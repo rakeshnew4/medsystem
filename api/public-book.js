@@ -14,14 +14,16 @@ export default async function(req,res){
   const patient=await db.query("SELECT id FROM patients WHERE hospital_id=$1 AND phone=$2 ORDER BY id LIMIT 1",[hid,b.phone]);
   let patientId=patient.rows[0]?.id;
   if(!patientId){
-    const p=await db.query("INSERT INTO patients(hospital_id,name,phone,email) VALUES($1,$2,$3,$4) RETURNING id",[hid,b.name,b.phone,b.email||null]);
+    const p=await db.query("INSERT INTO patients(hospital_id,name,phone,whatsapp_phone,whatsapp_opt_in,email) VALUES($1,$2,$3,$4,$5,$6) RETURNING id",[hid,b.name,b.phone,b.phone,Boolean(b.whatsapp_opt_in),b.email||null]);
     patientId=p.rows[0].id;
   } else {
-    await db.query("UPDATE patients SET name=$1,email=$2,updated_at=now() WHERE id=$3",[b.name,b.email||null,patientId]);
+    await db.query("UPDATE patients SET name=$1,email=$2,whatsapp_phone=$3,whatsapp_opt_in=$4,updated_at=now() WHERE id=$5",[b.name,b.email||null,b.phone,Boolean(b.whatsapp_opt_in),patientId]);
   }
   const conflict=await db.query("SELECT id FROM appointments WHERE hospital_id=$1 AND doctor_id=$2 AND appointment_date=$3 AND appointment_time=$4 AND status <> 'cancelled' LIMIT 1",[hid,b.doctor_id,b.appointment_date,b.appointment_time]);
   if(conflict.rows[0]) return res.status(409).json({error:"That slot is already booked. Please choose another time."});
   const a=await db.query("INSERT INTO appointments(hospital_id,patient_id,doctor_id,appointment_date,appointment_time,status,source,reason) VALUES($1,$2,$3,$4,$5,'pending','public-web',$6) RETURNING id,appointment_date,appointment_time,status",[hid,patientId,b.doctor_id,b.appointment_date,b.appointment_time,b.reason||null]);
-  await db.query("INSERT INTO notifications(hospital_id,patient_id,appointment_id,kind,scheduled_for,status) VALUES($1,$2,$3,'appointment_confirmation',now(),'pending')",[hid,patientId,a.rows[0].id]);
+  if(Boolean(b.whatsapp_opt_in)){
+    await db.query("INSERT INTO notifications(hospital_id,patient_id,appointment_id,kind,scheduled_for,status,channel) VALUES($1,$2,$3,'appointment_confirmation',now(),'pending','whatsapp') ON CONFLICT (appointment_id,kind) DO NOTHING",[hid,patientId,a.rows[0].id]);
+  }
   res.json({ok:true,appointment:a.rows[0],doctor:doctor.rows[0]});
 }

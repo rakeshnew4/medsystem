@@ -3,3 +3,19 @@ required = true
 
 [auth]
 enabled = true
+
+[[secret]]
+name = "WHATSAPP_GRAPH_URL"
+expose = true
+
+[[secret]]
+name = "WHATSAPP_ACCESS_TOKEN"
+expose = true
+
+[[secret]]
+name = "WHATSAPP_PHONE_NUMBER_ID"
+expose = true
+
+[[secret]]
+name = "WHATSAPP_VERIFY_TOKEN"
+expose = true
