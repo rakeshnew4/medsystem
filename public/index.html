@@ -61,7 +61,8 @@
 </section>
 
 <section id="staff" class="section">
-  <div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Staff & doctors access</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Email-code sign-in. Administrators activate staff and link doctors to accounts.</div></div></div><div id="staffTable" class="table-wrap"></div></div>
+  <div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Staff & access control</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Register exact email addresses, assign roles, activate accounts, link doctors, and control role permissions.</div></div><button class="btn primary" onclick="openModal('staffModal')">+ Register staff email</button></div><div id="staffTable" class="table-wrap"></div></div>
+  <div class="card panel" style="margin-top:16px"><div class="panel-head"><div><h2 class="panel-title">Role permissions</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">These controls decide which pages and actions each role can access. API permissions are enforced server-side too.</div></div><select id="permissionRole" style="width:180px"><option value="receptionist">Receptionist</option><option value="nurse">Nurse</option><option value="doctor">Doctor</option><option value="lab">Lab</option><option value="pharmacy">Pharmacy</option><option value="admin">Admin</option></select></div><div id="permissionMatrix"></div></div>
 </section>
 
 <section id="setup" class="section"><div class="card panel"><h2 class="panel-title">Hospital setup</h2><p style="color:var(--muted);font-size:13px">The first registered staff account becomes the hospital administrator.</p><form id="setupForm" class="form-grid" style="margin-top:18px"><div class="field full"><label>Hospital name</label><input id="hospitalName" required></div><div class="field"><label>Phone</label><input id="hospitalPhone"></div><div class="field"><label>Address</label><input id="hospitalAddress"></div><div><button class="btn primary" type="submit">Save hospital</button></div></form></div></section>
@@ -84,7 +85,7 @@
 
 <script>
 const API='/api';
-let state={dashboard:null,patients:[],doctors:[],appointments:[],followups:[],queue:[],beds:[],staff:[],queueView:'kanban',session:null};
+let state={dashboard:null,patients:[],doctors:[],appointments:[],followups:[],queue:[],beds:[],staff:[],permissionCatalog:[],rolePermissions:[],queueView:'kanban',session:null};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtTime=t=>t?String(t).slice(0,5):'';
 const fmtDate=d=>d?new Date(String(d).slice(0,10)+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
@@ -99,19 +100,57 @@ async function checkSession(){
   const s=await api('/public-staff-status');
   if(!s.signed_in){location.replace('/login?next='+encodeURIComponent(location.pathname));return false}
   state.session=s;
+  if(!s.staff){
+    document.body.innerHTML='<div style="min-height:100vh;display:grid;place-items:center;padding:24px;font-family:system-ui;background:#f6f8f7"><div class="card panel" style="max-width:560px;text-align:center"><h1>Email not registered</h1><p style="color:#6b7d77">This email can authenticate with the platform, but it has not been registered by the hospital administrator. Ask the administrator to add your exact email address first.</p><button class="btn" onclick="hatchable.auth.signOut().then(()=>location.replace(\'/login\'))">Sign out</button></div></div>';return false
+  }
   document.getElementById('userBadge').textContent=(s.user?.email||'')+(s.staff?.role?' · '+s.staff.role:'');
+  applyPermissions();
   if(s.staff && (!s.staff.active || s.staff.role==='pending')){document.body.innerHTML='<div style="min-height:100vh;display:grid;place-items:center;padding:24px;font-family:system-ui;background:#f6f8f7"><div class="card panel" style="max-width:520px;text-align:center"><h1>Account awaiting activation</h1><p style="color:#6b7d77">Your email is registered, but an administrator has not activated your staff account yet.</p><button class="btn primary" onclick="hatchable.auth.signOut().then(()=>location.replace(\'/login\'))">Sign out</button></div></div>';return false}
   return true;
+}
+function can(p){return !!(state.session?.permissions?.[p])}
+function applyPermissions(){
+  const pageMap={dashboard:'page.dashboard',queue:'page.queue',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',staff:'page.staff',setup:'page.setup'};
+  document.querySelectorAll('.nav button').forEach(b=>{const p=pageMap[b.dataset.section];b.style.display=can(p)?'':'none'});
+  document.querySelectorAll('button').forEach(b=>{
+    if(b.closest('.modal'))return;
+    const oc=b.getAttribute('onclick')||'';
+    let p=null;
+    if(oc.includes("openModal('appointmentModal')"))p='action.appointment.create';
+    else if(oc.includes("openModal('patientModal')"))p='action.patient.create';
+    else if(oc.includes("openModal('doctorModal')"))p='action.doctors.manage';
+    else if(oc.includes("openModal('followupModal')"))p='action.followups.manage';
+    else if(oc.includes("openModal('queueModal')"))p='action.queue.manage';
+    else if(oc.includes("openModal('vitalsModal')"))p='action.vitals.record';
+    else if(oc.includes("openModal('bedModal')")||oc.includes('admitBed(')||oc.includes('discharge('))p='action.beds.manage';
+    else if(oc.includes('askAI()'))p='action.ai.use';
+    if(p)b.style.display=can(p)?'':'none';
+  });
+  const staffNav=document.querySelector('.nav button[data-section="staff"]');if(staffNav&&state.session?.staff?.role!=='admin')staffNav.style.display='none';
 }
 async function loadAll(){
   if(!(await checkSession()))return;
   try{
     const setup=await api('/setup');
-    if(!setup){showSection('setup');document.getElementById('stats').innerHTML='<div class="card panel empty" style="grid-column:1/-1">Set up the hospital before using the operations workspace.</div>';return}
-    [state.dashboard,state.patients,state.doctors,state.appointments,state.followups,state.queue,state.beds]=await Promise.all([api('/dashboard'),api('/patients'),api('/doctors'),api('/appointments'),api('/followups'),api('/queue'),api('/beds')]);
-    if(state.session.staff?.role==='admin'){state.staff=await api('/team')}
-    renderAll();populateSelects();
-  }catch(e){if(e.status===401){location.replace('/login?next='+encodeURIComponent(location.pathname));return}if(e.status===403){alert(e.message);return}console.error(e);alert(e.message)}
+    if(!setup){if(can('page.setup'))showSection('setup');document.getElementById('stats').innerHTML='<div class="card panel empty" style="grid-column:1/-1">Hospital setup is required. Ask the administrator to complete it.</div>';return}
+    const p=state.session.permissions||{};
+    const get=(perm,path,fallback)=>p[perm]?api(path):Promise.resolve(fallback);
+    [state.dashboard,state.patients,state.doctors,state.appointments,state.followups,state.queue,state.beds]=await Promise.all([
+      get('page.dashboard','/dashboard',{hospital:setup,stats:{},appointments:[],followups:[],enquiries:[]}),
+      get('page.patients','/patients',[]),
+      get('page.doctors','/doctors',[]),
+      get('page.appointments','/appointments',[]),
+      get('page.followups','/followups',[]),
+      get('page.queue','/queue',[]),
+      get('page.beds','/beds',[])
+    ]);
+    if(state.session.staff?.role==='admin'){
+      state.staff=await api('/team');
+      const pm=await api('/permissions');state.permissionCatalog=pm.permissions;state.rolePermissions=pm.roles;
+      renderPermissionMatrix();
+    } else {state.staff=[]}
+    renderAll();populateSelects();applyPermissions();
+  }catch(e){if(e.status===401){location.replace('/login?next='+encodeURIComponent(location.pathname));return}if(e.status===403){console.error(e);return}console.error(e);alert(e.message)}
 }
 function renderAll(){
  const d=state.dashboard;if(!d||!d.hospital)return;
@@ -142,11 +181,27 @@ function openVitals(qid,pid){document.getElementById('vitalsPatient').value=pid;
 function renderBeds(){if(!state.beds.length){document.getElementById('bedsGrid').innerHTML='<div class="empty">No beds configured yet.</div>';return}document.getElementById('bedsGrid').innerHTML=state.beds.map(b=>'<div class="bed-card '+esc(b.status)+'"><div class="bed-head"><div><div class="bed-number">'+esc(b.ward)+' · '+esc(b.bed_number)+'</div><div class="bed-type">'+esc(b.bed_type)+'</div></div><span class="bed-status">'+esc(b.status)+'</span></div>'+(b.status==='occupied'?'<div class="bed-patient"><strong>'+esc(b.patient_name)+'</strong><div>'+esc(b.phone||'')+'</div><div style="margin-top:7px">Doctor: '+esc(b.doctor_name||'—')+'</div><div>Admitted: '+fmtDate(b.admitted_at)+'</div><div>Expected discharge: '+(b.expected_discharge_date?fmtDate(b.expected_discharge_date):'Not set')+'</div></div><div class="bed-metrics"><span>'+b.visit_count+' visits</span><span>'+b.medicine_count+' medicines</span><span>'+b.report_count+' reports</span></div><button class="btn" style="width:100%;margin-top:10px" onclick="discharge('+b.admission_id+')">Discharge patient</button>':'<div class="empty">Available for admission</div><button class="btn primary" style="width:100%;margin-top:8px" onclick="admitBed('+b.id+')">Assign patient</button>')+'</div>').join('')}
 function admitBed(bedId){document.getElementById('admitPatient').value='';document.getElementById('admitDoctor').value='';document.getElementById('admitBedId').value=bedId;openModal('admitModal')}
 async function discharge(id){if(!confirm('Discharge this patient from the bed?'))return;try{await api('/beds',{method:'PUT',body:JSON.stringify({action:'discharge',id})});await loadAll()}catch(e){alert(e.message)}}
+function renderPermissionMatrix(){
+  if(state.session.staff?.role!=='admin')return;
+  const role=document.getElementById('permissionRole')?.value||'receptionist';
+  const rows=state.permissionCatalog||[];
+  document.getElementById('permissionMatrix').innerHTML='<div class="permission-grid">'+rows.map(p=>{
+    const rp=state.rolePermissions.find(x=>x.role===role&&x.permission_key===p.permission_key);
+    const allowed=!!rp?.allowed;
+    return '<label class="permission-row"><input type="checkbox" '+(allowed?'checked':'')+' onchange="saveRolePermission(\''+p.permission_key+'\',this.checked)"><span><strong>'+esc(p.label)+'</strong><small>'+esc(p.permission_key)+' · '+esc(p.description||'')+'</small></span></label>'
+  }).join('')+'</div>';
+}
+async function saveRolePermission(permission_key,allowed){
+  const role=document.getElementById('permissionRole').value;
+  try{await api('/permissions',{method:'PUT',body:JSON.stringify({scope:'role',role,permission_key,allowed})});const pm=await api('/permissions');state.rolePermissions=pm.roles;renderPermissionMatrix();}catch(e){alert(e.message)}
+}
 function renderStaff(){if(state.session.staff?.role!=='admin'){document.getElementById('staffTable').innerHTML='<div class="empty">Staff management is available to administrators.</div>';return}document.getElementById('staffTable').innerHTML=table(state.staff,['Email','Name','Role','Doctor','Status','Action'],x=>'<td>'+esc(x.email)+'</td><td>'+esc(x.display_name||'')+'</td><td><select onchange="updateStaff('+x.id+',this.value,'+Number(x.doctor_id||0)+', '+x.active+')"><option '+(x.role==='admin'?'selected':'')+'>admin</option><option '+(x.role==='doctor'?'selected':'')+'>doctor</option><option '+(x.role==='nurse'?'selected':'')+'>nurse</option><option '+(x.role==='receptionist'?'selected':'')+'>receptionist</option><option '+(x.role==='lab'?'selected':'')+'>lab</option><option '+(x.role==='pharmacy'?'selected':'')+'>pharmacy</option><option '+(x.role==='pending'?'selected':'')+'>pending</option></select></td><td><select onchange="updateStaff('+x.id+',null,Number(this.value), '+x.active+')"><option value="">Not linked</option>'+state.doctors.map(d=>'<option value="'+d.id+'" '+(Number(x.doctor_id)===Number(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('')+'</select></td><td>'+esc(x.active?'Active':'Inactive')+'</td><td><button class="mini" onclick="updateStaff('+x.id+',null,'+JSON.stringify(x.doctor_id||'')+', '+(!x.active)+')">'+(x.active?'Deactivate':'Activate')+'</button></td>')}
 async function updateStaff(id,role,doctorId,active){try{const body={id,role:role||'pending',doctor_id:doctorId||null,active};if(role===null){const current=state.staff.find(x=>x.id===id);body.role=current?.role||'pending'}await api('/team',{method:'PUT',body:JSON.stringify(body)});await loadAll()}catch(e){alert(e.message)}}
 
-function populateSelects(){const po=state.patients.length?state.patients.map(x=>'<option value="'+x.id+'">'+esc(x.name)+(x.phone?' · '+esc(x.phone):'')+'</option>').join(''):'<option value="" disabled selected>No patients</option>';['apptPatient','followPatient','queuePatient','admitPatient'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='<option value="" disabled selected>Select patient</option>'+po});const docs=state.doctors.map(x=>'<option value="'+x.id+'">'+esc(x.name)+' · '+esc(x.specialty)+'</option>').join('');['apptDoctor','queueDoctor','followDoctor','admitDoctor'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='<option value="">Unassigned</option>'+docs})}
+function populateSelects(){const po=state.patients.length?state.patients.map(x=>'<option value="'+x.id+'">'+esc(x.name)+(x.phone?' · '+esc(x.phone):'')+'</option>').join(''):'<option value="" disabled selected>No patients</option>';['apptPatient','followPatient','queuePatient','admitPatient'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='<option value="" disabled selected>Select patient</option>'+po});const docs=state.doctors.map(x=>'<option value="'+x.id+'">'+esc(x.name)+' · '+esc(x.specialty)+'</option>').join('');['apptDoctor','queueDoctor','followDoctor','admitDoctor','staffDoctor'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='<option value="">Unassigned</option>'+docs})}
 
+document.getElementById('permissionRole').onchange=()=>renderPermissionMatrix();
+document.getElementById('staffForm').onsubmit=async e=>{e.preventDefault();try{await api('/team',{method:'POST',body:JSON.stringify({email:staffEmail.value,role:staffRole.value,doctor_id:staffDoctor.value||null,active:staffActive.value==='true'})});closeModal('staffModal');e.target.reset();await loadAll();alert('Staff email registered. Only that email can sign in, and the account must be active.')}catch(x){alert(x.message)}};
 document.getElementById('setupForm').onsubmit=async e=>{e.preventDefault();try{await api('/setup',{method:'POST',body:JSON.stringify({name:hospitalName.value,phone:hospitalPhone.value,address:hospitalAddress.value})});await loadAll();showSection('dashboard');alert('Hospital saved.')}catch(x){alert(x.message)}};
 document.getElementById('patientForm').onsubmit=async e=>{e.preventDefault();try{await api('/patients',{method:'POST',body:JSON.stringify({name:patientName.value,phone:patientPhone.value,email:patientEmail.value,date_of_birth:patientDob.value,notes:patientNotes.value})});closeModal('patientModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}};
 document.getElementById('doctorForm').onsubmit=async e=>{e.preventDefault();try{await api('/doctors',{method:'POST',body:JSON.stringify({name:doctorName.value,specialty:doctorSpecialty.value,phone:doctorPhone.value,consultation_fee:doctorFee.value})});closeModal('doctorModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}};
@@ -160,6 +215,8 @@ async function askAI(){const q=document.getElementById('aiQuestion').value.trim(
 async function signOut(){await hatchable.auth.signOut();location.replace('/login')}
 loadAll();
 </script>
+
+<div id="staffModal" class="modal"><div class="modal-card"><div class="panel-head"><h2 class="panel-title">Register staff email</h2><button class="btn" onclick="closeModal('staffModal')">Close</button></div><form id="staffForm" class="form-grid"><div class="field full"><label>Exact email address</label><input id="staffEmail" type="email" required placeholder="nurse@hospital.com"><div style="font-size:11px;color:var(--muted);margin-top:5px">Only this registered email can enter the hospital app. Authentication still requires ownership of the email.</div></div><div class="field"><label>Role</label><select id="staffRole"><option value="receptionist">Receptionist</option><option value="nurse">Nurse</option><option value="doctor">Doctor</option><option value="lab">Lab</option><option value="pharmacy">Pharmacy</option><option value="admin">Admin</option><option value="pending">Pending</option></select></div><div class="field"><label>Doctor link (optional)</label><select id="staffDoctor"></select></div><div class="field"><label>Activate now?</label><select id="staffActive"><option value="false">No — activate later</option><option value="true">Yes</option></select></div><div><button class="btn primary">Register email</button></div></form></div></div>
 
 <div id="admitModal" class="modal"><div class="modal-card"><div class="panel-head"><h2 class="panel-title">Assign patient to bed</h2><button class="btn" onclick="closeModal('admitModal')">Close</button></div><form id="admitForm" class="form-grid"><input id="admitBedId" type="hidden"><div class="field full"><label>Patient</label><select id="admitPatient" required></select></div><div class="field"><label>Admitting doctor</label><select id="admitDoctor"></select></div><div class="field"><label>Expected discharge</label><input id="admitDischarge" type="date"></div><div class="field full"><label>Admission notes</label><textarea id="admitNotes"></textarea></div><div><button class="btn primary">Assign bed</button></div></form></div></div>
 </body>

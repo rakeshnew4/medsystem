@@ -1,10 +1,10 @@
 import { db, ai } from "hatchable";
-import { requireStaff } from "../lib/authz.js";
+import { requirePermission } from "../lib/authz.js";
 export const access = "user";
 export const methods = ["POST"];
 
 export default async function(req,res){
-  const ctx=await requireStaff(req,res);
+  const ctx=await requirePermission(req,res,"action.ai.use");
   if(!ctx)return;
   const q=String((req.body||{}).question||"").trim();
   if(!q) return res.status(400).json({error:"Question is required"});

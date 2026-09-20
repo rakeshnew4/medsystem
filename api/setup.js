@@ -1,10 +1,13 @@
 import { auth, db } from "hatchable";
+import { requirePermission } from "../lib/authz.js";
 export const access="user";
 export const methods=["GET","POST"];
 export default async function(req,res){
   const user=await auth.getUser(req);
   if(!user)return res.status(401).json({error:"Sign in required"});
   if(req.method==="POST"){
+    const ctx=await requirePermission(req,res,"action.setup.manage");
+    if(!ctx)return;
     const b=req.body||{};
     if(!b.name)return res.status(400).json({error:"Hospital name is required"});
     const existing=await db.query("SELECT id FROM hospitals ORDER BY id LIMIT 1");

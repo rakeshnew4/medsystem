@@ -1,9 +1,9 @@
 import { db } from "hatchable";
-import { requireStaff } from "../lib/authz.js";
+import { requirePermission } from "../lib/authz.js";
 export const access="user";
 export const methods=["GET","POST"];
 export default async function(req,res){
-  const ctx=await requireStaff(req,res,["admin","doctor","nurse"]);
+  const ctx=await requirePermission(req,res,req.method==="GET"?"action.clinical.view":(({type})=>type==="lab"?"action.lab.manage":type==="report"?"action.lab.manage":"action.clinical.write")(req.body||{}));
   if(!ctx)return;
   if(req.method==="POST"){
     const b=req.body||{};

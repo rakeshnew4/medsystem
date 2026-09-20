@@ -1,10 +1,10 @@
 import { db } from "hatchable";
 export const access = "user";
-import { requireStaff } from "../lib/authz.js";
+import { requirePermission } from "../lib/authz.js";
 export const methods = ["GET"];
 
 export default async function(req,res){
-  const ctx=await requireStaff(req,res);
+  const ctx=await requirePermission(req,res,"page.dashboard");
   if(!ctx)return;
   const hospital = await db.query("SELECT id, name, phone, address FROM hospitals ORDER BY id LIMIT 1");
   const h = hospital.rows[0];
