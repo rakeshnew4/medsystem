@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CareFlow API — Swagger UI</title>
+<link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+<style>body{margin:0;background:#fafafa}.topbar{display:none}.swagger-ui .info{margin:28px 0}.swagger-ui .info .title{font-size:30px}</style>
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+<script>
+const spec={
+ openapi:"3.0.3",
+ info:{title:"CareFlow Hospital API",version:"1.0.0",description:"Administrative and patient-facing APIs for the CareFlow Hospital AI Assistant. Clinical diagnosis, prescribing and treatment decisions are outside this API."},
+ servers:[{url:location.origin}],
+ tags:[
+  {name:"Hospital",description:"Hospital setup and dashboard"},
+  {name:"Patients",description:"Patient records"},
+  {name:"Doctors",description:"Doctor roster"},
+  {name:"Appointments",description:"Appointment booking and status"},
+  {name:"Follow-ups",description:"Administrative follow-up tracking"},
+  {name:"Public patient",description:"Patient-facing booking and information"},
+  {name:"AI & messaging",description:"Administrative AI and WhatsApp endpoints"}
+ ],
+ paths:{
+  "/api/setup":{
+   get:{tags:["Hospital"],summary:"Get hospital setup",responses:{"200":{description:"Hospital or null"}}},
+   post:{tags:["Hospital"],summary:"Create or update hospital",requestBody:{required:true,content:{"application/json":{schema:{$ref:"#/components/schemas/HospitalInput"}}}},responses:{"200":{description:"Saved hospital"},"400":{description:"Validation error"}}}
+  },
+  "/api/dashboard":{get:{tags:["Hospital"],summary:"Get dashboard metrics and queues",responses:{"200":{description:"Dashboard data"}}}},
+  "/api/patients":{
+   get:{tags:["Patients"],summary:"List patients",responses:{"200":{description:"Patient list"}}},
+   post:{tags:["Patients"],summary:"Create patient",requestBody:{required:true,content:{"application/json":{schema:{$ref:"#/components/schemas/PatientInput"}}}},responses:{"200":{description:"Created patient"},"400":{description:"Validation error"}}}
+  },
+  "/api/doctors":{
+   get:{tags:["Doctors"],summary:"List doctors",responses:{"200":{description:"Doctor list"}}},
+   post:{tags:["Doctors"],summary:"Create doctor",requestBody:{required:true,content:{"application/json":{schema:{$ref:"#/components/schemas/DoctorInput"}}}},responses:{"200":{description:"Created doctor"},"400":{description:"Validation error"}}}
+  },
+  "/api/appointments":{
+   get:{tags:["Appointments"],summary:"List appointments",responses:{"200":{description:"Appointment list"}}},
+   post:{tags:["Appointments"],summary:"Book appointment",requestBody:{required:true,content:{"application/json":{schema:{$ref:"#/components/schemas/AppointmentInput"}}}},responses:{"200":{description:"Created appointment"},"400":{description:"Validation error"}}},
+   put:{tags:["Appointments"],summary:"Update appointment status",requestBody:{required:true,content:{"application/json":{schema:{$ref:"#/components/schemas/AppointmentStatusInput"}}}},responses:{"200":{description:"Updated appointment"}}}
+  },
+  "/api/followups":{
+   get:{tags:["Follow-ups"],summary:"List follow-ups",responses:{"200":{description:"Follow-up list"}}},
+   post:{tags:["Follow-ups"],summary:"Create follow-up",requestBody:{required:true,content:{"application/json":{schema:{$ref:"#/components/schemas/FollowupInput"}}}},responses:{"200":{description:"Created follow-up"}}},
+   put:{tags:["Follow-ups"],summary:"Update follow-up status",requestBody:{required:true,content:{"application/json":{schema:{$ref:"#/components/schemas/FollowupStatusInput"}}}},responses:{"200":{description:"Updated follow-up"}}}
+  },
+  "/api/public-hospital":{get:{tags:["Public patient"],summary:"Get public hospital information",responses:{"200":{description:"Hospital, doctors and FAQs"}}}},
+  "/api/public-slots":{get:{tags:["Public patient"],summary:"Get available appointment slots",parameters:[{name:"doctor_id",in:"query",required:true,schema:{type:"string"}},{name:"date",in:"query",required:true,schema:{type:"string",format:"date"}}],responses:{"200":{description:"Available slots"}}}},
+  "/api/public-book":{post:{tags:["Public patient"],summary:"Book a patient appointment",requestBody:{required:true,content:{"application/json":{schema:{$ref:"#/components/schemas/PublicBookingInput"}}}},responses:{"200":{description:"Booking result"},"400":{description:"Validation error"}}}},
+  "/api/public-chat":{post:{tags:["Public patient"],summary:"Ask the administrative patient-facing AI assistant",requestBody:{required:true,content:{"application/json":{schema:{$ref:"#/components/schemas/ChatInput"}}}},responses:{"200":{description:"AI response"}}}},
+  "/api/ai-assistant":{post:{tags:["AI & messaging"],summary:"Ask the internal administrative AI assistant",requestBody:{required:true,content:{"application/json":{schema:{$ref:"#/components/schemas/ChatInput"}}}},responses:{"200":{description:"AI response"}}}},
+  "/api/patient-optin":{post:{tags:["AI & messaging"],summary:"Update patient WhatsApp opt-in",requestBody:{required:true,content:{"application/json":{schema:{$ref:"#/components/schemas/OptinInput"}}}},responses:{"200":{description:"Opt-in result"}}}},
+  "/api/whatsapp-webhook":{get:{tags:["AI & messaging"],summary:"Meta WhatsApp webhook verification",responses:{"200":{description:"Verification response"}}},post:{tags:["AI & messaging"],summary:"Receive WhatsApp messages",responses:{"200":{description:"Webhook accepted"}}}}
+ },
+ components:{schemas:{
+  HospitalInput:{type:"object",required:["name"],properties:{name:{type:"string"},phone:{type:"string"},address:{type:"string"}}},
+  PatientInput:{type:"object",required:["name"],properties:{name:{type:"string"},phone:{type:"string"},email:{type:"string",format:"email"},date_of_birth:{type:"string",format:"date"},notes:{type:"string"}}},
+  DoctorInput:{type:"object",required:["name","specialty"],properties:{name:{type:"string"},specialty:{type:"string"},phone:{type:"string"},consultation_fee:{type:"number"},department_id:{type:"string"}}},
+  AppointmentInput:{type:"object",required:["patient_id","doctor_id","appointment_date","appointment_time"],properties:{patient_id:{type:"string"},doctor_id:{type:"string"},appointment_date:{type:"string",format:"date"},appointment_time:{type:"string",example:"10:30"},status:{type:"string",example:"pending"},source:{type:"string",example:"reception"},reason:{type:"string"}}},
+  AppointmentStatusInput:{type:"object",required:["id","status"],properties:{id:{type:"string"},status:{type:"string",example:"confirmed"}}},
+  FollowupInput:{type:"object",required:["patient_id","due_date"],properties:{patient_id:{type:"string"},doctor_id:{type:"string"},due_date:{type:"string",format:"date"},status:{type:"string",example:"due"},notes:{type:"string"}}},
+  FollowupStatusInput:{type:"object",required:["id","status"],properties:{id:{type:"string"},status:{type:"string"}}},
+  PublicBookingInput:{type:"object",required:["name","phone","doctor_id","appointment_date","appointment_time"],properties:{name:{type:"string"},phone:{type:"string"},email:{type:"string",format:"email"},doctor_id:{type:"string"},appointment_date:{type:"string",format:"date"},appointment_time:{type:"string"},reason:{type:"string"},whatsapp_opt_in:{type:"boolean"}}},
+  ChatInput:{type:"object",required:["question"],properties:{question:{type:"string"}}},
+  OptinInput:{type:"object",required:["patient_id","whatsapp_opt_in"],properties:{patient_id:{type:"string"},whatsapp_opt_in:{type:"boolean"},whatsapp_phone:{type:"string"}}}
+ }}
+};
+SwaggerUIBundle({spec,dom_id:"#swagger-ui",deepLinking:true,displayRequestDuration:true,persistAuthorization:true,filter:true});
+</script>
+</body>
+</html>
