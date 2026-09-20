@@ -18,6 +18,7 @@
     <button data-section="beds">Beds & admissions</button>
     <button data-section="followups">Follow-ups</button>
     <button data-section="billing">Billing</button>
+    <button data-section="analytics">Insights</button>
     <button data-section="staff">Staff</button>
     <button data-section="setup">Hospital setup</button>
   </nav>
@@ -54,6 +55,7 @@
 <section id="doctors" class="section"><div class="card panel"><div class="panel-head"><h2 class="panel-title">Doctors</h2><button class="btn primary" onclick="openModal('doctorModal')">+ Add doctor</button></div><div id="doctorsTable" class="table-wrap"></div></div></section>
 <section id="followups" class="section"><div class="card panel"><div class="panel-head"><h2 class="panel-title">Follow-ups</h2><button class="btn primary" onclick="openModal('followupModal')">+ Add follow-up</button></div><div id="followupsTable" class="table-wrap"></div></div></section>
 <section id="billing" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Billing & payments</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Simple invoice, paid/partial/unpaid tracking and outstanding dues.</div></div><button class="btn primary" onclick="openModal('billingModal')">+ New invoice</button></div><div id="billingTable" class="table-wrap"></div></div></section>
+<section id="analytics" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Clinic insights</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">60-day operational view for doctors and administrators.</div></div><button class="btn" onclick="loadAnalytics()">Refresh insights</button></div><div id="analyticsContent" style="margin-top:16px"></div></div></section>
 
 <section id="beds" class="section">
   <div class="card panel">
@@ -67,7 +69,7 @@
   <div class="card panel" style="margin-top:16px"><div class="panel-head"><div><h2 class="panel-title">Role permissions</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">These controls decide which pages and actions each role can access. API permissions are enforced server-side too.</div></div><select id="permissionRole" style="width:180px"><option value="receptionist">Receptionist</option><option value="nurse">Nurse</option><option value="doctor">Doctor</option><option value="lab">Lab</option><option value="pharmacy">Pharmacy</option><option value="admin">Admin</option></select></div><div id="permissionMatrix"></div></div>
 </section>
 
-<section id="setup" class="section"><div class="card panel"><h2 class="panel-title">Hospital setup</h2><p style="color:var(--muted);font-size:13px">The first registered staff account becomes the hospital administrator.</p><form id="setupForm" class="form-grid" style="margin-top:18px"><div class="field full"><label>Hospital name</label><input id="hospitalName" required></div><div class="field"><label>Phone</label><input id="hospitalPhone"></div><div class="field"><label>Address</label><input id="hospitalAddress"></div><div><button class="btn primary" type="submit">Save hospital</button></div></form></div></section>
+<section id="setup" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Hospital setup</h2><p style="color:var(--muted);font-size:13px">The first registered staff account becomes the hospital administrator.</p></div><button class="btn" onclick="seedDemoData()">Add 2 months demo data</button></div><form id="setupForm" class="form-grid" style="margin-top:18px"><div class="field full"><label>Hospital name</label><input id="hospitalName" required></div><div class="field"><label>Phone</label><input id="hospitalPhone"></div><div class="field"><label>Address</label><input id="hospitalAddress"></div><div><button class="btn primary" type="submit">Save hospital</button></div></form></div></section>
 </main>
 </div>
 
@@ -92,7 +94,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtTime=t=>t?String(t).slice(0,5):'';
 const fmtDate=d=>d?new Date(String(d).slice(0,10)+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
 async function api(path,opts={}){const r=await fetch(API+path,{headers:{'Content-Type':'application/json'},...opts});let j={};try{j=await r.json()}catch{}if(!r.ok)throw Object.assign(Error(j.error||'Request failed'),{status:r.status,data:j});return j}
-function showSection(id){document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.section===id));const titles={dashboard:'Hospital overview',queue:'Patient queue',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',staff:'Staff',setup:'Hospital setup'};document.getElementById('pageTitle').textContent=titles[id]||id}
+function showSection(id){document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.section===id));const titles={dashboard:'Hospital overview',queue:'Patient queue',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',analytics:'Clinic insights',staff:'Staff',setup:'Hospital setup'};document.getElementById('pageTitle').textContent=titles[id]||id}
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>showSection(b.dataset.section));
 function openModal(id){document.getElementById(id).classList.add('open')} function closeModal(id){document.getElementById(id).classList.remove('open')}
 function status(s){return '<span class="status '+esc(s)+'">'+esc(s)+'</span>'}
@@ -112,7 +114,7 @@ async function checkSession(){
 }
 function can(p){return !!(state.session?.permissions?.[p])}
 function applyPermissions(){
-  const pageMap={dashboard:'page.dashboard',queue:'page.queue',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',staff:'page.staff',setup:'page.setup'};
+  const pageMap={dashboard:'page.dashboard',queue:'page.queue',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',analytics:'page.dashboard',staff:'page.staff',setup:'page.setup'};
   document.querySelectorAll('.nav button').forEach(b=>{const p=pageMap[b.dataset.section];b.style.display=can(p)?'':'none'});
   document.querySelectorAll('button').forEach(b=>{
     if(b.closest('.modal'))return;
@@ -153,7 +155,7 @@ async function loadAll(){
       const pm=await api('/permissions');state.permissionCatalog=pm.permissions;state.rolePermissions=pm.roles;
       renderPermissionMatrix();
     } else {state.staff=[]}
-    renderAll();populateSelects();applyPermissions();
+    renderAll();populateSelects();applyPermissions();if(can('page.dashboard'))loadAnalytics();
   }catch(e){if(e.status===401){location.replace('/login?next='+encodeURIComponent(location.pathname));return}if(e.status===403){console.error(e);return}console.error(e);alert(e.message)}
 }
 function renderAll(){
@@ -206,6 +208,7 @@ async function updateStaff(id,role,doctorId,active){try{const body={id,role:role
 function populateSelects(){const po=state.patients.length?state.patients.map(x=>'<option value="'+x.id+'">'+esc(x.name)+(x.phone?' · '+esc(x.phone):'')+'</option>').join(''):'<option value="" disabled selected>No patients</option>';['apptPatient','followPatient','queuePatient','admitPatient','billPatient'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='<option value="" disabled selected>Select patient</option>'+po});const docs=state.doctors.map(x=>'<option value="'+x.id+'">'+esc(x.name)+' · '+esc(x.specialty)+'</option>').join('');['apptDoctor','queueDoctor','followDoctor','admitDoctor','staffDoctor'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='<option value="">Unassigned</option>'+docs})}
 
 document.getElementById('permissionRole').onchange=()=>renderPermissionMatrix();
+  const analyticsNav=document.querySelector('.nav button[data-section="analytics"]');if(analyticsNav)analyticsNav.onclick=()=>{showSection('analytics');loadAnalytics()};
 document.getElementById('staffForm').onsubmit=async e=>{e.preventDefault();try{await api('/team',{method:'POST',body:JSON.stringify({email:staffEmail.value,role:staffRole.value,doctor_id:staffDoctor.value||null,active:staffActive.value==='true'})});closeModal('staffModal');e.target.reset();await loadAll();alert('Staff email registered. Only that email can sign in, and the account must be active.')}catch(x){alert(x.message)}};
 document.getElementById('billingForm').onsubmit=async e=>{e.preventDefault();try{await api('/billing',{method:'POST',body:JSON.stringify({patient_id:billPatient.value,items:[{description:billDescription.value,quantity:1,unit_price:Number(billAmount.value)}],discount:Number(billDiscount.value||0),tax:Number(billTax.value||0),paid:Number(billPaid.value||0),payment_method:billMethod.value,notes:billNotes.value})});closeModal('billingModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}};
 document.getElementById('setupForm').onsubmit=async e=>{e.preventDefault();try{await api('/setup',{method:'POST',body:JSON.stringify({name:hospitalName.value,phone:hospitalPhone.value,address:hospitalAddress.value})});await loadAll();showSection('dashboard');alert('Hospital saved.')}catch(x){alert(x.message)}};
@@ -217,6 +220,7 @@ document.getElementById('queueForm').onsubmit=async e=>{e.preventDefault();try{a
 document.getElementById('vitalsForm').onsubmit=async e=>{e.preventDefault();try{await api('/vitals',{method:'POST',body:JSON.stringify({patient_id:vitalsPatient.value,queue_entry_id:e.target.dataset.queue,blood_pressure_systolic:vitalsSbp.value,blood_pressure_diastolic:vitalsDbp.value,pulse:vitalsPulse.value,temperature:vitalsTemp.value,weight_kg:vitalsWeight.value,height_cm:vitalsHeight.value,spo2:vitalsSpo2.value,respiratory_rate:vitalsResp.value,notes:vitalsNotes.value})});closeModal('vitalsModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}};
 document.getElementById('bedForm').onsubmit=async e=>{e.preventDefault();try{await api('/beds',{method:'POST',body:JSON.stringify({ward:bedWard.value,bed_number:bedNumber.value,bed_type:bedType.value,status:bedStatus.value,notes:bedNotes.value})});closeModal('bedModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}};
 window.addEventListener('DOMContentLoaded',()=>{document.getElementById('admitForm').onsubmit=async e=>{e.preventDefault();try{await api('/beds',{method:'PUT',body:JSON.stringify({action:'admit',patient_id:admitPatient.value,bed_id:admitBedId.value,doctor_id:admitDoctor.value||null,expected_discharge_date:admitDischarge.value||null,notes:admitNotes.value})});closeModal('admitModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}}});
+async function seedDemoData(){if(!confirm('Add a clearly labeled 60-day demo dataset to this hospital? It will create demo patients, appointments, visits and billing records.'))return;try{const r=await api('/demo-seed',{method:'POST'});alert(r.message||('Demo data added: '+r.patients+' patients, '+r.appointments+' appointments.'));await loadAll()}catch(e){alert(e.message)}}
 async function askAI(){const q=document.getElementById('aiQuestion').value.trim();if(!q)return;document.getElementById('aiResponse').textContent='Thinking…';try{const r=await api('/ai-assistant',{method:'POST',body:JSON.stringify({question:q})});document.getElementById('aiResponse').textContent=r.answer}catch(e){document.getElementById('aiResponse').textContent=e.message}}
 async function signOut(){await hatchable.auth.signOut();location.replace('/login')}
 loadAll();

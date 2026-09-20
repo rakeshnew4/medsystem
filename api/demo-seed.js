@@ -1,0 +1,19 @@
+import { db } from "hatchable";
+import { requirePermission } from "../lib/authz.js";
+export const access = "user";
+export const methods = ["POST"];
+const iso=d=>d.toISOString().slice(0,10), addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+export default async function(req,res){
+ const ctx=await requirePermission(req,res,"action.setup.manage"); if(!ctx)return;
+ const hid=ctx.hospital_id;
+ const e=await db.query("SELECT id FROM demo_seed_runs WHERE hospital_id=$1 AND seed_key=$2",[hid,"two_months_v1"]);
+ if(e.rows.length)return res.json({ok:true,alreadySeeded:true,message:"Two-month demo data already exists."});
+ const names=["Dr. Ananya Rao","Dr. Rahul Mehta","Dr. Priya Nair","Dr. Arjun Singh"],docs=[];
+ for(let i=0;i<names.length;i++){const r=await db.query("INSERT INTO doctors(hospital_id,name,specialty,active) VALUES($1,$2,$3,true) ON CONFLICT DO NOTHING RETURNING id",[hid,names[i],["General Medicine","Pediatrics","Gynecology","Orthopedics"][i]]);docs.push(r.rows[0]?.id||(await db.query("SELECT id FROM doctors WHERE hospital_id=$1 AND name=$2",[hid,names[i]])).rows[0].id)}
+ const firstNames=["Aarav","Meera","Rohan","Ishita","Vikram","Anika","Kabir","Neha","Aditya","Sneha","Arjun","Pooja","Karan","Divya","Rahul","Kavya","Manish","Nisha","Sanjay","Aditi","Varun","Priyanka","Mohit","Riya","Suresh","Tanvi","Naveen","Shreya","Amit","Lakshmi"],lastNames=["Sharma","Reddy","Patel","Kumar","Iyer","Singh","Gupta","Nair","Joshi","Verma"],patients=[];
+ for(let i=0;i<30;i++){const phone="+9197000"+String(10000+i).padStart(5,"0"),name=firstNames[i]+" "+lastNames[i%10];const r=await db.query("INSERT INTO patients(hospital_id,full_name,phone,gender) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING RETURNING id",[hid,name,phone,i%2?"female":"male"]);patients.push(r.rows[0]?.id||(await db.query("SELECT id FROM patients WHERE hospital_id=$1 AND phone=$2",[hid,phone])).rows[0].id)}
+ const first=new Date();first.setHours(0,0,0,0);first.setDate(first.getDate()-59);let appointments=0,visits=0,invoices=0;
+ for(let day=0;day<60;day++){const date=addDays(first,day);if(date.getDay()===0)continue;for(let j=0;j<8+(day%6);j++){const pi=(day*5+j)%patients.length,di=(day+j)%docs.length,status=j%11===0?"no_show":"completed",time=String(9+(j%8)).padStart(2,"0")+":00";const a=await db.query("INSERT INTO appointments(hospital_id,patient_id,doctor_id,appointment_date,appointment_time,status,reason) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id",[hid,patients[pi],docs[di],iso(date),time,status,["Routine visit","Follow-up","Consultation","Review"][j%4]]);appointments++;if(status==="no_show")continue;const started=new Date(date);started.setHours(9+(j%8),0,0,0),ended=new Date(started.getTime()+(20+(j%4)*10)*60000);const v=await db.query("INSERT INTO doctor_visits(hospital_id,patient_id,doctor_id,appointment_id,visit_number,status,clinical_notes,started_at,ended_at) VALUES($1,$2,$3,$4,1,'completed',$5,$6,$7) RETURNING id",[hid,patients[pi],docs[di],a.rows[0].id,"DEMO VISIT — operational test data",started,ended]);visits++;const total=500+(j%5)*150;await db.query("INSERT INTO invoices(hospital_id,patient_id,appointment_id,visit_id,invoice_number,subtotal,discount,tax,total,paid,payment_method,status,notes) VALUES($1,$2,$3,$4,$5,$6,0,0,$6,$7,$8,$9,$10)",[hid,patients[pi],a.rows[0].id,v.rows[0].id,"DEMO-"+iso(date).replaceAll("-","")+"-"+String(j+1).padStart(3,"0"),total,j%5===0?total:Math.round(total*0.6),j%3===0?"upi":j%3===1?"cash":"card",j%5===0?"paid":"partial","DEMO DATA"]);invoices++}}
+ await db.query("INSERT INTO demo_seed_runs(hospital_id,seed_key) VALUES($1,$2)",[hid,"two_months_v1"]);
+ return res.json({ok:true,patients:patients.length,appointments,visits,invoices,period_start:iso(first),period_end:iso(addDays(first,59)),note:"Operational demo data only."});
+}

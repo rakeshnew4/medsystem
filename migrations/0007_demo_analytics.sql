@@ -1,0 +1,3 @@
+CREATE TABLE IF NOT EXISTS demo_seed_runs (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), hospital_id uuid NOT NULL, seed_key text NOT NULL, created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(hospital_id, seed_key));
+CREATE TABLE IF NOT EXISTS clinic_insights (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), hospital_id uuid NOT NULL, period_start date NOT NULL, period_end date NOT NULL, metric_key text NOT NULL, metric_value numeric NOT NULL DEFAULT 0, dimension text, dimension_value text, created_at timestamptz NOT NULL DEFAULT now());
+CREATE INDEX IF NOT EXISTS clinic_insights_hospital_period_idx ON clinic_insights(hospital_id, period_start, period_end);
