@@ -3,6 +3,7 @@ required = true
 
 [auth]
 enabled = true
+providers = ["email"]
 
 [[secret]]
 name = "WHATSAPP_GRAPH_URL"

@@ -1,8 +1,11 @@
 import { db, ai } from "hatchable";
-export const access = "admin";
+import { requireStaff } from "../lib/authz.js";
+export const access = "user";
 export const methods = ["POST"];
 
 export default async function(req,res){
+  const ctx=await requireStaff(req,res);
+  if(!ctx)return;
   const q=String((req.body||{}).question||"").trim();
   if(!q) return res.status(400).json({error:"Question is required"});
   const h=await db.query("SELECT id,name,phone,address FROM hospitals ORDER BY id LIMIT 1");

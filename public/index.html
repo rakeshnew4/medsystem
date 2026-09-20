@@ -2,84 +2,165 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hospital AI Assistant</title>
+<title>CareFlow — Hospital Operations</title>
 <link rel="stylesheet" href="/theme.css">
-<script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
 <div class="app-shell">
 <aside class="sidebar">
-  <div class="brand"><div class="brand-mark">+</div><div><div class="brand-title">CareFlow</div><div class="brand-sub">Hospital AI Assistant</div></div></div>
+  <div class="brand"><div class="brand-mark">+</div><div><div class="brand-title">CareFlow</div><div class="brand-sub">Hospital Operations</div></div></div>
   <nav class="nav">
     <button class="active" data-section="dashboard">Overview</button>
+    <button data-section="queue">Queue board</button>
     <button data-section="appointments">Appointments</button>
     <button data-section="patients">Patients</button>
     <button data-section="doctors">Doctors</button>
+    <button data-section="beds">Beds & admissions</button>
     <button data-section="followups">Follow-ups</button>
+    <button data-section="staff">Staff</button>
     <button data-section="setup">Hospital setup</button>
   </nav>
-  <div class="sidebar-footer">Administrative workflow only · Clinical decisions remain with qualified clinicians.</div>
+  <div class="sidebar-footer">Staff workspace · Clinical records are documentation tools; clinical decisions remain with qualified clinicians.</div>
 </aside>
+
 <main class="main">
-  <header class="topbar">
-    <div><div class="kicker" id="dateLabel">Today</div><h1 class="title" id="pageTitle">Hospital overview</h1></div>
-    <div class="top-actions"><button class="btn" onclick="loadAll()">Refresh</button><button class="btn primary" onclick="openModal('appointmentModal')">+ Appointment</button></div>
-  </header>
+<header class="topbar">
+  <div><div class="kicker" id="dateLabel">Today</div><h1 class="title" id="pageTitle">Hospital overview</h1><div id="userBadge" style="font-size:12px;color:var(--muted);margin-top:6px"></div></div>
+  <div class="top-actions"><button class="btn" onclick="loadAll()">Refresh</button><button class="btn" onclick="signOut()">Sign out</button><button class="btn primary" onclick="openModal('appointmentModal')">+ Appointment</button></div>
+</header>
 
-  <section id="dashboard" class="section active">
-    <div id="stats" class="grid stats"></div>
-    <div class="grid two-col" style="margin-top:16px">
-      <div class="card panel"><div class="panel-head"><h2 class="panel-title">Today's appointments</h2><button class="btn" onclick="showSection('appointments')">View all</button></div><div id="todayAppointments" class="table-wrap"></div></div>
-      <div class="ai-box"><h2 class="panel-title">AI front desk assistant</h2><p style="font-size:12px;opacity:.7;margin:5px 0">Ask about hospital operations, doctors, FAQs or today's workload.</p><div class="ai-response" id="aiResponse">Ask something like “Which doctors are available?” or “How busy are we today?”</div><div class="ai-input"><input id="aiQuestion" placeholder="Ask the hospital assistant…" onkeydown="if(event.key==='Enter')askAI()"><button class="btn primary" onclick="askAI()">Ask</button></div></div>
-    </div>
-    <div class="grid two-col" style="margin-top:16px">
-      <div class="card panel"><div class="panel-head"><h2 class="panel-title">Follow-ups needing attention</h2><button class="btn" onclick="showSection('followups')">Manage</button></div><div id="followupQueue"></div></div>
-      <div class="card panel"><div class="panel-head"><h2 class="panel-title">Open enquiries</h2></div><div id="enquiryQueue"></div></div>
-    </div>
-  </section>
+<section id="dashboard" class="section active">
+  <div id="stats" class="grid stats"></div>
+  <div class="grid two-col" style="margin-top:16px">
+    <div class="card panel"><div class="panel-head"><h2 class="panel-title">Today's appointments</h2><button class="btn" onclick="showSection('appointments')">View all</button></div><div id="todayAppointments" class="table-wrap"></div></div>
+    <div class="ai-box"><h2 class="panel-title">AI front desk assistant</h2><p style="font-size:12px;opacity:.7;margin:5px 0">Administrative questions only.</p><div class="ai-response" id="aiResponse">Ask about doctors, appointments, workload or hospital FAQs.</div><div class="ai-input"><input id="aiQuestion" placeholder="Ask the hospital assistant…" onkeydown="if(event.key==='Enter')askAI()"><button class="btn primary" onclick="askAI()">Ask</button></div></div>
+  </div>
+  <div class="grid two-col" style="margin-top:16px">
+    <div class="card panel"><div class="panel-head"><h2 class="panel-title">Live patient flow</h2><button class="btn" onclick="showSection('queue')">Open board</button></div><div id="flowSummary"></div></div>
+    <div class="card panel"><div class="panel-head"><h2 class="panel-title">Beds</h2><button class="btn" onclick="showSection('beds')">Manage beds</button></div><div id="bedSummary"></div></div>
+  </div>
+</section>
 
-  <section id="appointments" class="section"><div class="card panel"><div class="panel-head"><h2 class="panel-title">Appointments</h2><button class="btn primary" onclick="openModal('appointmentModal')">+ Book appointment</button></div><div id="appointmentsTable" class="table-wrap"></div></div></section>
-  <section id="patients" class="section"><div class="card panel"><div class="panel-head"><h2 class="panel-title">Patients</h2><button class="btn primary" onclick="openModal('patientModal')">+ Add patient</button></div><div id="patientsTable" class="table-wrap"></div></div></section>
-  <section id="doctors" class="section"><div class="card panel"><div class="panel-head"><h2 class="panel-title">Doctors</h2><button class="btn primary" onclick="openModal('doctorModal')">+ Add doctor</button></div><div id="doctorsTable" class="table-wrap"></div></div></section>
-  <section id="followups" class="section"><div class="card panel"><div class="panel-head"><h2 class="panel-title">Follow-ups</h2><button class="btn primary" onclick="openModal('followupModal')">+ Add follow-up</button></div><div id="followupsTable" class="table-wrap"></div></div></section>
-  <section id="setup" class="section"><div class="card panel"><h2 class="panel-title">Hospital setup</h2><p style="color:var(--muted);font-size:13px">Configure the hospital identity used by the front desk assistant.</p><form id="setupForm" class="form-grid" style="margin-top:18px"><div class="field full"><label>Hospital name</label><input id="hospitalName" required></div><div class="field"><label>Phone</label><input id="hospitalPhone"></div><div class="field"><label>Address</label><input id="hospitalAddress"></div><div><button class="btn primary" type="submit">Save hospital</button></div></form></div></section>
+<section id="queue" class="section">
+  <div class="card panel">
+    <div class="panel-head"><div><h2 class="panel-title">Patient queue</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Move patients through reception → vitals → doctor → lab/follow-up → pharmacy.</div></div><div style="display:flex;gap:8px"><button class="btn" id="kanbanBtn" onclick="setQueueView('kanban')">Kanban</button><button class="btn" id="listBtn" onclick="setQueueView('list')">List</button><button class="btn primary" onclick="openModal('queueModal')">+ Add to queue</button></div></div>
+    <div id="queueBoard"></div>
+  </div>
+</section>
+
+<section id="appointments" class="section"><div class="card panel"><div class="panel-head"><h2 class="panel-title">Appointments</h2><button class="btn primary" onclick="openModal('appointmentModal')">+ Book appointment</button></div><div id="appointmentsTable" class="table-wrap"></div></div></section>
+<section id="patients" class="section"><div class="card panel"><div class="panel-head"><h2 class="panel-title">Patients</h2><button class="btn primary" onclick="openModal('patientModal')">+ Add patient</button></div><div id="patientsTable" class="table-wrap"></div></div></section>
+<section id="doctors" class="section"><div class="card panel"><div class="panel-head"><h2 class="panel-title">Doctors</h2><button class="btn primary" onclick="openModal('doctorModal')">+ Add doctor</button></div><div id="doctorsTable" class="table-wrap"></div></div></section>
+<section id="followups" class="section"><div class="card panel"><div class="panel-head"><h2 class="panel-title">Follow-ups</h2><button class="btn primary" onclick="openModal('followupModal')">+ Add follow-up</button></div><div id="followupsTable" class="table-wrap"></div></div></section>
+
+<section id="beds" class="section">
+  <div class="card panel">
+    <div class="panel-head"><div><h2 class="panel-title">Beds & admissions</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Live occupancy, assigned patient, discharge plan and care-record counts.</div></div><button class="btn primary" onclick="openModal('bedModal')">+ Add bed</button></div>
+    <div id="bedsGrid" class="bed-grid"></div>
+  </div>
+</section>
+
+<section id="staff" class="section">
+  <div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Staff & doctors access</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Email-code sign-in. Administrators activate staff and link doctors to accounts.</div></div></div><div id="staffTable" class="table-wrap"></div></div>
+</section>
+
+<section id="setup" class="section"><div class="card panel"><h2 class="panel-title">Hospital setup</h2><p style="color:var(--muted);font-size:13px">The first registered staff account becomes the hospital administrator.</p><form id="setupForm" class="form-grid" style="margin-top:18px"><div class="field full"><label>Hospital name</label><input id="hospitalName" required></div><div class="field"><label>Phone</label><input id="hospitalPhone"></div><div class="field"><label>Address</label><input id="hospitalAddress"></div><div><button class="btn primary" type="submit">Save hospital</button></div></form></div></section>
 </main>
 </div>
 
 <div id="appointmentModal" class="modal"><div class="modal-card"><div class="panel-head"><h2 class="panel-title">Book appointment</h2><button class="btn" onclick="closeModal('appointmentModal')">Close</button></div><form id="appointmentForm" class="form-grid"><div class="field"><label>Patient</label><div style="display:flex;gap:8px"><select id="apptPatient" required style="flex:1"></select><button type="button" class="btn" onclick="closeModal('appointmentModal');openModal('patientModal')">+ Add</button></div></div><div class="field"><label>Doctor</label><select id="apptDoctor" required></select></div><div class="field"><label>Date</label><input id="apptDate" type="date" required></div><div class="field"><label>Time</label><input id="apptTime" type="time" required></div><div class="field full"><label>Reason / enquiry</label><input id="apptReason"></div><div><button class="btn primary">Book</button></div></form></div></div>
+
 <div id="patientModal" class="modal"><div class="modal-card"><div class="panel-head"><h2 class="panel-title">Add patient</h2><button class="btn" onclick="closeModal('patientModal')">Close</button></div><form id="patientForm" class="form-grid"><div class="field full"><label>Name</label><input id="patientName" required></div><div class="field"><label>Phone</label><input id="patientPhone"></div><div class="field"><label>Email</label><input id="patientEmail" type="email"></div><div class="field"><label>Date of birth</label><input id="patientDob" type="date"></div><div class="field full"><label>Administrative notes</label><textarea id="patientNotes"></textarea></div><div><button class="btn primary">Save patient</button></div></form></div></div>
+
 <div id="doctorModal" class="modal"><div class="modal-card"><div class="panel-head"><h2 class="panel-title">Add doctor</h2><button class="btn" onclick="closeModal('doctorModal')">Close</button></div><form id="doctorForm" class="form-grid"><div class="field full"><label>Name</label><input id="doctorName" required></div><div class="field"><label>Specialty</label><input id="doctorSpecialty" required></div><div class="field"><label>Phone</label><input id="doctorPhone"></div><div class="field"><label>Consultation fee</label><input id="doctorFee" type="number" step="0.01"></div><div><button class="btn primary">Save doctor</button></div></form></div></div>
+
 <div id="followupModal" class="modal"><div class="modal-card"><div class="panel-head"><h2 class="panel-title">Add follow-up</h2><button class="btn" onclick="closeModal('followupModal')">Close</button></div><form id="followupForm" class="form-grid"><div class="field"><label>Patient</label><select id="followPatient" required></select></div><div class="field"><label>Doctor</label><select id="followDoctor"></select></div><div class="field"><label>Due date</label><input id="followDate" type="date" required></div><div class="field full"><label>Notes</label><textarea id="followNotes"></textarea></div><div><button class="btn primary">Create follow-up</button></div></form></div></div>
 
+<div id="queueModal" class="modal"><div class="modal-card"><div class="panel-head"><h2 class="panel-title">Add patient to queue</h2><button class="btn" onclick="closeModal('queueModal')">Close</button></div><form id="queueForm" class="form-grid"><div class="field"><label>Patient</label><select id="queuePatient" required></select></div><div class="field"><label>Doctor</label><select id="queueDoctor"></select></div><div class="field"><label>Stage</label><select id="queueStage"><option value="waiting">Waiting / reception</option><option value="vitals">Vitals</option><option value="doctor">Doctor room</option><option value="lab">Lab</option><option value="followup">Follow-up</option><option value="pharmacy">Pharmacy</option></select></div><div class="field"><label>Priority</label><select id="queuePriority"><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option></select></div><div class="field"><label>Token</label><input id="queueToken" placeholder="A-101"></div><div class="field"><label>Reason</label><input id="queueReason"></div><div class="field full"><label>Notes</label><textarea id="queueNotes"></textarea></div><div><button class="btn primary">Add to queue</button></div></form></div></div>
+
+<div id="vitalsModal" class="modal"><div class="modal-card"><div class="panel-head"><h2 class="panel-title">Record vitals</h2><button class="btn" onclick="closeModal('vitalsModal')">Close</button></div><form id="vitalsForm" class="form-grid"><input id="vitalsPatient" type="hidden"><div class="field"><label>Blood pressure — systolic</label><input id="vitalsSbp" type="number"></div><div class="field"><label>Blood pressure — diastolic</label><input id="vitalsDbp" type="number"></div><div class="field"><label>Pulse</label><input id="vitalsPulse" type="number"></div><div class="field"><label>Temperature</label><input id="vitalsTemp" type="number" step="0.1"></div><div class="field"><label>Weight (kg)</label><input id="vitalsWeight" type="number" step="0.1"></div><div class="field"><label>Height (cm)</label><input id="vitalsHeight" type="number" step="0.1"></div><div class="field"><label>SpO₂</label><input id="vitalsSpo2" type="number" step="0.1"></div><div class="field"><label>Respiratory rate</label><input id="vitalsResp" type="number"></div><div class="field full"><label>Notes</label><textarea id="vitalsNotes"></textarea></div><div><button class="btn primary">Save vitals</button></div></form></div></div>
+
+<div id="bedModal" class="modal"><div class="modal-card"><div class="panel-head"><h2 class="panel-title">Add bed</h2><button class="btn" onclick="closeModal('bedModal')">Close</button></div><form id="bedForm" class="form-grid"><div class="field"><label>Ward</label><input id="bedWard" placeholder="General ward" required></div><div class="field"><label>Bed number</label><input id="bedNumber" placeholder="G-101" required></div><div class="field"><label>Bed type</label><select id="bedType"><option>general</option><option>semi-private</option><option>private</option><option>ICU</option><option>emergency</option></select></div><div class="field"><label>Status</label><select id="bedStatus"><option value="available">Available</option><option value="maintenance">Maintenance</option></select></div><div class="field full"><label>Notes</label><textarea id="bedNotes"></textarea></div><div><button class="btn primary">Add bed</button></div></form></div></div>
+
 <script>
-const API='/api'; let state={dashboard:null,patients:[],doctors:[],appointments:[],followups:[]};
+const API='/api';
+let state={dashboard:null,patients:[],doctors:[],appointments:[],followups:[],queue:[],beds:[],staff:[],queueView:'kanban',session:null};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtTime=t=>t?String(t).slice(0,5):'';
-const fmtDate=d=>d?new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
-async function api(path,opts={}){const r=await fetch(API+path,{headers:{'Content-Type':'application/json'},...opts});const j=await r.json();if(!r.ok)throw Error(j.error||'Request failed');return j}
-function showSection(id){document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.section===id));const titles={dashboard:'Hospital overview',appointments:'Appointments',patients:'Patients',doctors:'Doctors',followups:'Follow-ups',setup:'Hospital setup'};document.getElementById('pageTitle').textContent=titles[id]||id}
+const fmtDate=d=>d?new Date(String(d).slice(0,10)+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
+async function api(path,opts={}){const r=await fetch(API+path,{headers:{'Content-Type':'application/json'},...opts});let j={};try{j=await r.json()}catch{}if(!r.ok)throw Object.assign(Error(j.error||'Request failed'),{status:r.status,data:j});return j}
+function showSection(id){document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.section===id));const titles={dashboard:'Hospital overview',queue:'Patient queue',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',staff:'Staff',setup:'Hospital setup'};document.getElementById('pageTitle').textContent=titles[id]||id}
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>showSection(b.dataset.section));
 function openModal(id){document.getElementById(id).classList.add('open')} function closeModal(id){document.getElementById(id).classList.remove('open')}
 function status(s){return '<span class="status '+esc(s)+'">'+esc(s)+'</span>'}
-async function loadAll(){try{state.dashboard=await api('/dashboard');state.patients=await api('/patients');state.doctors=await api('/doctors');state.appointments=await api('/appointments');state.followups=await api('/followups');renderAll();populateSelects()}catch(e){console.error(e);if(e.message.includes('hospital'))showSection('setup')}}
-function renderAll(){const d=state.dashboard;if(!d||!d.hospital){document.getElementById('stats').innerHTML='<div class="card panel empty" style="grid-column:1/-1">Set up your hospital to start using CareFlow.</div>';return}
-document.getElementById('stats').innerHTML=[['Appointments today',d.stats.appointments_today,'Scheduled for today'],['Patients',d.stats.patients,'Registered patients'],['Follow-ups due',d.stats.followups_due,'Need attention'],['Open enquiries',d.stats.open_enquiries,'Active conversations'],['Doctors',state.doctors.length,'Active roster']].map(x=>'<div class="card stat"><div class="stat-label">'+x[0]+'</div><div class="stat-value">'+x[1]+'</div><div class="stat-note">'+x[2]+'</div></div>').join('');
-const ap=d.appointments;document.getElementById('todayAppointments').innerHTML=ap.length?'<table><thead><tr><th>Time</th><th>Patient</th><th>Doctor</th><th>Status</th></tr></thead><tbody>'+ap.map(x=>'<tr><td>'+fmtTime(x.appointment_time)+'</td><td>'+esc(x.patient_name)+'</td><td>'+esc(x.doctor_name)+'</td><td>'+status(x.status)+'</td></tr>').join('')+'</tbody></table>':'<div class="empty">No appointments today.</div>';
-document.getElementById('followupQueue').innerHTML=d.followups.length?d.followups.map(x=>'<div class="queue-item"><div><strong>'+esc(x.patient_name)+'</strong><div class="queue-meta">'+esc(x.doctor_name||'Unassigned')+' · due '+fmtDate(x.due_date)+'</div></div><span class="pill">Follow-up</span></div>').join(''):'<div class="empty">No follow-ups due.</div>';
-document.getElementById('enquiryQueue').innerHTML=d.enquiries.length?d.enquiries.map(x=>'<div class="queue-item"><div><strong>'+esc(x.patient_name||'Visitor')+'</strong><div class="queue-meta">'+esc(x.channel)+' · '+new Date(x.created_at).toLocaleString('en-IN')+'</div></div>'+(x.requires_staff?'<span class="pill">Staff</span>':'')+'</div>').join(''):'<div class="empty">No open enquiries.</div>';
-document.getElementById('appointmentsTable').innerHTML=table(state.appointments,['appointment_date','appointment_time','patient_name','doctor_name','status'],['Date','Time','Patient','Doctor','Status'],x=>'<td>'+fmtDate(x.appointment_date)+'</td><td>'+fmtTime(x.appointment_time)+'</td><td>'+esc(x.patient_name)+'</td><td>'+esc(x.doctor_name)+'</td><td>'+status(x.status)+'</td>');
-document.getElementById('patientsTable').innerHTML=table(state.patients,['name','phone','email','date_of_birth'],['Name','Phone','Email','DOB'],x=>'<td>'+esc(x.name)+'</td><td>'+esc(x.phone||'—')+'</td><td>'+esc(x.email||'—')+'</td><td>'+fmtDate(x.date_of_birth)+'</td>');
-document.getElementById('doctorsTable').innerHTML=table(state.doctors,['name','specialty','phone','consultation_fee'],['Name','Specialty','Phone','Fee'],x=>'<td>'+esc(x.name)+'</td><td>'+esc(x.specialty)+'</td><td>'+esc(x.phone||'—')+'</td><td>'+(x.consultation_fee?'₹'+x.consultation_fee:'—')+'</td>');
-document.getElementById('followupsTable').innerHTML=table(state.followups,['due_date','patient_name','doctor_name','status'],['Due','Patient','Doctor','Status'],x=>'<td>'+fmtDate(x.due_date)+'</td><td>'+esc(x.patient_name)+'</td><td>'+esc(x.doctor_name||'—')+'</td><td>'+status(x.status)+'</td>');
-document.getElementById('hospitalName').value=d.hospital.name||'';document.getElementById('hospitalPhone').value=d.hospital.phone||'';document.getElementById('hospitalAddress').value=d.hospital.address||'';document.getElementById('dateLabel').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}
-function table(rows,keys,heads,renderer){if(!rows.length)return '<div class="empty">Nothing here yet.</div>';return '<table><thead><tr>'+heads.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(x=>'<tr>'+renderer(x)+'</tr>').join('')+'</tbody></table>'}
-function populateSelects(){const patientOptions=state.patients.length?state.patients.map(x=>'<option value="'+x.id+'">'+esc(x.name)+(x.phone?' · '+esc(x.phone):'')+'</option>').join(''):'<option value="" disabled selected>No patients found — add a patient first</option>';document.getElementById('apptPatient').innerHTML='<option value="" disabled '+(state.patients.length?'selected':'')+'>Select patient</option>'+patientOptions;document.getElementById('followPatient').innerHTML='<option value="" disabled '+(state.patients.length?'selected':'')+'>Select patient</option>'+patientOptions;const docs=state.doctors.length?state.doctors.map(x=>'<option value="'+x.id+'">'+esc(x.name)+' · '+esc(x.specialty)+'</option>').join(''):'<option value="" disabled selected>No doctors found — add a doctor first</option>';document.getElementById('apptDoctor').innerHTML='<option value="" disabled '+(state.doctors.length?'selected':'')+'>Select doctor</option>'+docs;document.getElementById('followDoctor').innerHTML='<option value="">Unassigned</option>'+docs}
-document.getElementById('setupForm').onsubmit=async e=>{e.preventDefault();try{await api('/setup',{method:'POST',body:JSON.stringify({name:hospitalName.value,phone:hospitalPhone.value,address:hospitalAddress.value})});await loadAll();alert('Hospital details saved.')}catch(x){alert(x.message)}};
+function table(rows,heads,renderer){if(!rows.length)return '<div class="empty">Nothing here yet.</div>';return '<table><thead><tr>'+heads.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(x=>'<tr>'+renderer(x)+'</tr>').join('')+'</tbody></table>'}
+
+async function checkSession(){
+  const s=await api('/public-staff-status');
+  if(!s.signed_in){location.replace('/login?next='+encodeURIComponent(location.pathname));return false}
+  state.session=s;
+  document.getElementById('userBadge').textContent=(s.user?.email||'')+(s.staff?.role?' · '+s.staff.role:'');
+  if(s.staff && (!s.staff.active || s.staff.role==='pending')){document.body.innerHTML='<div style="min-height:100vh;display:grid;place-items:center;padding:24px;font-family:system-ui;background:#f6f8f7"><div class="card panel" style="max-width:520px;text-align:center"><h1>Account awaiting activation</h1><p style="color:#6b7d77">Your email is registered, but an administrator has not activated your staff account yet.</p><button class="btn primary" onclick="hatchable.auth.signOut().then(()=>location.replace(\'/login\'))">Sign out</button></div></div>';return false}
+  return true;
+}
+async function loadAll(){
+  if(!(await checkSession()))return;
+  try{
+    const setup=await api('/setup');
+    if(!setup){showSection('setup');document.getElementById('stats').innerHTML='<div class="card panel empty" style="grid-column:1/-1">Set up the hospital before using the operations workspace.</div>';return}
+    [state.dashboard,state.patients,state.doctors,state.appointments,state.followups,state.queue,state.beds]=await Promise.all([api('/dashboard'),api('/patients'),api('/doctors'),api('/appointments'),api('/followups'),api('/queue'),api('/beds')]);
+    if(state.session.staff?.role==='admin'){state.staff=await api('/team')}
+    renderAll();populateSelects();
+  }catch(e){if(e.status===401){location.replace('/login?next='+encodeURIComponent(location.pathname));return}if(e.status===403){alert(e.message);return}console.error(e);alert(e.message)}
+}
+function renderAll(){
+ const d=state.dashboard;if(!d||!d.hospital)return;
+ document.getElementById('stats').innerHTML=[['Appointments today',d.stats.appointments_today,'Scheduled today'],['Patients',d.stats.patients,'Registered'],['In queue',state.queue.length,'Active patient flow'],['Beds occupied',state.beds.filter(x=>x.status==='occupied').length,'Of '+state.beds.length+' beds'],['Follow-ups due',d.stats.followups_due,'Need attention']].map(x=>'<div class="card stat"><div class="stat-label">'+x[0]+'</div><div class="stat-value">'+x[1]+'</div><div class="stat-note">'+x[2]+'</div></div>').join('');
+ const ap=d.appointments;document.getElementById('todayAppointments').innerHTML=ap.length?'<table><thead><tr><th>Time</th><th>Patient</th><th>Doctor</th><th>Status</th></tr></thead><tbody>'+ap.map(x=>'<tr><td>'+fmtTime(x.appointment_time)+'</td><td>'+esc(x.patient_name)+'</td><td>'+esc(x.doctor_name)+'</td><td>'+status(x.status)+'</td></tr>').join('')+'</tbody></table>':'<div class="empty">No appointments today.</div>';
+ const counts={waiting:0,vitals:0,doctor:0,lab:0,followup:0,pharmacy:0};state.queue.forEach(q=>counts[q.stage]=(counts[q.stage]||0)+1);
+ document.getElementById('flowSummary').innerHTML='<div class="flow-grid">'+Object.entries(counts).map(([k,v])=>'<div class="flow-chip"><strong>'+v+'</strong><span>'+k+'</span></div>').join('')+'</div>';
+ const occupied=state.beds.filter(x=>x.status==='occupied').length;document.getElementById('bedSummary').innerHTML='<div class="bed-stat"><div><strong>'+occupied+'</strong> occupied</div><div><strong>'+Math.max(state.beds.length-occupied,0)+'</strong> available</div></div>';
+ document.getElementById('appointmentsTable').innerHTML=table(state.appointments,['Date','Time','Patient','Doctor','Status'],x=>'<td>'+fmtDate(x.appointment_date)+'</td><td>'+fmtTime(x.appointment_time)+'</td><td>'+esc(x.patient_name)+'</td><td>'+esc(x.doctor_name)+'</td><td>'+status(x.status)+'</td>');
+ document.getElementById('patientsTable').innerHTML=table(state.patients,['Name','Phone','Email','DOB'],x=>'<td>'+esc(x.name)+'</td><td>'+esc(x.phone||'—')+'</td><td>'+esc(x.email||'—')+'</td><td>'+fmtDate(x.date_of_birth)+'</td>');
+ document.getElementById('doctorsTable').innerHTML=table(state.doctors,['Name','Specialty','Phone','Fee'],x=>'<td>'+esc(x.name)+'</td><td>'+esc(x.specialty)+'</td><td>'+esc(x.phone||'—')+'</td><td>'+(x.consultation_fee?'₹'+x.consultation_fee:'—')+'</td>');
+ document.getElementById('followupsTable').innerHTML=table(state.followups,['Due','Patient','Doctor','Status'],x=>'<td>'+fmtDate(x.due_date)+'</td><td>'+esc(x.patient_name)+'</td><td>'+esc(x.doctor_name||'—')+'</td><td>'+status(x.status)+'</td>');
+ renderQueue();renderBeds();renderStaff();
+ document.getElementById('hospitalName').value=d.hospital.name||'';document.getElementById('hospitalPhone').value=d.hospital.phone||'';document.getElementById('hospitalAddress').value=d.hospital.address||'';document.getElementById('dateLabel').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+}
+function renderQueue(){
+ const stages=[['waiting','Waiting'],['vitals','Vitals'],['doctor','Doctor room'],['lab','Lab'],['followup','Follow-up'],['pharmacy','Pharmacy']];
+ if(state.queueView==='list'){document.getElementById('queueBoard').innerHTML=table(state.queue,['Token','Patient','Doctor','Stage','Priority','Checked in','Next'],x=>'<td>'+esc(x.token||'—')+'</td><td><strong>'+esc(x.patient_name)+'</strong><div style="font-size:11px;color:var(--muted)">'+esc(x.phone||'')+'</div></td><td>'+esc(x.doctor_name||'—')+'</td><td>'+status(x.stage)+'</td><td>'+status(x.priority)+'</td><td>'+new Date(x.checked_in_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+'</td><td>'+queueActions(x)+'</td>');return}
+ document.getElementById('queueBoard').innerHTML='<div class="kanban">'+stages.map(([stage,label])=>'<div class="kanban-col" data-stage="'+stage+'" ondragover="event.preventDefault()" ondrop="dropQueue(event,\''+stage+'\')"><div class="kanban-head"><strong>'+label+'</strong><span>'+state.queue.filter(x=>x.stage===stage).length+'</span></div><div class="kanban-list">'+state.queue.filter(x=>x.stage===stage).map(queueCard).join('')+'</div></div>').join('')+'</div>';
+}
+function queueCard(x){return '<div class="queue-card '+esc(x.priority)+'" draggable="true" ondragstart="event.dataTransfer.setData(\'text/plain\',\''+x.id+'\')"><div style="display:flex;justify-content:space-between;gap:8px"><strong>'+esc(x.patient_name)+'</strong><span class="token">'+esc(x.token||'—')+'</span></div><div class="queue-small">'+esc(x.doctor_name||'No doctor assigned')+'</div><div class="queue-small">'+esc(x.reason||'General visit')+'</div><div class="queue-actions">'+queueActions(x)+'</div></div>'}
+function queueActions(x){const next={waiting:'vitals',vitals:'doctor',doctor:'lab',lab:'followup',followup:'pharmacy',pharmacy:'completed'}[x.stage];const move=next?'<button class="mini" onclick="moveQueue('+x.id+',\\''+next+'\\')">'+(next==='completed'?'Complete':'→ '+next)+'</button>':'';const vitals=x.stage==='waiting'?'<button class="mini" onclick="openVitals('+x.id+','+x.patient_id+')">Vitals</button>':'';return move+vitals}
+function dropQueue(e,stage){const id=e.dataTransfer.getData('text/plain');if(id)moveQueue(id,stage)}
+function setQueueView(v){state.queueView=v;document.getElementById('kanbanBtn').classList.toggle('primary',v==='kanban');document.getElementById('listBtn').classList.toggle('primary',v==='list');renderQueue()}
+async function moveQueue(id,stage){try{await api('/queue',{method:'PUT',body:JSON.stringify({id:Number(id),stage})});await loadAll()}catch(e){alert(e.message)}}
+function openVitals(qid,pid){document.getElementById('vitalsPatient').value=pid;document.getElementById('vitalsForm').dataset.queue=qid;openModal('vitalsModal')}
+
+function renderBeds(){if(!state.beds.length){document.getElementById('bedsGrid').innerHTML='<div class="empty">No beds configured yet.</div>';return}document.getElementById('bedsGrid').innerHTML=state.beds.map(b=>'<div class="bed-card '+esc(b.status)+'"><div class="bed-head"><div><div class="bed-number">'+esc(b.ward)+' · '+esc(b.bed_number)+'</div><div class="bed-type">'+esc(b.bed_type)+'</div></div><span class="bed-status">'+esc(b.status)+'</span></div>'+(b.status==='occupied'?'<div class="bed-patient"><strong>'+esc(b.patient_name)+'</strong><div>'+esc(b.phone||'')+'</div><div style="margin-top:7px">Doctor: '+esc(b.doctor_name||'—')+'</div><div>Admitted: '+fmtDate(b.admitted_at)+'</div><div>Expected discharge: '+fmtDate(b.expected_discharge_date)||'Not set'+'</div></div><div class="bed-metrics"><span>'+b.visit_count+' visits</span><span>'+b.medicine_count+' medicines</span><span>'+b.report_count+' reports</span></div><button class="btn" style="width:100%;margin-top:10px" onclick="discharge('+b.admission_id+')">Discharge patient</button>':'<div class="empty">Available for admission</div><button class="btn primary" style="width:100%;margin-top:8px" onclick="admitBed('+b.id+')">Assign patient</button>')+'</div>').join('')}
+function admitBed(bedId){document.getElementById('admitPatient').value='';document.getElementById('admitDoctor').value='';document.getElementById('admitBedId').value=bedId;openModal('admitModal')}
+async function discharge(id){if(!confirm('Discharge this patient from the bed?'))return;try{await api('/beds',{method:'PUT',body:JSON.stringify({action:'discharge',id})});await loadAll()}catch(e){alert(e.message)}}
+function renderStaff(){if(state.session.staff?.role!=='admin'){document.getElementById('staffTable').innerHTML='<div class="empty">Staff management is available to administrators.</div>';return}document.getElementById('staffTable').innerHTML=table(state.staff,['Email','Name','Role','Doctor','Status','Action'],x=>'<td>'+esc(x.email)+'</td><td>'+esc(x.display_name||'')+'</td><td><select onchange="updateStaff('+x.id+',this.value,'+JSON.stringify(x.doctor_id||'')+', '+x.active+')"><option '+(x.role==='admin'?'selected':'')+'>admin</option><option '+(x.role==='doctor'?'selected':'')+'>doctor</option><option '+(x.role==='nurse'?'selected':'')+'>nurse</option><option '+(x.role==='receptionist'?'selected':'')+'>receptionist</option><option '+(x.role==='lab'?'selected':'')+'>lab</option><option '+(x.role==='pharmacy'?'selected':'')+'>pharmacy</option><option '+(x.role==='pending'?'selected':'')+'>pending</option></select></td><td>'+esc(x.doctor_name||'—')+'</td><td>'+esc(x.active?'Active':'Inactive')+'</td><td><button class="mini" onclick="updateStaff('+x.id+',null,'+JSON.stringify(x.doctor_id||'')+', '+(!x.active)+')">'+(x.active?'Deactivate':'Activate')+'</button></td>')}
+async function updateStaff(id,role,doctorId,active){try{const body={id,role:role||'pending',doctor_id:doctorId||null,active};if(role===null){const current=state.staff.find(x=>x.id===id);body.role=current?.role||'pending'}await api('/team',{method:'PUT',body:JSON.stringify(body)});await loadAll()}catch(e){alert(e.message)}}
+
+function populateSelects(){const po=state.patients.length?state.patients.map(x=>'<option value="'+x.id+'">'+esc(x.name)+(x.phone?' · '+esc(x.phone):'')+'</option>').join(''):'<option value="" disabled selected>No patients</option>';['apptPatient','followPatient','queuePatient','admitPatient'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='<option value="" disabled selected>Select patient</option>'+po});const docs=state.doctors.map(x=>'<option value="'+x.id+'">'+esc(x.name)+' · '+esc(x.specialty)+'</option>').join('');['apptDoctor','queueDoctor','followDoctor','admitDoctor'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='<option value="">Unassigned</option>'+docs})}
+
+document.getElementById('setupForm').onsubmit=async e=>{e.preventDefault();try{await api('/setup',{method:'POST',body:JSON.stringify({name:hospitalName.value,phone:hospitalPhone.value,address:hospitalAddress.value})});await loadAll();showSection('dashboard');alert('Hospital saved.')}catch(x){alert(x.message)}};
 document.getElementById('patientForm').onsubmit=async e=>{e.preventDefault();try{await api('/patients',{method:'POST',body:JSON.stringify({name:patientName.value,phone:patientPhone.value,email:patientEmail.value,date_of_birth:patientDob.value,notes:patientNotes.value})});closeModal('patientModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}};
 document.getElementById('doctorForm').onsubmit=async e=>{e.preventDefault();try{await api('/doctors',{method:'POST',body:JSON.stringify({name:doctorName.value,specialty:doctorSpecialty.value,phone:doctorPhone.value,consultation_fee:doctorFee.value})});closeModal('doctorModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}};
 document.getElementById('appointmentForm').onsubmit=async e=>{e.preventDefault();try{await api('/appointments',{method:'POST',body:JSON.stringify({patient_id:apptPatient.value,doctor_id:apptDoctor.value,appointment_date:apptDate.value,appointment_time:apptTime.value,reason:apptReason.value})});closeModal('appointmentModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}};
 document.getElementById('followupForm').onsubmit=async e=>{e.preventDefault();try{await api('/followups',{method:'POST',body:JSON.stringify({patient_id:followPatient.value,doctor_id:followDoctor.value,due_date:followDate.value,notes:followNotes.value})});closeModal('followupModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}};
+document.getElementById('queueForm').onsubmit=async e=>{e.preventDefault();try{await api('/queue',{method:'POST',body:JSON.stringify({patient_id:queuePatient.value,doctor_id:queueDoctor.value||null,stage:queueStage.value,priority:queuePriority.value,token:queueToken.value,reason:queueReason.value,notes:queueNotes.value})});closeModal('queueModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}};
+document.getElementById('vitalsForm').onsubmit=async e=>{e.preventDefault();try{await api('/vitals',{method:'POST',body:JSON.stringify({patient_id:vitalsPatient.value,queue_entry_id:e.target.dataset.queue,blood_pressure_systolic:vitalsSbp.value,blood_pressure_diastolic:vitalsDbp.value,pulse:vitalsPulse.value,temperature:vitalsTemp.value,weight_kg:vitalsWeight.value,height_cm:vitalsHeight.value,spo2:vitalsSpo2.value,respiratory_rate:vitalsResp.value,notes:vitalsNotes.value})});closeModal('vitalsModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}};
+document.getElementById('bedForm').onsubmit=async e=>{e.preventDefault();try{await api('/beds',{method:'POST',body:JSON.stringify({ward:bedWard.value,bed_number:bedNumber.value,bed_type:bedType.value,status:bedStatus.value,notes:bedNotes.value})});closeModal('bedModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}};
+window.addEventListener('DOMContentLoaded',()=>{document.getElementById('admitForm').onsubmit=async e=>{e.preventDefault();try{await api('/beds',{method:'PUT',body:JSON.stringify({action:'admit',patient_id:admitPatient.value,bed_id:admitBedId.value,doctor_id:admitDoctor.value||null,expected_discharge_date:admitDischarge.value||null,notes:admitNotes.value})});closeModal('admitModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}}});
 async function askAI(){const q=document.getElementById('aiQuestion').value.trim();if(!q)return;document.getElementById('aiResponse').textContent='Thinking…';try{const r=await api('/ai-assistant',{method:'POST',body:JSON.stringify({question:q})});document.getElementById('aiResponse').textContent=r.answer}catch(e){document.getElementById('aiResponse').textContent=e.message}}
+async function signOut(){await hatchable.auth.signOut();location.replace('/login')}
 loadAll();
 </script>
-</body></html>
+
+<div id="admitModal" class="modal"><div class="modal-card"><div class="panel-head"><h2 class="panel-title">Assign patient to bed</h2><button class="btn" onclick="closeModal('admitModal')">Close</button></div><form id="admitForm" class="form-grid"><input id="admitBedId" type="hidden"><div class="field full"><label>Patient</label><select id="admitPatient" required></select></div><div class="field"><label>Admitting doctor</label><select id="admitDoctor"></select></div><div class="field"><label>Expected discharge</label><input id="admitDischarge" type="date"></div><div class="field full"><label>Admission notes</label><textarea id="admitNotes"></textarea></div><div><button class="btn primary">Assign bed</button></div></form></div></div>
+</body>
+</html>

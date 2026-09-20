@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>CareFlow Staff Sign in</title><link rel="stylesheet" href="/theme.css">
+<style>body{min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#eef6f2,#f8faf9)}.login-card{width:min(430px,calc(100% - 32px));background:#fff;border:1px solid var(--line);border-radius:22px;padding:32px;box-shadow:var(--shadow)}.login-brand{display:flex;gap:12px;align-items:center;margin-bottom:28px}.login-icon{width:46px;height:46px;border-radius:14px;background:#8de0c5;display:grid;place-items:center;font-weight:800;font-size:22px}.login-card h1{margin:0;font-size:27px}.login-card p{color:var(--muted);font-size:13px;line-height:1.6}.login-card input{width:100%;height:48px;border:1px solid var(--line);border-radius:11px;padding:0 14px;box-sizing:border-box}.login-card button{width:100%;height:48px;margin-top:10px}.login-note{font-size:11px!important;text-align:center;margin-top:18px}</style></head>
+<body><main class="login-card">
+<div class="login-brand"><div class="login-icon">+</div><div><strong style="font-family:Manrope">CareFlow</strong><div style="font-size:11px;color:var(--muted)">Hospital staff workspace</div></div></div>
+<h1 id="title">Staff sign in</h1><p id="sub">Enter your work email. We'll send a one-time 6-digit code. No password needed.</p>
+<form id="form"><input id="email" type="email" autocomplete="username webauthn" placeholder="doctor@hospital.com" required><div id="codeWrap" hidden><input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6-digit code"></div><button id="submit" class="btn primary">Send code</button><button id="back" type="button" class="btn" hidden>Use different email</button></form>
+<div id="msg" style="min-height:22px;margin-top:12px;font-size:13px;color:var(--muted)"></div>
+<p class="login-note">Access is controlled by your hospital administrator. The first registered account becomes the initial administrator.</p>
+</main>
+<script>
+(()=>{const A=window.hatchable.auth;const form=document.getElementById('form'),email=document.getElementById('email'),code=document.getElementById('code'),wrap=document.getElementById('codeWrap'),submit=document.getElementById('submit'),back=document.getElementById('back'),msg=document.getElementById('msg'),sub=document.getElementById('sub');let step='email',hasPasskey=false;
+const next=()=>{const n=new URLSearchParams(location.search).get('next')||'/';return n.startsWith('/')&&!n.startsWith('//')?n:'/'};const say=(x,err)=>{msg.textContent=x;msg.style.color=err?'var(--danger)':'var(--muted)'};
+A.getSession().then(s=>{if(s&&s.user)location.replace(next())});
+back.onclick=()=>{step='email';wrap.hidden=true;back.hidden=true;submit.textContent='Send code';sub.textContent="Enter your work email. We'll send a one-time 6-digit code. No password needed.";say('');email.focus()};
+form.onsubmit=async e=>{e.preventDefault();submit.disabled=true;const em=email.value.trim();try{if(step==='email'){const r=await A.startLogin({email:em});hasPasskey=!!r.has_passkey;if(hasPasskey&&A.supportsPasskeys()){try{const d=await A.signInWithPasskey({email:em});if(d&&d.user){location.replace(next());return}}catch{}}step='code';wrap.hidden=false;back.hidden=false;submit.textContent='Sign in';sub.textContent='Enter the code sent to '+em+'.';say('Code sent.');code.focus()}else{const d=await A.verifyCode({email:em,code:code.value.trim()});if(d&&d.user)location.replace(next());else say('The code could not be verified.',true)}}catch(err){say(err.message||'Something went wrong.',true)}finally{submit.disabled=false}};
+email.focus()})()
+</script></body></html>
