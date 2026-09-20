@@ -33,7 +33,7 @@ export default async function(req,res){
   await db.query(`INSERT INTO doctor_visits(hospital_id,patient_id,doctor_id,appointment_id,visit_number,visit_status,clinical_notes,started_at,ended_at)
     SELECT a.hospital_id,a.patient_id,a.doctor_id,a.id,1,'completed','DEMO DATA — operational visit for analytics',
            (a.appointment_date::timestamp+a.appointment_time),
-           (a.appointment_date::timestamp+a.appointment_time)+make_interval(mins=>20+mod(row_number() over(order by a.id),4)*10)
+           (a.appointment_date::timestamp+a.appointment_time)+(20+mod(row_number() over(order by a.id),4)*10)*interval '1 minute'
     FROM appointments a
     WHERE a.hospital_id=$1 AND a.appointment_date>=current_date-59 AND a.reason IN ('Routine visit','Follow-up','Consultation','Review')
       AND a.status='completed' AND NOT EXISTS (SELECT 1 FROM doctor_visits v WHERE v.appointment_id=a.id)`,[hid]);
