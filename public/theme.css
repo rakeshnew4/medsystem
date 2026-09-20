@@ -83,4 +83,62 @@ th{color:var(--muted);font-weight:700}
 .flow-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.flow-chip{background:var(--surface-2);border-radius:10px;padding:10px;display:flex;justify-content:space-between;gap:8px}.flow-chip strong{font-family:'Manrope';font-size:18px}.flow-chip span{font-size:11px;color:var(--muted);text-transform:capitalize}.bed-stat{display:flex;gap:12px}.bed-stat>div{flex:1;background:var(--surface-2);padding:18px;border-radius:12px;color:var(--muted)}.bed-stat strong{display:block;font-family:'Manrope';font-size:28px;color:var(--text)}
 .kanban{display:grid;grid-template-columns:repeat(6,minmax(190px,1fr));gap:12px;overflow:auto;padding-bottom:8px}.kanban-col{background:var(--surface-2);border-radius:14px;padding:10px;min-height:420px}.kanban-head{display:flex;justify-content:space-between;align-items:center;padding:4px 4px 10px;font-size:13px}.kanban-head span{background:#fff;border:1px solid var(--line);border-radius:999px;padding:2px 7px;font-size:11px}.kanban-list{display:grid;gap:9px}.queue-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;box-shadow:0 4px 14px rgba(20,49,42,.05);cursor:grab}.queue-card.urgent{border-left:4px solid var(--danger)}.queue-card.high{border-left:4px solid var(--warn)}.token{font-size:10px;background:var(--accent-2);color:var(--accent);padding:4px 6px;border-radius:6px;font-weight:700}.queue-small{font-size:11px;color:var(--muted);margin-top:5px}.queue-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}.mini{border:1px solid var(--line);background:#fff;border-radius:7px;padding:5px 7px;font-size:10px;font-weight:700;cursor:pointer;color:var(--text)}.mini:hover{background:var(--surface-2)}
 .permission-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.permission-row{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}.permission-row input{margin-top:3px}.permission-row span{display:flex;flex-direction:column;gap:3px}.permission-row small{color:var(--muted);font-size:10px}.bed-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.bed-card{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px}.bed-card.occupied{border-top:4px solid var(--accent)}.bed-card.available{border-top:4px solid #a8c8bc}.bed-card.maintenance{border-top:4px solid var(--warn)}.bed-head{display:flex;justify-content:space-between;gap:12px}.bed-number{font-family:'Manrope';font-weight:800}.bed-type{font-size:11px;color:var(--muted);margin-top:3px;text-transform:capitalize}.bed-status{font-size:10px;padding:5px 7px;border-radius:999px;background:var(--surface-2);text-transform:capitalize;font-weight:700}.bed-patient{margin-top:15px;font-size:12px;color:var(--muted);line-height:1.7}.bed-patient strong{font-size:16px;color:var(--text)}.bed-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:12px}.bed-metrics span{background:var(--surface-2);padding:8px 5px;border-radius:8px;text-align:center;font-size:10px;font-weight:700}
-@media(max-width:1250px){.kanban{grid-template-columns:repeat(3,minmax(210px,1fr))}.bed-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:760px){.kanban{grid-template-columns:repeat(6,260px)}.bed-grid{grid-template-columns:1fr}.flow-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:1250px){.kanban{grid-template-columns:repeat(3,minmax(210px,1fr))}.bed-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:760px){
+  html,body{width:100%;min-width:0;overflow-x:hidden}
+  body{padding-bottom:env(safe-area-inset-bottom)}
+  .app-shell{display:block;min-height:100dvh}
+  .sidebar{position:sticky;top:0;z-index:30;padding:10px 10px 8px;display:block;box-shadow:0 4px 18px rgba(20,49,42,.12)}
+  .brand{padding:2px 4px 9px}
+  .brand-mark{width:32px;height:32px;border-radius:9px}
+  .brand-sub{display:none}
+  .nav{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;padding:0 0 3px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .nav::-webkit-scrollbar{display:none}
+  .nav button{flex:0 0 auto;white-space:nowrap;font-size:12px;padding:8px 11px}
+  .sidebar-footer{display:none}
+  .main{padding:14px 12px 28px;width:100%;max-width:none}
+  .topbar{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+  .title{font-size:24px}
+  .top-actions{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .top-actions .btn.primary{grid-column:1/-1}
+  .btn{min-height:42px;padding:9px 11px}
+  .panel{padding:14px;border-radius:14px}
+  .panel-head{align-items:flex-start;gap:10px;flex-wrap:wrap}
+  .panel-head>div:first-child{min-width:0;flex:1}
+  .panel-head .btn,.panel-head select{max-width:100%}
+  .stats{grid-template-columns:1fr 1fr;gap:9px}
+  .stat{min-height:105px;padding:13px}
+  .stat-value{font-size:24px}
+  .two-col{grid-template-columns:1fr}
+  .flow-grid{grid-template-columns:1fr 1fr}
+  .form-grid{grid-template-columns:1fr}
+  .field.full{grid-column:auto}
+  .table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:620px}
+  th,td{white-space:nowrap;padding:10px 9px;font-size:12px}
+  .kanban{display:flex;overflow-x:auto;gap:10px;padding-bottom:10px;scroll-snap-type:x proximity}
+  .kanban-col{flex:0 0 270px;min-height:360px;scroll-snap-align:start}
+  .bed-grid{grid-template-columns:1fr}
+  .bed-card{padding:14px}
+  .permission-grid{grid-template-columns:1fr}
+  .ai-input{flex-direction:column}
+  .ai-input .btn{width:100%}
+  .modal{padding:10px;align-items:end}
+  .modal-card{width:100%;max-height:92dvh;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px}
+  .modal-card .panel-head{position:sticky;top:-16px;background:#fff;z-index:2;padding-bottom:10px}
+  #analyticsContent{min-width:0}
+  #analyticsContent .stats-grid{grid-template-columns:1fr 1fr!important;gap:9px!important}
+  #analyticsContent .panel{margin-top:12px}
+  #analyticsContent h3{font-size:15px}
+}
+@media(max-width:420px){
+  .stats,#analyticsContent .stats-grid{grid-template-columns:1fr!important}
+  .flow-grid{grid-template-columns:1fr}
+  .top-actions{grid-template-columns:1fr}
+  .top-actions .btn.primary{grid-column:auto}
+  .kanban-col{flex-basis:calc(100vw - 44px)}
+}
+@media(min-width:761px) and (max-width:1100px){
+  .app-shell{grid-template-columns:210px 1fr}
+  .main{padding:20px}
+  .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
