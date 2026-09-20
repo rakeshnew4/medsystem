@@ -1,0 +1,4 @@
+INSERT INTO permissions(permission_key,label,category,description) VALUES ('page.billing','Billing','Pages','Invoices, payments and outstanding dues'),('action.billing.manage','Manage billing','Actions','Create invoices and record payments');
+INSERT INTO role_permissions(role,permission_key,allowed) SELECT 'admin',permission_key,true FROM permissions WHERE permission_key IN ('page.billing','action.billing.manage');
+INSERT INTO role_permissions(role,permission_key,allowed) SELECT 'receptionist',permission_key,true FROM permissions WHERE permission_key IN ('page.billing','action.billing.manage');
+INSERT INTO role_permissions(role,permission_key,allowed) SELECT 'doctor',permission_key,true FROM permissions WHERE permission_key='page.billing';
