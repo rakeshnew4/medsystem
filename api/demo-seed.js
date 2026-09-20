@@ -1,19 +1,54 @@
 import { db } from "hatchable";
 export const access = "admin";
 export const methods = ["POST"];
-const iso=d=>d.toISOString().slice(0,10), addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+
 export default async function(req,res){
- const h=await db.query("SELECT id FROM hospitals ORDER BY id LIMIT 1");
- const hid=h.rows[0]?.id;
- if(!hid)return res.status(400).json({error:"Create the hospital first."});
- const e=await db.query("SELECT id FROM demo_seed_runs WHERE hospital_id=$1 AND seed_key=$2",[hid,"two_months_v1"]);
- if(e.rows.length)return res.json({ok:true,alreadySeeded:true,message:"Two-month demo data already exists."});
- const names=["Dr. Ananya Rao","Dr. Rahul Mehta","Dr. Priya Nair","Dr. Arjun Singh"],docs=[];
- for(let i=0;i<names.length;i++){const r=await db.query("INSERT INTO doctors(hospital_id,name,specialty,active) VALUES($1,$2,$3,true) ON CONFLICT DO NOTHING RETURNING id",[hid,names[i],["General Medicine","Pediatrics","Gynecology","Orthopedics"][i]]);docs.push(r.rows[0]?.id||(await db.query("SELECT id FROM doctors WHERE hospital_id=$1 AND name=$2",[hid,names[i]])).rows[0].id)}
- const firstNames=["Aarav","Meera","Rohan","Ishita","Vikram","Anika","Kabir","Neha","Aditya","Sneha","Arjun","Pooja","Karan","Divya","Rahul","Kavya","Manish","Nisha","Sanjay","Aditi","Varun","Priyanka","Mohit","Riya","Suresh","Tanvi","Naveen","Shreya","Amit","Lakshmi"],lastNames=["Sharma","Reddy","Patel","Kumar","Iyer","Singh","Gupta","Nair","Joshi","Verma"],patients=[];
- for(let i=0;i<30;i++){const phone="+9197000"+String(10000+i).padStart(5,"0"),name=firstNames[i]+" "+lastNames[i%10];const r=await db.query("INSERT INTO patients(hospital_id,name,phone) VALUES($1,$2,$3) ON CONFLICT DO NOTHING RETURNING id",[hid,name,phone]);patients.push(r.rows[0]?.id||(await db.query("SELECT id FROM patients WHERE hospital_id=$1 AND phone=$2",[hid,phone])).rows[0].id)}
- const first=new Date();first.setHours(0,0,0,0);first.setDate(first.getDate()-59);let appointments=0,visits=0,invoices=0;
- for(let day=0;day<60;day++){const date=addDays(first,day);if(date.getDay()===0)continue;for(let j=0;j<8+(day%6);j++){const pi=(day*5+j)%patients.length,di=(day+j)%docs.length,status=j%11===0?"no_show":"completed",time=String(9+(j%8)).padStart(2,"0")+":00";const a=await db.query("INSERT INTO appointments(hospital_id,patient_id,doctor_id,appointment_date,appointment_time,status,reason) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id",[hid,patients[pi],docs[di],iso(date),time,status,["Routine visit","Follow-up","Consultation","Review"][j%4]]);appointments++;if(status==="no_show")continue;const started=new Date(date);started.setHours(9+(j%8),0,0,0);const ended=new Date(started.getTime()+(20+(j%4)*10)*60000);const v=await db.query("INSERT INTO doctor_visits(hospital_id,patient_id,doctor_id,appointment_id,visit_number,visit_status,clinical_notes,started_at,ended_at) VALUES($1,$2,$3,$4,1,'completed',$5,$6,$7) RETURNING id",[hid,patients[pi],docs[di],a.rows[0].id,"DEMO VISIT — operational test data",started,ended]);visits++;const total=500+(j%5)*150;await db.query("INSERT INTO invoices(hospital_id,patient_id,appointment_id,visit_id,invoice_number,subtotal,discount,tax,total,paid,payment_method,status,notes) VALUES($1,$2,$3,$4,$5,$6,0,0,$6,$7,$8,$9,$10)",[hid,patients[pi],a.rows[0].id,v.rows[0].id,"DEMO-"+iso(date).replaceAll("-","")+"-"+String(j+1).padStart(3,"0"),total,j%5===0?total:Math.round(total*0.6),j%3===0?"upi":j%3===1?"cash":"card",j%5===0?"paid":"partial","DEMO DATA"]);invoices++}}
- await db.query("INSERT INTO demo_seed_runs(hospital_id,seed_key) VALUES($1,$2)",[hid,"two_months_v1"]);
- return res.json({ok:true,patients:patients.length,appointments,visits,invoices,period_start:iso(first),period_end:iso(addDays(first,59)),note:"Operational demo data only."});
+  const h=await db.query("SELECT id FROM hospitals ORDER BY id LIMIT 1");
+  const hid=h.rows[0]?.id;
+  if(!hid)return res.status(400).json({error:"Create the hospital first."});
+
+  const existing=await db.query("SELECT id FROM demo_seed_runs WHERE hospital_id=$1 AND seed_key=$2",[hid,"two_months_v2"]);
+  if(existing.rows.length)return res.json({ok:true,alreadySeeded:true,message:"Two-month demo data already exists."});
+
+  await db.query("INSERT INTO doctors(hospital_id,name,specialty,active) VALUES($1,'Dr. Ananya Rao','General Medicine',true),($1,'Dr. Rahul Mehta','Pediatrics',true),($1,'Dr. Priya Nair','Gynecology',true),($1,'Dr. Arjun Singh','Orthopedics',true) ON CONFLICT DO NOTHING",[hid]);
+
+  await db.query(`INSERT INTO patients(hospital_id,name,phone,notes)
+    SELECT $1, (ARRAY['Aarav','Meera','Rohan','Ishita','Vikram','Anika','Kabir','Neha','Aditya','Sneha','Arjun','Pooja','Karan','Divya','Rahul','Kavya','Manish','Nisha','Sanjay','Aditi','Varun','Priyanka','Mohit','Riya','Suresh','Tanvi','Naveen','Shreya','Amit','Lakshmi'])[g],
+           '+9197000'||lpad(g::text,5,'0'), 'DEMO DATA'
+    FROM generate_series(1,30) g
+    WHERE NOT EXISTS (SELECT 1 FROM patients p WHERE p.hospital_id=$1 AND p.phone='+9197000'||lpad(g::text,5,'0'))`,[hid]);
+
+  await db.query(`INSERT INTO appointments(hospital_id,patient_id,doctor_id,appointment_date,appointment_time,status,reason)
+    SELECT $1,
+      (SELECT p.id FROM patients p WHERE p.hospital_id=$1 AND p.phone='+9197000'||lpad((1+mod(d*5+j,30))::text,5,'0') LIMIT 1),
+      (SELECT d2.id FROM doctors d2 WHERE d2.hospital_id=$1 ORDER BY d2.id OFFSET mod(d+j,4) LIMIT 1),
+      current_date-59+d,
+      make_time(9+mod(j,8),0,0),
+      CASE WHEN mod(j,11)=0 THEN 'no_show' ELSE 'completed' END,
+      (ARRAY['Routine visit','Follow-up','Consultation','Review'])[1+mod(j,4)]
+    FROM generate_series(0,59) d
+    CROSS JOIN generate_series(0,12) j
+    WHERE extract(dow from current_date-59+d) <> 0 AND j < 8+mod(d,6)`,[hid]);
+
+  await db.query(`INSERT INTO doctor_visits(hospital_id,patient_id,doctor_id,appointment_id,visit_number,visit_status,clinical_notes,started_at,ended_at)
+    SELECT a.hospital_id,a.patient_id,a.doctor_id,a.id,1,'completed','DEMO DATA — operational visit for analytics',
+           (a.appointment_date::timestamp+a.appointment_time),
+           (a.appointment_date::timestamp+a.appointment_time)+make_interval(mins=>20+mod(row_number() over(order by a.id),4)*10)
+    FROM appointments a
+    WHERE a.hospital_id=$1 AND a.appointment_date>=current_date-59 AND a.reason IN ('Routine visit','Follow-up','Consultation','Review')
+      AND a.status='completed' AND NOT EXISTS (SELECT 1 FROM doctor_visits v WHERE v.appointment_id=a.id)`,[hid]);
+
+  await db.query(`INSERT INTO invoices(hospital_id,patient_id,appointment_id,visit_id,invoice_number,subtotal,discount,tax,total,paid,payment_method,status,notes,created_at)
+    SELECT v.hospital_id,v.patient_id,v.appointment_id,v.id,
+           'DEMO-'||to_char(a.appointment_date,'YYYYMMDD')||'-'||v.id,
+           500+mod(v.id,5)*150,0,0,500+mod(v.id,5)*150,
+           CASE WHEN mod(v.id,5)=0 THEN 500+mod(v.id,5)*150 ELSE round((500+mod(v.id,5)*150)*0.6,2) END,
+           CASE WHEN mod(v.id,3)=0 THEN 'upi' WHEN mod(v.id,3)=1 THEN 'cash' ELSE 'card' END,
+           CASE WHEN mod(v.id,5)=0 THEN 'paid' ELSE 'partial' END,'DEMO DATA',a.appointment_date::timestamp
+    FROM doctor_visits v JOIN appointments a ON a.id=v.appointment_id
+    WHERE v.hospital_id=$1 AND v.clinical_notes LIKE 'DEMO DATA%' AND NOT EXISTS (SELECT 1 FROM invoices i WHERE i.visit_id=v.id)`,[hid]);
+
+  await db.query("INSERT INTO demo_seed_runs(hospital_id,seed_key) VALUES($1,$2)",[hid,"two_months_v2"]);
+  const counts=await db.query("SELECT (SELECT count(*) FROM patients WHERE hospital_id=$1 AND phone LIKE '+9197000%') patients,(SELECT count(*) FROM appointments WHERE hospital_id=$1 AND appointment_date>=current_date-59 AND reason IN ('Routine visit','Follow-up','Consultation','Review')) appointments,(SELECT count(*) FROM doctor_visits WHERE hospital_id=$1 AND clinical_notes LIKE 'DEMO DATA%') visits,(SELECT count(*) FROM invoices WHERE hospital_id=$1 AND notes='DEMO DATA') invoices",[hid]);
+  return res.json({ok:true,...counts.rows[0],period_start:new Date(Date.now()-59*86400000).toISOString().slice(0,10),period_end:new Date().toISOString().slice(0,10),note:"Operational demo data only. Clearly labeled DEMO DATA."});
 }
