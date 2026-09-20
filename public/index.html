@@ -87,6 +87,7 @@
 
 <div id="bedModal" class="modal"><div class="modal-card"><div class="panel-head"><h2 class="panel-title">Add bed</h2><button class="btn" onclick="closeModal('bedModal')">Close</button></div><form id="bedForm" class="form-grid"><div class="field"><label>Ward</label><input id="bedWard" placeholder="General ward" required></div><div class="field"><label>Bed number</label><input id="bedNumber" placeholder="G-101" required></div><div class="field"><label>Bed type</label><select id="bedType"><option>general</option><option>semi-private</option><option>private</option><option>ICU</option><option>emergency</option></select></div><div class="field"><label>Status</label><select id="bedStatus"><option value="available">Available</option><option value="maintenance">Maintenance</option></select></div><div class="field full"><label>Notes</label><textarea id="bedNotes"></textarea></div><div><button class="btn primary">Add bed</button></div></form></div></div>
 
+<script src="/analytics.js"></script>
 <script>
 const API='/api';
 let state={dashboard:null,patients:[],doctors:[],appointments:[],followups:[],queue:[],beds:[],billing:[],staff:[],permissionCatalog:[],rolePermissions:[],queueView:'kanban',session:null};
