@@ -1,11 +1,11 @@
 import { db } from "hatchable";
-import { requirePermission } from "../lib/authz.js";
-export const access = "user";
+export const access = "admin";
 export const methods = ["POST"];
 const iso=d=>d.toISOString().slice(0,10), addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
 export default async function(req,res){
- const ctx=await requirePermission(req,res,"action.setup.manage"); if(!ctx)return;
- const hid=ctx.hospital_id;
+ const h=await db.query("SELECT id FROM hospitals ORDER BY id LIMIT 1");
+ const hid=h.rows[0]?.id;
+ if(!hid)return res.status(400).json({error:"Create the hospital first."});
  const e=await db.query("SELECT id FROM demo_seed_runs WHERE hospital_id=$1 AND seed_key=$2",[hid,"two_months_v1"]);
  if(e.rows.length)return res.json({ok:true,alreadySeeded:true,message:"Two-month demo data already exists."});
  const names=["Dr. Ananya Rao","Dr. Rahul Mehta","Dr. Priya Nair","Dr. Arjun Singh"],docs=[];
