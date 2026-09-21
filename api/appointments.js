@@ -9,6 +9,19 @@ export default async function(req,res){
   if(req.method==="POST"){
     const b=req.body||{};
     if(!b.patient_name||!String(b.patient_name).trim()||!b.doctor_id||!b.appointment_date||!b.appointment_time)return res.status(400).json({error:"Patient name, doctor, date and time are required"});
+    const apDate=String(b.appointment_date), apTime=String(b.appointment_time).slice(0,5);
+    const dt=new Date(apDate+"T12:00:00Z"), dow=dt.getUTCDay();
+    const rules=await db.query("SELECT start_time,end_time FROM doctor_availability_rules WHERE hospital_id=$1 AND doctor_id=$2 AND day_of_week=$3 AND active=true",[hid,b.doctor_id,dow]);
+    const ex=await db.query("SELECT start_time,end_time,exception_type FROM doctor_availability_exceptions WHERE hospital_id=$1 AND doctor_id=$2 AND exception_date=$3",[hid,b.doctor_id,apDate]);
+    const sp=await db.query("SELECT sp.status,sp.expected_until FROM staff_presence sp JOIN staff_profiles s ON s.id=sp.staff_id WHERE sp.hospital_id=$1 AND s.doctor_id=$2",[hid,b.doctor_id]);
+    const toMin=t=>{const p=String(t).slice(0,5).split(":").map(Number);return p[0]*60+p[1]};
+    const tm=toMin(apTime);
+    let open=!rules.rows.length;
+    if(rules.rows.some(x=>tm>=toMin(x.start_time)&&tm<toMin(x.end_time)))open=true;
+    for(const x of ex.rows){if(["leave","unavailable","closed"].includes(String(x.exception_type).toLowerCase())){const s=x.start_time?toMin(x.start_time):0,e=x.end_time?toMin(x.end_time):1440;if(tm>=s&&tm<e)open=false}}
+    const p=sp.rows[0]; const today=new Date().toISOString().slice(0,10);
+    if(apDate===today&&p&&["lunch","outside","meeting","unavailable","off_duty","custom"].includes(p.status)){const until=p.expected_until?new Date(p.expected_until):null;const now=new Date();if(!until||new Date(apDate+"T"+apTime+":00")<until)open=false}
+    if(!open)return res.status(409).json({error:"Doctor is not available for this time slot"});
     let patient=null;
     if(b.patient_phone){const r=await db.query("SELECT id,name,phone FROM patients WHERE hospital_id=$1 AND phone=$2 ORDER BY id LIMIT 1",[hid,String(b.patient_phone).trim()]);patient=r.rows[0]||null}
     if(!patient){const r=await db.query("SELECT id,name,phone FROM patients WHERE hospital_id=$1 AND lower(trim(name))=lower(trim($2)) ORDER BY id LIMIT 1",[hid,String(b.patient_name).trim()]);patient=r.rows[0]||null}
