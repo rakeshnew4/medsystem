@@ -9,7 +9,34 @@ export default async function(req,res){
 
   const key="full_demo_v3";
   const existing=await db.query("SELECT id FROM demo_seed_runs WHERE hospital_id=$1 AND seed_key=$2",[hid,key]);
-  if(existing.rows.length)return res.json({ok:true,alreadySeeded:true,message:"Full demo dataset already exists.",seed:key});
+  if(existing.rows.length){
+    const countQueries={
+      departments:"SELECT count(*)::int AS n FROM departments WHERE hospital_id=$1",
+      doctors:"SELECT count(*)::int AS n FROM doctors WHERE hospital_id=$1",
+      patients:"SELECT count(*)::int AS n FROM patients WHERE hospital_id=$1",
+      appointments:"SELECT count(*)::int AS n FROM appointments WHERE hospital_id=$1",
+      followups:"SELECT count(*)::int AS n FROM followups WHERE hospital_id=$1",
+      hospital_faqs:"SELECT count(*)::int AS n FROM hospital_faqs WHERE hospital_id=$1",
+      conversations:"SELECT count(*)::int AS n FROM conversations WHERE hospital_id=$1",
+      messages:"SELECT count(*)::int AS n FROM messages m JOIN conversations c ON c.id=m.conversation_id WHERE c.hospital_id=$1",
+      notifications:"SELECT count(*)::int AS n FROM notifications WHERE hospital_id=$1",
+      audit_logs:"SELECT count(*)::int AS n FROM audit_logs WHERE hospital_id=$1",
+      staff_profiles:"SELECT count(*)::int AS n FROM staff_profiles WHERE hospital_id=$1",
+      queue_entries:"SELECT count(*)::int AS n FROM queue_entries WHERE hospital_id=$1",
+      vitals:"SELECT count(*)::int AS n FROM vitals WHERE hospital_id=$1",
+      doctor_visits:"SELECT count(*)::int AS n FROM doctor_visits WHERE hospital_id=$1",
+      lab_orders:"SELECT count(*)::int AS n FROM lab_orders WHERE hospital_id=$1",
+      medications:"SELECT count(*)::int AS n FROM medications WHERE hospital_id=$1",
+      clinical_reports:"SELECT count(*)::int AS n FROM clinical_reports WHERE hospital_id=$1",
+      beds:"SELECT count(*)::int AS n FROM beds WHERE hospital_id=$1",
+      admissions:"SELECT count(*)::int AS n FROM admissions WHERE hospital_id=$1",
+      invoices:"SELECT count(*)::int AS n FROM invoices WHERE hospital_id=$1",
+      invoice_items:"SELECT count(*)::int AS n FROM invoice_items i JOIN invoices x ON x.id=i.invoice_id WHERE x.hospital_id=$1"
+    };
+    const counts={};
+    for(const [name,sql] of Object.entries(countQueries)){const r=await db.query(sql,[hid]);counts[name]=r.rows[0].n;}
+    return res.json({ok:true,alreadySeeded:true,seed:key,counts,message:"Full demo dataset already exists."});
+  }
 
   // Reference data
   await db.query(`INSERT INTO departments(hospital_id,name,description)
