@@ -335,10 +335,12 @@ function populateSelects(){
   if(staff)staff.innerHTML='<option value="">Not linked</option>'+doctorItems.map(x=>'<option value="'+x.id+'">'+esc(x.label)+'</option>').join('');
 }
 
-document.getElementById('permissionRole').onchange=()=>renderPermissionMatrix();
+document.getElementById('permissionRole')?.onchange=()=>renderPermissionMatrix();
   const analyticsNav=document.querySelector('.nav button[data-section="analytics"]');if(analyticsNav)analyticsNav.onclick=()=>{showSection('analytics');loadAnalytics()};
+window.addEventListener('DOMContentLoaded',()=>{
 document.getElementById('staffForm').onsubmit=async e=>{e.preventDefault();try{await api('/team',{method:'POST',body:JSON.stringify({email:staffEmail.value,role:staffRole.value,doctor_id:staffDoctor.value||null,active:staffActive.value==='true'})});closeModal('staffModal');e.target.reset();await loadAll();alert('Staff email registered. Only that email can sign in, and the account must be active.')}catch(x){alert(x.message)}};
 document.getElementById('billingForm').onsubmit=async e=>{e.preventDefault();try{await api('/billing',{method:'POST',body:JSON.stringify({patient_id:billPatient.value,items:[{description:billDescription.value,quantity:1,unit_price:Number(billAmount.value)}],discount:Number(billDiscount.value||0),tax:Number(billTax.value||0),paid:Number(billPaid.value||0),payment_method:billMethod.value,notes:billNotes.value})});closeModal('billingModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}};
+});
 async function saveHospitalSetting(key,value){try{await api('/hospital-config',{method:'PUT',body:JSON.stringify({type:'setting',setting_key:key,setting_value:value})});await loadHospitalConfig()}catch(e){alert(e.message)}}
 async function saveHospitalFeature(key,enabled){try{await api('/hospital-config',{method:'PUT',body:JSON.stringify({type:'feature',feature_key:key,enabled})});await loadHospitalConfig()}catch(e){alert(e.message)}}
 async function saveHospitalModule(key,enabled){try{const m=state.hospitalConfig.modules.find(x=>x.module_key===key);await api('/hospital-config',{method:'PUT',body:JSON.stringify({type:'module',module_key:key,enabled,display_name:m?.display_name,display_order:m?.display_order||100,configuration:m?.configuration||{}})});await loadHospitalConfig()}catch(e){alert(e.message)}}
