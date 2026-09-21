@@ -95,7 +95,23 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtTime=t=>t?String(t).slice(0,5):'';
 const fmtDate=d=>d?new Date(String(d).slice(0,10)+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
 async function api(path,opts={}){const r=await fetch(API+path,{headers:{'Content-Type':'application/json'},...opts});let j={};try{j=await r.json()}catch{}if(!r.ok)throw Object.assign(Error(j.error||'Request failed'),{status:r.status,data:j});return j}
-function showSection(id){document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.section===id));const titles={dashboard:'Hospital overview',queue:'Patient queue',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',analytics:'Clinic insights',staff:'Staff',setup:'Hospital setup'};document.getElementById('pageTitle').textContent=titles[id]||id}
+const VALID_SECTIONS=['dashboard','queue','appointments','patients','doctors','beds','followups','billing','analytics','staff','setup'];
+function showSection(id,updateUrl=true){
+  if(!VALID_SECTIONS.includes(id))id='dashboard';
+  const section=document.getElementById(id);
+  if(!section)return;
+  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
+  section.classList.add('active');
+  document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.section===id));
+  const titles={dashboard:'Hospital overview',queue:'Patient queue',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',analytics:'Clinic insights',staff:'Staff',setup:'Hospital setup'};
+  document.getElementById('pageTitle').textContent=titles[id]||id;
+  if(updateUrl && location.hash!=='#'+id)history.replaceState(null,'','#'+id);
+}
+function restoreSection(){
+  const id=(location.hash||'').slice(1);
+  showSection(VALID_SECTIONS.includes(id)?id:'dashboard',false);
+}
+window.addEventListener('hashchange',restoreSection);
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>showSection(b.dataset.section));
 function openModal(id){document.getElementById(id).classList.add('open')} function closeModal(id){document.getElementById(id).classList.remove('open')}
 function status(s){return '<span class="status '+esc(s)+'">'+esc(s)+'</span>'}
@@ -157,6 +173,7 @@ async function loadAll(){
       renderPermissionMatrix();
     } else {state.staff=[]}
     renderAll();populateSelects();applyPermissions();if(can('page.dashboard'))loadAnalytics();
+    restoreSection();
   }catch(e){if(e.status===401){location.replace('/login?next='+encodeURIComponent(location.pathname));return}if(e.status===403){console.error(e);return}console.error(e);alert(e.message)}
 }
 function renderAll(){
