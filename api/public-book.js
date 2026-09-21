@@ -21,7 +21,7 @@ export default async function(req,res){
   }
   const conflict=await db.query("SELECT id FROM appointments WHERE hospital_id=$1 AND doctor_id=$2 AND appointment_date=$3 AND appointment_time=$4 AND status <> 'cancelled' LIMIT 1",[hid,b.doctor_id,b.appointment_date,b.appointment_time]);
   if(conflict.rows[0]) return res.status(409).json({error:"That slot is already booked. Please choose another time."});
-  const a=await db.query("INSERT INTO appointments(hospital_id,patient_id,doctor_id,appointment_date,appointment_time,status,source,reason) VALUES($1,$2,$3,$4,$5,'pending','public-web',$6) RETURNING id,appointment_date,appointment_time,status",[hid,patientId,b.doctor_id,b.appointment_date,b.appointment_time,b.reason||null]);
+  const a=await db.query("INSERT INTO appointments(hospital_id,patient_id,doctor_id,appointment_date,appointment_time,status,source,reason) VALUES($1,$2,$3,$4,$5,'pending','public-web',$6) RETURNING id,public_token,appointment_date,appointment_time,status",[hid,patientId,b.doctor_id,b.appointment_date,b.appointment_time,b.reason||null]);
   if(Boolean(b.whatsapp_opt_in)){
     await db.query("INSERT INTO notifications(hospital_id,patient_id,appointment_id,kind,scheduled_for,status,channel) VALUES($1,$2,$3,'appointment_confirmation',now(),'pending','whatsapp') ON CONFLICT (appointment_id,kind) DO NOTHING",[hid,patientId,a.rows[0].id]);
   }
