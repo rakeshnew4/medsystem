@@ -159,3 +159,5 @@ th{color:var(--muted);font-weight:700}
   .main{padding:20px}
   .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
+.search-select-input{width:100%;box-sizing:border-box;background:var(--surface,#fff);border:1px solid var(--line,#d9e1dd);border-radius:10px;padding:10px 12px;font:inherit;color:var(--ink,#17231f)}
+.search-select-input:focus{outline:none;border-color:var(--accent,#173f35);box-shadow:0 0 0 3px rgba(23,63,53,.08)}
