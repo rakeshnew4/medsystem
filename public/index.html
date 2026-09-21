@@ -36,8 +36,9 @@
   <div id="stats" class="grid stats"></div>
   <div class="grid two-col" style="margin-top:16px">
     <div class="card panel"><div class="panel-head"><h2 class="panel-title">Today's appointments</h2><button class="btn" onclick="showSection('appointments')">View all</button></div><div id="todayAppointments" class="table-wrap"></div></div>
-    <div class="ai-box"><h2 class="panel-title">AI front desk assistant</h2><p style="font-size:12px;opacity:.7;margin:5px 0">Administrative questions only.</p><div class="ai-response" id="aiResponse">Ask about doctors, appointments, workload or hospital FAQs.</div><div class="ai-input"><input id="aiQuestion" placeholder="Ask the hospital assistant…" onkeydown="if(event.key==='Enter')askAI()"><button class="btn primary" onclick="askAI()">Ask</button></div></div>
+    <div class="ai-box"><div class="panel-head"><div><h2 class="panel-title">AI front desk assistant</h2><p style="font-size:12px;opacity:.7;margin:5px 0">Administrative questions only.</p></div></div><div class="ai-response" id="aiResponse">Ask about doctors, appointments, workload or hospital FAQs.</div><div class="ai-input"><input id="aiQuestion" placeholder="Ask the hospital assistant…" onkeydown="if(event.key==='Enter')askAI()"><button class="btn primary" onclick="askAI()">Ask</button></div></div>
   </div>
+  <div class="card panel" style="margin-top:16px"><div class="panel-head"><div><h2 class="panel-title">AI operations brief</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Uses aggregate operational metrics only. No clinical decision support.</div></div><button class="btn primary" onclick="loadAIOpsBrief()">Generate brief</button></div><div id="aiOpsBrief" style="margin-top:12px"><div class="empty">Generate a concise manager brief from today's flow, follow-ups, billing and staffing metrics.</div></div></div>
   <div class="grid two-col" style="margin-top:16px">
     <div class="card panel"><div class="panel-head"><h2 class="panel-title">Live patient flow</h2><button class="btn" onclick="showSection('queue')">Open board</button></div><div id="flowSummary"></div></div>
     <div class="card panel"><div class="panel-head"><h2 class="panel-title">Beds</h2><button class="btn" onclick="showSection('beds')">Manage beds</button></div><div id="bedSummary"></div></div>
@@ -206,7 +207,7 @@ async function loadAll(){
       const pm=await api('/permissions');state.permissionCatalog=pm.permissions;state.rolePermissions=pm.roles;
       renderPermissionMatrix();
     } else {state.staff=[]}
-    renderAll();populateSelects();applyPermissions();if(can('page.dashboard'))loadAnalytics();if(state.session.staff?.role==='doctor'||state.session.staff?.role==='admin')renderDoctorRoom();
+    renderAll();populateSelects();applyPermissions();if(can('page.dashboard')){loadAnalytics();loadAIOpsBrief()}if(state.session.staff?.role==='doctor'||state.session.staff?.role==='admin')renderDoctorRoom();
     restoreSection();
   }catch(e){if(e.status===401){location.replace('/login?next='+encodeURIComponent(location.pathname));return}if(e.status===403){console.error(e);return}console.error(e);alert(e.message)}
 }
@@ -357,6 +358,7 @@ document.getElementById('bedForm').onsubmit=async e=>{e.preventDefault();try{awa
 window.addEventListener('DOMContentLoaded',()=>{document.getElementById('admitForm').onsubmit=async e=>{e.preventDefault();try{await api('/beds',{method:'PUT',body:JSON.stringify({action:'admit',patient_id:admitPatient.value,bed_id:admitBedId.value,doctor_id:admitDoctor.value||null,expected_discharge_date:admitDischarge.value||null,notes:admitNotes.value})});closeModal('admitModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}}});
 async function seedDemoData(){if(!confirm('Add a complete, clearly labeled demo dataset to this hospital? It will add patients, appointments, billing, queue, follow-ups, beds, vitals, labs, medicines and reports.'))return;try{const r=await api('/demo-full-seed',{method:'POST'});const q=await api('/demo-flow-seed',{method:'POST'});alert(r.message||('Demo data ready: '+r.patients+' patients, '+r.appointments+' appointments, '+q.queue+' active queue entries, '+r.followups+' follow-ups.'));await loadAll()}catch(e){alert(e.message)}}
 async function askAI(){const q=document.getElementById('aiQuestion').value.trim();if(!q)return;document.getElementById('aiResponse').textContent='Thinking…';try{const r=await api('/ai-assistant',{method:'POST',body:JSON.stringify({question:q})});document.getElementById('aiResponse').textContent=r.answer}catch(e){document.getElementById('aiResponse').textContent=e.message}}
+async function loadAIOpsBrief(){const el=document.getElementById('aiOpsBrief');if(!el||!can('action.ai.use'))return;el.innerHTML='<div class="empty">Generating operational brief…</div>';try{const r=await api('/ai-ops-brief',{method:'POST',body:'{}'});el.innerHTML='<div style="white-space:pre-wrap;line-height:1.6">'+esc(r.brief||'No brief generated.')+'</div>'}catch(e){el.innerHTML='<div class="empty">AI brief unavailable: '+esc(e.message||'Unknown error')+'</div>'}}
 async function signOut(){await hatchable.auth.signOut();location.replace('/login')}
 loadAll();
 </script>

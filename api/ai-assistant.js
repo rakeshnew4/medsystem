@@ -1,5 +1,6 @@
-import { db, ai } from "hatchable";
+import { db } from "hatchable";
 import { requirePermission } from "../lib/authz.js";
+import { groqChat } from "../lib/groq.js";
 export const access = "user";
 export const methods = ["POST"];
 
@@ -18,6 +19,8 @@ export default async function(req,res){
     db.query("SELECT count(*)::int AS n FROM followups WHERE hospital_id=$1 AND due_date<=current_date AND status='due'",[hid])
   ]);
   const prompt = `You are the administrative AI assistant for a small hospital. Do not diagnose, prescribe, interpret clinical reports, or provide treatment decisions. If asked for clinical advice, say a qualified clinician should help. Answer using only the supplied hospital information and operational data. Hospital: ${JSON.stringify(h.rows[0])}. Doctors: ${JSON.stringify(doctors.rows)}. FAQs: ${JSON.stringify(faqs.rows)}. Today's appointments: ${today.rows[0].n}. Follow-ups due: ${followups.rows[0].n}. Staff question: ${q}`;
-  const result=await ai.generateText({model:"gpt",purpose:"hospital-admin-assistant",prompt,maxTokens:500});
-  res.json({answer:result.text||"I could not generate a response."});
+  try{
+    const answer=await groqChat({system:"You are CareFlow's administrative hospital assistant. Never diagnose, prescribe, interpret medical reports, or provide clinical treatment decisions. Use only supplied hospital information and operational data. If asked a clinical question, direct the user to a qualified clinician. Keep answers concise and practical.",user:prompt,maxTokens:500});
+    res.json({answer:answer||"I could not generate a response."});
+  }catch(e){res.status(502).json({error:e.message||"AI assistant failed"});}
 }
