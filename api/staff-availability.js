@@ -23,15 +23,16 @@ function currentWindow(windows, nowMin) {
   }) || null;
 }
 
-async function context(req) {
-  const staff = await requireStaff(req);
-  await requirePermission(staff, "action.communication.use");
-  return staff;
+async function context(req,res) {
+  const ctx = await requirePermission(req,res,"action.communication.use");
+  if(!ctx)return null;
+  return {...ctx.staff,hospital_id:ctx.hospitalId,user:ctx.user};
 }
 
 export default async function(req,res) {
   try {
-    const staff = await context(req);
+    const staff = await context(req,res);
+    if(!staff)return;
     const method = req.method;
     const action = req.query?.action || "overview";
 
