@@ -10,9 +10,26 @@ export default async function(req,res){
   const hid=h.rows[0].id;
   if(req.method==="POST"){
     const b=req.body||{};
-    if(!b.patient_id||!b.doctor_id||!b.appointment_date||!b.appointment_time) return res.status(400).json({error:"Patient, doctor, date and time are required"});
-    const r=await db.query("INSERT INTO appointments(hospital_id,patient_id,doctor_id,appointment_date,appointment_time,status,source,reason) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id,appointment_date,appointment_time,status",[hid,b.patient_id,b.doctor_id,b.appointment_date,b.appointment_time,b.status||"pending",b.source||"reception",b.reason||null]);
-    return res.json(r.rows[0]);
+    if(!b.patient_name||!String(b.patient_name).trim()||!b.doctor_id||!b.appointment_date||!b.appointment_time) return res.status(400).json({error:"Patient name, doctor, date and time are required"});
+
+    // Reception should be able to book in one flow. Find the patient by phone first,
+    // then exact name; create the patient automatically when they are new.
+    let patient=null;
+    if(b.patient_phone){
+      const byPhone=await db.query("SELECT id,name,phone FROM patients WHERE hospital_id=$1 AND phone=$2 ORDER BY id LIMIT 1",[hid,String(b.patient_phone).trim()]);
+      patient=byPhone.rows[0]||null;
+    }
+    if(!patient){
+      const byName=await db.query("SELECT id,name,phone FROM patients WHERE hospital_id=$1 AND lower(trim(name))=lower(trim($2)) ORDER BY id LIMIT 1",[hid,String(b.patient_name).trim()]);
+      patient=byName.rows[0]||null;
+    }
+    if(!patient){
+      const created=await db.query("INSERT INTO patients(hospital_id,name,phone,email,notes) VALUES($1,$2,$3,$4,$5) RETURNING id,name,phone",[hid,String(b.patient_name).trim(),b.patient_phone||null,b.patient_email||null,"Created from appointment booking"]);
+      patient=created.rows[0];
+    }
+
+    const r=await db.query("INSERT INTO appointments(hospital_id,patient_id,doctor_id,appointment_date,appointment_time,status,source,reason) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id,appointment_date,appointment_time,status,patient_id",[hid,patient.id,b.doctor_id,b.appointment_date,b.appointment_time,b.status||"pending",b.source||"reception",b.reason||null]);
+    return res.json({...r.rows[0],patient});
   }
   if(req.method==="PUT"){
     const b=req.body||{};
