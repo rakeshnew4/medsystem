@@ -137,6 +137,23 @@ th{color:var(--muted);font-weight:700}
   .top-actions .btn.primary{grid-column:auto}
   .kanban-col{flex-basis:calc(100vw - 44px)}
 }
+/* Mobile overflow and touch-scrolling fixes */
+.grid,.card,.panel,.section,.two-col,#analyticsContent{min-width:0;max-width:100%}
+.table-wrap{width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;touch-action:pan-x pan-y}
+.table-wrap table{min-width:620px}
+#analyticsContent .table-wrap{display:block;overflow-x:auto}
+@media(max-width:760px){
+  .main{overflow-x:hidden}
+  .section.active{width:100%;min-width:0}
+  .card{overflow:hidden}
+  #analyticsContent .grid{min-width:0}
+  #analyticsContent .card{width:100%;min-width:0}
+  #analyticsContent .table-wrap{margin-right:0;padding-bottom:4px}
+  #analyticsContent .table-wrap table{min-width:560px}
+  #analyticsContent .panel-head{width:100%}
+  .table-wrap::-webkit-scrollbar{height:5px}
+  .table-wrap::-webkit-scrollbar-thumb{background:#b9c9c3;border-radius:5px}
+}
 @media(min-width:761px) and (max-width:1100px){
   .app-shell{grid-template-columns:210px 1fr}
   .main{padding:20px}
