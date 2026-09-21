@@ -165,11 +165,33 @@ export default async function(req,res){
 
   await db.query("INSERT INTO demo_seed_runs(hospital_id,seed_key) VALUES($1,$2)",[hid,key]);
 
-  const tables=['departments','doctors','patients','appointments','followups','hospital_faqs','conversations','messages','notifications','audit_logs','staff_profiles','queue_entries','vitals','doctor_visits','lab_orders','medications','clinical_reports','beds','admissions','invoices','invoice_items'];
+  const countQueries={
+    departments:"SELECT count(*)::int AS n FROM departments WHERE hospital_id=$1",
+    doctors:"SELECT count(*)::int AS n FROM doctors WHERE hospital_id=$1",
+    patients:"SELECT count(*)::int AS n FROM patients WHERE hospital_id=$1",
+    appointments:"SELECT count(*)::int AS n FROM appointments WHERE hospital_id=$1",
+    followups:"SELECT count(*)::int AS n FROM followups WHERE hospital_id=$1",
+    hospital_faqs:"SELECT count(*)::int AS n FROM hospital_faqs WHERE hospital_id=$1",
+    conversations:"SELECT count(*)::int AS n FROM conversations WHERE hospital_id=$1",
+    messages:"SELECT count(*)::int AS n FROM messages m JOIN conversations c ON c.id=m.conversation_id WHERE c.hospital_id=$1",
+    notifications:"SELECT count(*)::int AS n FROM notifications WHERE hospital_id=$1",
+    audit_logs:"SELECT count(*)::int AS n FROM audit_logs WHERE hospital_id=$1",
+    staff_profiles:"SELECT count(*)::int AS n FROM staff_profiles WHERE hospital_id=$1",
+    queue_entries:"SELECT count(*)::int AS n FROM queue_entries WHERE hospital_id=$1",
+    vitals:"SELECT count(*)::int AS n FROM vitals WHERE hospital_id=$1",
+    doctor_visits:"SELECT count(*)::int AS n FROM doctor_visits WHERE hospital_id=$1",
+    lab_orders:"SELECT count(*)::int AS n FROM lab_orders WHERE hospital_id=$1",
+    medications:"SELECT count(*)::int AS n FROM medications WHERE hospital_id=$1",
+    clinical_reports:"SELECT count(*)::int AS n FROM clinical_reports WHERE hospital_id=$1",
+    beds:"SELECT count(*)::int AS n FROM beds WHERE hospital_id=$1",
+    admissions:"SELECT count(*)::int AS n FROM admissions WHERE hospital_id=$1",
+    invoices:"SELECT count(*)::int AS n FROM invoices WHERE hospital_id=$1",
+    invoice_items:"SELECT count(*)::int AS n FROM invoice_items i JOIN invoices x ON x.id=i.invoice_id WHERE x.hospital_id=$1"
+  };
   const counts={};
-  for(const t of tables){
-    const r=await db.query('SELECT count(*)::int AS n FROM '+t+' WHERE hospital_id=$1',[hid]);
-    counts[t]=r.rows[0].n;
+  for(const [name,sql] of Object.entries(countQueries)){
+    const r=await db.query(sql,[hid]);
+    counts[name]=r.rows[0].n;
   }
   return res.json({ok:true,seed:key,counts,message:"Full demo dataset created. Every operational table has at least 20 records where applicable; existing larger demo tables were preserved."});
 }
