@@ -335,7 +335,8 @@ function populateSelects(){
   if(staff)staff.innerHTML='<option value="">Not linked</option>'+doctorItems.map(x=>'<option value="'+x.id+'">'+esc(x.label)+'</option>').join('');
 }
 
-document.getElementById('permissionRole')?.onchange=()=>renderPermissionMatrix();
+const permissionRoleEl=document.getElementById('permissionRole');
+if(permissionRoleEl)permissionRoleEl.onchange=()=>renderPermissionMatrix();
   const analyticsNav=document.querySelector('.nav button[data-section="analytics"]');if(analyticsNav)analyticsNav.onclick=()=>{showSection('analytics');loadAnalytics()};
 window.addEventListener('DOMContentLoaded',()=>{
 document.getElementById('staffForm').onsubmit=async e=>{e.preventDefault();try{await api('/team',{method:'POST',body:JSON.stringify({email:staffEmail.value,role:staffRole.value,doctor_id:staffDoctor.value||null,active:staffActive.value==='true'})});closeModal('staffModal');e.target.reset();await loadAll();alert('Staff email registered. Only that email can sign in, and the account must be active.')}catch(x){alert(x.message)}};
@@ -391,7 +392,7 @@ async function addDoctorRule(){const day=prompt('OPD day: 0 Sun ... 6 Sat','1');
 async function addDoctorException(){const date=prompt('Date YYYY-MM-DD');const type=prompt('Exception type: leave, unavailable, extra','leave');if(!date||!type)return;const start=prompt('Start time (blank = whole day)');const end=prompt('End time (blank = whole day)');const reason=prompt('Reason');await api('/staff-availability',{method:'POST',body:JSON.stringify({action:'doctor-exception',exception_date:date,exception_type:type,start_time:start||null,end_time:end||null,reason:reason||null})});await loadAvailability()}
 async function deleteAvailability(kind,id){if(!confirm('Remove this schedule?'))return;await api('/staff-availability?action='+encodeURIComponent(kind)+'&id='+id,{method:'DELETE'});await loadAvailability()}
 async function signOut(){await hatchable.auth.signOut();location.replace('/login')}
-loadAll();
+window.addEventListener('DOMContentLoaded',()=>loadAll());
 </script>
 
 <div id="billingModal" class="modal"><div class="modal-card"><div class="panel-head"><h2 class="panel-title">New invoice</h2><button class="btn" onclick="closeModal('billingModal')">Close</button></div><form id="billingForm" class="form-grid"><div class="field"><label>Patient</label><input id="billPatient" type="hidden"><input id="billPatientSearch" class="search-select-input" required placeholder="Search patient…" autocomplete="off" list="billPatientOptions"><datalist id="billPatientOptions"></datalist></div><div class="field"><label>Payment method</label><select id="billMethod"><option value="cash">Cash</option><option value="upi">UPI</option><option value="card">Card</option><option value="online">Online</option></select></div><div class="field"><label>Service / item</label><input id="billDescription" required placeholder="Consultation"></div><div class="field"><label>Amount</label><input id="billAmount" type="number" min="0" step="0.01" required></div><div class="field"><label>Discount</label><input id="billDiscount" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Tax</label><input id="billTax" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Paid now</label><input id="billPaid" type="number" min="0" step="0.01" value="0"></div><div class="field full"><label>Notes</label><input id="billNotes"></div><div><button class="btn primary">Create invoice</button></div></form></div></div>
