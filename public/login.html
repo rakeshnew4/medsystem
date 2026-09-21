@@ -1,18 +1,124 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>CareFlow Staff Sign in</title><link rel="stylesheet" href="/theme.css">
-<style>body{min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#eef6f2,#f8faf9)}.login-card{width:min(430px,calc(100% - 32px));background:#fff;border:1px solid var(--line);border-radius:22px;padding:32px;box-shadow:var(--shadow)}.login-brand{display:flex;gap:12px;align-items:center;margin-bottom:28px}.login-icon{width:46px;height:46px;border-radius:14px;background:#8de0c5;display:grid;place-items:center;font-weight:800;font-size:22px}.login-card h1{margin:0;font-size:27px}.login-card p{color:var(--muted);font-size:13px;line-height:1.6}.login-card input{width:100%;height:48px;border:1px solid var(--line);border-radius:11px;padding:0 14px;box-sizing:border-box}.login-card button{width:100%;height:48px;margin-top:10px}.login-note{font-size:11px!important;text-align:center;margin-top:18px}</style></head>
-<body><main class="login-card">
-<div class="login-brand"><div class="login-icon">+</div><div><strong style="font-family:Manrope">CareFlow</strong><div style="font-size:11px;color:var(--muted)">Hospital staff workspace</div></div></div>
-<h1 id="title">Staff sign in</h1><p id="sub">Enter your work email. We'll send a one-time 6-digit code. No password needed.</p>
-<form id="form"><input id="email" type="email" autocomplete="username webauthn" placeholder="doctor@hospital.com" required><div id="codeWrap" hidden><input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6-digit code"></div><button id="submit" class="btn primary">Send code</button><button id="back" type="button" class="btn" hidden>Use different email</button></form>
-<div id="msg" style="min-height:22px;margin-top:12px;font-size:13px;color:var(--muted)"></div>
-<p class="login-note">Access is controlled by your hospital administrator. The first registered account becomes the initial administrator.</p>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Sign in — CareFlow</title>
+<link rel="stylesheet" href="/theme.css">
+<style>
+body{min-height:100vh;margin:0;display:grid;place-items:center;background:linear-gradient(145deg,#f4f8f5,#eef4f0);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#17322a}
+.login-shell{width:min(430px,calc(100% - 32px))}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.brand-mark{width:44px;height:44px;border-radius:14px;background:#173f31;color:#fff;display:grid;place-items:center;font-weight:800;font-size:18px;box-shadow:0 8px 24px rgba(23,63,49,.18)}
+.brand-name{font-weight:800;font-size:22px;line-height:1}.brand-sub{font-size:12px;color:#71837c;margin-top:4px}
+.card{background:#fff;border:1px solid #dce7e1;border-radius:20px;padding:28px;box-shadow:0 18px 50px rgba(23,63,49,.10)}
+h1{margin:0;font-size:25px}.sub{margin:8px 0 24px;color:#6d7d77;font-size:14px;line-height:1.5}
+label{display:block;font-size:12px;font-weight:700;color:#496057;margin:0 0 7px}
+input{width:100%;height:48px;box-sizing:border-box;border:1px solid #cfdcd6;border-radius:12px;padding:0 14px;font-size:15px;outline:none;background:#fbfdfc;color:#17322a}
+input:focus{border-color:#4d8a72;box-shadow:0 0 0 3px rgba(77,138,114,.12)}
+button{width:100%;height:48px;border:0;border-radius:12px;margin-top:12px;font-size:15px;font-weight:750;cursor:pointer;background:#173f31;color:#fff}
+button:disabled{opacity:.55;cursor:not-allowed}
+button.secondary{background:#eef4f1;color:#315248}.msg{min-height:22px;margin:14px 0 0;font-size:13px;color:#667870;line-height:1.45}.msg.err{color:#b34c39}.hint{margin-top:20px;padding-top:16px;border-top:1px solid #e7eeea;color:#7a8983;font-size:12px;line-height:1.5}
+.badge{display:inline-flex;padding:4px 8px;border-radius:999px;background:#eaf4ef;color:#356653;font-size:11px;font-weight:700;margin-bottom:12px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main class="login-shell">
+  <div class="brand">
+    <div class="brand-mark">CF</div>
+    <div><div class="brand-name">CareFlow</div><div class="brand-sub">Hospital Operations</div></div>
+  </div>
+  <section class="card">
+    <div class="badge">STAFF PORTAL</div>
+    <h1 id="title">Sign in</h1>
+    <p class="sub" id="sub">Use your registered hospital email. We'll send a secure one-time code — no password to remember.</p>
+
+    <form id="form" novalidate>
+      <div id="emailRow">
+        <label for="email">Hospital email</label>
+        <input id="email" type="email" autocomplete="username webauthn" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="you@hospital.com" required>
+      </div>
+      <div id="codeRow" hidden>
+        <label for="code">Verification code</label>
+        <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" placeholder="6-digit code" required>
+      </div>
+      <button id="submit" type="submit">Send sign-in code</button>
+      <button id="back" class="secondary" type="button" hidden>Use a different email</button>
+    </form>
+
+    <div id="passkey" hidden>
+      <button id="passkeyAdd" type="button">Add a passkey</button>
+      <button id="passkeySkip" class="secondary" type="button">Continue without passkey</button>
+    </div>
+
+    <p id="msg" class="msg" role="status" aria-live="polite"></p>
+    <div class="hint">Access is controlled by your hospital staff registration and role. If your email is not registered, ask the hospital administrator to add it under <b>Staff</b>.</div>
+  </section>
 </main>
 <script>
-(()=>{const A=window.hatchable.auth;const form=document.getElementById('form'),email=document.getElementById('email'),code=document.getElementById('code'),wrap=document.getElementById('codeWrap'),submit=document.getElementById('submit'),back=document.getElementById('back'),msg=document.getElementById('msg'),sub=document.getElementById('sub');let step='email',hasPasskey=false;
-const next=()=>{const n=new URLSearchParams(location.search).get('next')||'/';return n.startsWith('/')&&!n.startsWith('//')?n:'/'};const say=(x,err)=>{msg.textContent=x;msg.style.color=err?'var(--danger)':'var(--muted)'};
-A.getSession().then(s=>{if(s&&s.user)location.replace(next())});
-back.onclick=()=>{step='email';wrap.hidden=true;back.hidden=true;submit.textContent='Send code';sub.textContent="Enter your work email. We'll send a one-time 6-digit code. No password needed.";say('');email.focus()};
-form.onsubmit=async e=>{e.preventDefault();submit.disabled=true;const em=email.value.trim();try{if(step==='email'){const r=await A.startLogin({email:em});hasPasskey=!!r.has_passkey;if(hasPasskey&&A.supportsPasskeys()){try{const d=await A.signInWithPasskey({email:em});if(d&&d.user){location.replace(next());return}}catch{}}step='code';wrap.hidden=false;back.hidden=false;submit.textContent='Sign in';sub.textContent='Enter the code sent to '+em+'.';say('Code sent.');code.focus()}else{const d=await A.verifyCode({email:em,code:code.value.trim()});if(d&&d.user)location.replace(next());else say('The code could not be verified.',true)}}catch(err){say(err.message||'Something went wrong.',true)}finally{submit.disabled=false}};
-email.focus()})()
-</script></body></html>
+(function(){
+  const A=window.hatchable&&window.hatchable.auth;
+  const form=document.getElementById('form'),email=document.getElementById('email'),code=document.getElementById('code');
+  const emailRow=document.getElementById('emailRow'),codeRow=document.getElementById('codeRow'),submit=document.getElementById('submit'),back=document.getElementById('back');
+  const msg=document.getElementById('msg'),sub=document.getElementById('sub'),title=document.getElementById('title');
+  const passkey=document.getElementById('passkey'),passkeyAdd=document.getElementById('passkeyAdd'),passkeySkip=document.getElementById('passkeySkip');
+  let step='email',hasPasskey=false;
+
+  function say(t,err){msg.textContent=t||'';msg.className='msg'+(err?' err':'')}
+  function next(){const n=new URLSearchParams(location.search).get('next')||'/';location.replace(n.charAt(0)==='/'&&n.indexOf('//')!==0?n:'/')}
+  if(!A){say('Authentication is unavailable. Please refresh.',true);submit.disabled=true;return}
+  A.getSession().then(s=>{if(s&&s.user)next()}).catch(()=>{});
+
+  if(A.attachPasskeyAutofill){
+    try{A.attachPasskeyAutofill(email).then(r=>{if(r&&r.user)next()}).catch(()=>{})}catch(e){}
+  }
+
+  back.onclick=()=>{
+    step='email';emailRow.hidden=false;codeRow.hidden=true;back.hidden=true;submit.textContent='Send sign-in code';
+    sub.textContent="Use your registered hospital email. We'll send a secure one-time code — no password to remember.";
+    say('');email.focus();
+  };
+
+  form.onsubmit=e=>{
+    e.preventDefault();submit.disabled=true;
+    if(step==='email'){
+      const value=email.value.trim();
+      if(!value){say('Enter your hospital email.',true);submit.disabled=false;return}
+      A.startLogin({email:value}).then(r=>{
+        hasPasskey=!!(r&&r.has_passkey);
+        if(hasPasskey&&A.supportsPasskeys&&A.supportsPasskeys()){
+          return A.signInWithPasskey({email:value}).then(d=>{
+            if(d&&d.user){next();return null} return 'code'
+          }).catch(()=>'code')
+        }
+        return 'code'
+      }).then(n=>{
+        if(n!=='code')return;
+        step='code';emailRow.hidden=true;codeRow.hidden=false;back.hidden=false;
+        submit.textContent='Sign in';sub.textContent='Enter the 6-digit code sent to '+email.value.trim()+'.';
+        say('Code sent. It expires in 10 minutes.');code.focus()
+      }).catch(err=>say(err&&err.message?err.message:'Could not send the code. Check the email address and try again.',true))
+      .finally(()=>submit.disabled=false);
+      return;
+    }
+    A.verifyCode({email:email.value.trim(),code:code.value.trim()}).then(d=>{
+      if(!d||!d.user){say('That code did not work. Please try again.',true);return}
+      if(!hasPasskey&&A.registerPasskey&&A.supportsPasskeys&&A.supportsPasskeys()){
+        form.hidden=true;title.textContent="You're signed in";sub.textContent='Add a passkey for faster sign-in next time.';passkey.hidden=false;say('');passkeyAdd.focus()
+      }else next()
+    }).catch(err=>say(err&&err.message?err.message:'That code did not work. Please try again.',true))
+    .finally(()=>submit.disabled=false)
+  };
+
+  passkeyAdd.onclick=()=>{
+    passkeyAdd.disabled=true;passkeySkip.disabled=true;
+    A.registerPasskey().then(()=>next()).catch(err=>{say(err&&err.message?err.message:'Could not save the passkey. You can continue without one.',true);passkeyAdd.disabled=false;passkeySkip.disabled=false})
+  };
+  passkeySkip.onclick=next;
+  email.focus();
+})();
+</script>
+</body>
+</html>
