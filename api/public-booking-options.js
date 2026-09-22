@@ -36,7 +36,9 @@ export default async function(req,res){
   const doctors=await db.query("SELECT id,name,specialty,display_room FROM doctors WHERE hospital_id=$1 AND active=true ORDER BY name",[h.id]);
   const matching=doctors.rows.filter(d=>String(d.specialty||"").toLowerCase()===recommendation.specialty.toLowerCase());
   const general=doctors.rows.filter(d=>/general/i.test(String(d.specialty||"")));
-  const suggested=(matching.length?matching:general.length?general:doctors.rows).slice(0,5);
+  const source=matching.length?matching:general.length?general:doctors.rows;
+  const seen=new Set();
+  const suggested=source.filter(d=>{const k=String(d.name||"").trim().toLowerCase()+"|"+String(d.specialty||"").trim().toLowerCase();if(seen.has(k))return false;seen.add(k);return true}).slice(0,5);
   res.json({
     hospital:h,
     recommendation:{
