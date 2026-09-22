@@ -6,6 +6,12 @@
 </style></head><body><main class="wrap">
 <div class="top"><div><div class="brand">CareFlow</div><div class="muted">Patient Portal</div></div><a class="back" href="/portal/">← Staff / Patient</a></div>
 <section class="hero"><div id="hospitalName">Hospital</div><h1>Your care, in one place</h1><p>Book visits, manage appointments, follow your OPD token and join online consultations.</p></section>
+<section id="authPanel" class="card"><h2 id="authTitle">Patient sign in</h2><p id="authSub" class="muted">Use your mobile number to receive a one-time verification code.</p>
+<div id="phoneStep"><div class="field"><label>Mobile number</label><input id="loginPhone" inputmode="tel" autocomplete="tel" placeholder="10-digit mobile number"></div><button class="btn" style="margin-top:10px" onclick="sendOtp()">Send OTP</button></div>
+<div id="otpStep" class="hidden"><div class="field"><label>Verification code</label><input id="loginOtp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6-digit OTP"></div><button class="btn" style="margin-top:10px" onclick="verifyOtp()">Verify & sign in</button><button class="tab" style="margin-left:8px" onclick="resetOtp()">Change number</button></div>
+<div id="authMsg"></div>
+<div id="signedIn" class="hidden"><strong id="patientName"></strong><div class="muted" id="patientPhone"></div><button class="tab" style="margin-top:10px" onclick="logoutPatient()">Sign out</button></div>
+</section>
 <nav class="tabs"><button class="tab active" id="homeTab" onclick="show('home')">Home</button><button class="tab" id="bookTab" onclick="show('book')">Book appointment</button><button class="tab" id="manageTab" onclick="show('manage')">Manage appointment</button><button class="tab" id="tokenTab" onclick="show('token')">Track token</button></nav>
 <section id="home" class="card"><h2>What would you like to do?</h2><div class="actions">
 <a class="action" href="/opd/"><strong>📅 Book appointment</strong><span>Choose a doctor, date and in-person or online consultation.</span></a>
@@ -18,10 +24,40 @@
 <section id="token" class="card hidden"><h2>Track OPD token</h2><p class="muted">Paste the token from your hospital token link.</p><div class="field"><label>Token</label><input id="opdToken" placeholder="Paste token"></div><button class="btn" style="margin-top:10px" onclick="track()">Track token</button><div id="tokenResult"></div></section>
 </main><script>
 const qs=new URLSearchParams(location.search);
+let otpPhone="";
 function show(t){['home','book','manage','token'].forEach(x=>{document.getElementById(x).classList.toggle('hidden',x!==t);document.getElementById(x+'Tab').classList.toggle('active',x===t)})}
 async function init(){try{const r=await fetch('/api/opd/hospital');const x=await r.json();if(r.ok&&x.hospital)hospitalName.textContent=x.hospital.name}catch(e){}if(qs.get('token')){manageToken.value=qs.get('token');show('manage');manage()}}
 async function manage(){const t=manageToken.value.trim();if(!t)return;manageResult.innerHTML='<div class="muted" style="margin-top:12px">Loading…</div>';try{const r=await fetch('/api/opd/appointment?token='+encodeURIComponent(t));const x=await r.json();if(!r.ok)throw Error(x.error);manageResult.innerHTML='<div class="summary"><div><strong>Doctor</strong><br>'+esc(x.doctor_name)+'</div><div><strong>Date & time</strong><br>'+esc(x.appointment_date)+' · '+esc(String(x.appointment_time).slice(0,5))+'</div><div><strong>Type</strong><br>'+esc(x.consultation_type==='online'?'Online video':'In-person')+'</div><div><strong>Status</strong><br>'+esc(x.status)+'</div></div>'+(x.video?'<div class="success"><strong>Online consultation ready</strong><br><a href="'+esc(x.video.join_url)+'" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px">Join video consultation</a></div>':'')}catch(e){manageResult.innerHTML='<div class="error">'+esc(e.message)+'</div>'}}
 async function track(){const t=opdToken.value.trim();if(!t)return;tokenResult.innerHTML='<div class="muted" style="margin-top:12px">Loading…</div>';try{const r=await fetch('/api/opd/token?token='+encodeURIComponent(t),{cache:'no-store'});const x=await r.json();if(!r.ok)throw Error(x.error);tokenResult.innerHTML='<div class="summary"><div><strong>Hospital</strong><br>'+esc(x.hospital.name)+'</div><div><strong>Patients ahead</strong><br>'+x.position.patients_ahead+'</div><div><strong>Estimated wait</strong><br>'+x.position.estimated_wait.min+'–'+x.position.estimated_wait.max+' min</div><div><strong>Status</strong><br>'+esc(x.status.title)+'</div></div><div class="token">'+esc(x.token)+'</div><p>'+esc(x.status.next_action)+'</p>'}catch(e){tokenResult.innerHTML='<div class="error">'+esc(e.message)+'</div>'}}
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
-init();
+function authMsg(s,err){authMsgEl.textContent=s||"";authMsgEl.className=err?"error":"success"}
+const authMsgEl=document.getElementById("authMsg");
+async function sendOtp(){
+ const phone=document.getElementById("loginPhone").value.trim();
+ authMsgEl.textContent="Sending OTP…";authMsgEl.className="muted";
+ try{const r=await fetch("/api/patient/auth/send-otp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone})});const x=await r.json();if(!r.ok)throw Error(x.error);otpPhone=phone;phoneStep.classList.add("hidden");otpStep.classList.remove("hidden");authMsg("OTP sent. It expires in 10 minutes.");loginOtp.focus()}catch(e){authMsg(e.message,true)}
+}
+async function verifyOtp(){
+ const otp=document.getElementById("loginOtp").value.trim();
+ authMsgEl.textContent="Verifying…";authMsgEl.className="muted";
+ try{const r=await fetch("/api/patient/auth/verify-otp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone:otpPhone,otp,slug:qs.get("hospital")||""})});const x=await r.json();if(!r.ok)throw Error(x.error);showSignedIn(x.patient);await loadMe()}catch(e){authMsg(e.message,true)}
+}
+function resetOtp(){otpStep.classList.add("hidden");phoneStep.classList.remove("hidden");authMsgEl.textContent=""}
+function showSignedIn(p){
+ phoneStep.classList.add("hidden");otpStep.classList.add("hidden");signedIn.classList.remove("hidden");authTitle.textContent="You're signed in";authSub.textContent="Your CareFlow patient account is protected by phone verification.";patientName.textContent=p.name;patientPhone.textContent=p.phone;authMsgEl.textContent="";
+}
+async function loadMe(){
+ try{const r=await fetch("/api/patient/auth/me");if(!r.ok)return;const x=await r.json();showSignedIn(x.patient);renderMyAppointments(x.appointments||[])}catch(e){}
+}
+function renderMyAppointments(arr){
+ let el=document.getElementById("home");
+ const old=document.getElementById("myAppointments");if(old)old.remove();
+ const box=document.createElement("div");box.id="myAppointments";box.className="card";
+ box.innerHTML="<h2>My appointments</h2>"+(arr.length?arr.map(a=>"<div class='summary' style='margin-top:10px'><div><strong>Doctor</strong><br>"+esc(a.doctor_name)+"</div><div><strong>Date & time</strong><br>"+esc(a.appointment_date)+" · "+esc(String(a.appointment_time).slice(0,5))+"</div><div><strong>Status</strong><br>"+esc(a.status)+"</div><div><strong>Type</strong><br>"+esc(a.consultation_type==="online"?"Online":"In-person")+"</div></div>").join(""):"<p class='muted'>No appointments found.</p>");
+ el.parentNode.insertBefore(box,el.nextSibling);
+}
+async function logoutPatient(){
+ await fetch("/api/patient/auth/logout",{method:"POST"});location.reload();
+}
+init();loadMe();
 </script></body></html>

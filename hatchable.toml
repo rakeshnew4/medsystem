@@ -24,3 +24,7 @@ expose = true
 [[secret]]
 name = "GROQ_API_KEY"
 expose = true
+
+[[secret]]
+name = "MSG91_AUTH_KEY"
+expose = true
