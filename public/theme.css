@@ -243,7 +243,7 @@ button:disabled,.btn:disabled{opacity:.55;cursor:not-allowed}
   .patient-record-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:420px){.patient-record-summary{grid-template-columns:1fr 1fr}.patient-record-name{font-size:24px}}
-.workflow-timeline{margin-bottom:16px}
+.status{cursor:default}.flow-chip{cursor:pointer}.flow-chip:hover{transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,.08)}.workflow-timeline{margin-bottom:16px}
 .workflow-timeline .panel-head{align-items:center}
 .workflow-event{display:grid;grid-template-columns:12px 1fr;gap:10px;padding:11px 0;border-top:1px solid var(--line)}
 .workflow-event:first-of-type{border-top:0}
