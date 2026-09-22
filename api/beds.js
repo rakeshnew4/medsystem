@@ -1,5 +1,6 @@
 import { db } from "hatchable";
 import { requirePermission } from "../lib/authz.js";
+import { logWorkflowEvent } from "../lib/workflow.js";
 
 export const access="user";
 export const methods=["GET","POST","PUT"];
@@ -32,6 +33,9 @@ export default async function(req,res){
 
     if(b.action==="edit-bed"){
       if(!b.id||!b.ward||!b.bed_number)return res.status(400).json({error:"Bed, ward and bed number are required"});
+      const current=await db.query("SELECT status FROM beds WHERE id=$1 AND hospital_id=$2",[b.id,ctx.hospitalId]);
+      if(!current.rows[0])return res.status(404).json({error:"Bed not found"});
+      if(current.rows[0].status==="occupied")return res.status(409).json({error:"Occupied beds cannot be renamed or moved. Transfer/discharge the patient first."});
       const r=await db.query(
         "UPDATE beds SET ward=$1,bed_number=$2,bed_type=$3,notes=$4,updated_at=now() WHERE id=$5 AND hospital_id=$6 RETURNING *",
         [b.ward,b.bed_number,b.bed_type||"general",b.notes||null,b.id,ctx.hospitalId]
@@ -75,6 +79,7 @@ export default async function(req,res){
           [admission.bed_id,ctx.hospitalId]
         );
       }
+      await logWorkflowEvent(ctx,{patientId:admission.patient_id,eventType:"ipd_discharged",stage:"discharge",entityType:"admission",entityId:admission.id,metadata:{bed_id:admission.bed_id}});
       return res.json({id:admission.id,patient_id:admission.patient_id,status:"discharged",bed_id:admission.bed_id});
     }
 
@@ -97,6 +102,7 @@ export default async function(req,res){
       await db.query("UPDATE admissions SET bed_id=$1,updated_at=now() WHERE id=$2 AND hospital_id=$3",[b.new_bed_id,admission.id,ctx.hospitalId]);
       await db.query("INSERT INTO bed_assignments(hospital_id,admission_id,bed_id,reason) VALUES($1,$2,$3,$4)",[ctx.hospitalId,admission.id,b.new_bed_id,b.reason||"Bed transfer"]);
       await db.query("UPDATE beds SET status='occupied',updated_at=now() WHERE id=$1 AND hospital_id=$2",[b.new_bed_id,ctx.hospitalId]);
+      await logWorkflowEvent(ctx,{patientId:admission.patient_id,eventType:"bed_transferred",stage:"ipd",entityType:"admission",entityId:admission.id,metadata:{from_bed_id:admission.bed_id,to_bed_id:b.new_bed_id,reason:b.reason||"Bed transfer"}});
       return res.json({id:admission.id,bed_id:b.new_bed_id,patient_id:admission.patient_id});
     }
 
@@ -122,6 +128,7 @@ export default async function(req,res){
       );
       await db.query("INSERT INTO bed_assignments(hospital_id,admission_id,bed_id,reason) VALUES($1,$2,$3,$4)",[ctx.hospitalId,admission.id,b.bed_id,"Initial admission"]);
       await db.query("UPDATE beds SET status='occupied',updated_at=now() WHERE id=$1 AND hospital_id=$2",[b.bed_id,ctx.hospitalId]);
+      await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId:encounter.rows[0].id,eventType:"ipd_admitted",stage:"ipd",entityType:"admission",entityId:admission.id,metadata:{bed_id:b.bed_id,admission_type:b.admission_type||"general"}});
       return res.json({...admission,admission_number:admissionNumber(admission.id),encounter_id:encounter.rows[0].id});
     }
 

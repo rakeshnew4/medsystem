@@ -1,5 +1,6 @@
 import { db } from "hatchable";
 import { requirePermission } from "../lib/authz.js";
+import { logWorkflowEvent } from "../lib/workflow.js";
 export const access="user";
 export const methods=["GET","POST","PUT"];
 export default async function(req,res){
@@ -9,6 +10,7 @@ export default async function(req,res){
  if(req.method==="POST"){
   const b=req.body||{}; if(!b.name)return res.status(400).json({error:"Patient name is required"});
   const r=await db.query("INSERT INTO patients(hospital_id,name,phone,email,date_of_birth,notes,status) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id,name,phone,email,date_of_birth,notes,status",[hid,b.name,b.phone||null,b.email||null,b.date_of_birth||null,b.notes||null,b.status||"active"]);
+  await logWorkflowEvent(ctx,{patientId:r.rows[0].id,eventType:"patient_registered",stage:"registration",entityType:"patient",entityId:r.rows[0].id,metadata:{source:"staff"}});
   return res.json(r.rows[0]);
  }
  if(req.method==="PUT"){

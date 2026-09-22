@@ -66,12 +66,15 @@ function renderAdminInsights(d){
 
     "<div class='grid two-col' style='margin-top:16px'>"+
       "<div class='card panel'><div class='panel-head'><div><h2 class='panel-title'>Current patient flow</h2><div style='font-size:12px;color:var(--muted)'>Today's live queue.</div></div></div>"+
-        "<div class='grid stats' style='grid-template-columns:repeat(4,1fr)'>"+
+        "<div class='grid stats' style='grid-template-columns:repeat(3,1fr)'>"+
           statCard("Active queue",q.active_queue||0,"today")+
           statCard("Waiting",q.waiting||0,"reception")+
           statCard("Vitals",q.vitals||0,"nurse")+
           statCard("Doctor room",q.doctor_room||0,"consultation")+
+          statCard("Lab",q.lab||0,"diagnostics")+
+          statCard("Pharmacy",q.pharmacy||0,"dispensing")+
         "</div>"+
+        "<div style='margin-top:12px;padding:10px 12px;border-radius:10px;background:"+(Number(q.oldest_waiting_minutes||0)>=30?"#fff4e5":"var(--surface-2)")+";color:"+(Number(q.oldest_waiting_minutes||0)>=30?"#8a5a00":"var(--text)")+";font-size:12px'><strong>Oldest waiting: "+(q.oldest_waiting_minutes||0)+" min</strong>"+(Number(q.oldest_waiting_minutes||0)>=30?" · Attention needed":"")+"</div>"+
       "</div>"+
       "<div class='card panel'><div class='panel-head'><div><h2 class='panel-title'>Patient base</h2><div style='font-size:12px;color:var(--muted)'>Hospital-wide current status.</div></div></div>"+
         "<div class='grid stats' style='grid-template-columns:repeat(3,1fr)'>"+
