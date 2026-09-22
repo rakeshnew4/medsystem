@@ -14,7 +14,7 @@ export default async function(req,res){
              p.name AS patient_name,p.phone,
              d.name AS doctor_name,d.specialty,d.consultation_fee,
              h.name AS hospital_name,h.phone AS hospital_phone,h.address,h.public_slug,
-             vs.provider AS video_provider,vs.status AS video_session_status,vs.room_name,vs.join_token
+             vs.provider AS video_provider,vs.status AS video_session_status,vs.room_name
       FROM appointments a
       JOIN patients p ON p.id=a.patient_id
       JOIN doctors d ON d.id=a.doctor_id
