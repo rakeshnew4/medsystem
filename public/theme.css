@@ -23,9 +23,18 @@ button,input,select,textarea{font:inherit}
 .brand-mark{width:38px;height:38px;border-radius:12px;background:#8de0c5;color:#10372e;display:grid;place-items:center;font-weight:800}
 .brand-title{font-family:'Manrope';font-weight:800;letter-spacing:-.02em}
 .brand-sub{font-size:11px;opacity:.65}
-.nav{display:grid;gap:6px}
-.nav button{border:0;background:transparent;color:#dceee9;text-align:left;padding:12px 12px;border-radius:10px;cursor:pointer}
+.nav{display:grid;gap:5px}
+.nav button{border:0;background:transparent;color:#dceee9;text-align:left;padding:11px 12px;border-radius:10px;cursor:pointer}
 .nav button.active,.nav button:hover{background:rgba(255,255,255,.10);color:#fff}
+.nav-group{display:grid;gap:2px}
+.nav-group-toggle{width:100%;display:flex!important;justify-content:space-between;align-items:center;font-weight:700;opacity:.9}
+.nav-group-toggle span{font-size:12px;transition:transform .15s}
+.nav-group.open .nav-group-toggle span{transform:rotate(180deg)}
+.nav-sub{display:grid;gap:2px;padding-left:8px;border-left:1px solid rgba(255,255,255,.12);margin-left:8px}
+.nav-sub button{padding:8px 10px;font-size:13px}
+.nav-link{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#dceee9;text-decoration:none;padding:8px 10px;border-radius:10px;font-size:13px}
+.nav-link:hover{background:rgba(255,255,255,.10);color:#fff}
+.nav-link small{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#8de0c5;border:1px solid rgba(141,224,197,.35);padding:2px 5px;border-radius:5px}
 .sidebar-footer{margin-top:auto;padding:12px 8px;font-size:11px;opacity:.62}
 .main{padding:28px;max-width:1500px;width:100%;margin:0 auto}
 .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:24px}

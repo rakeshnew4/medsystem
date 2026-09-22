@@ -10,22 +10,59 @@
 <aside class="sidebar">
   <div class="brand"><div class="brand-mark">+</div><div><div class="brand-title">CareFlow</div><div class="brand-sub">Hospital Operations</div></div></div>
   <nav class="nav">
-    <button class="active" data-section="dashboard">Overview</button>
-    <button data-section="queue">Queue board</button>
-    <button data-section="doctor-room">Doctor Room</button>
-    <button data-section="appointments">Appointments</button>
-    <button data-section="patients">Patients</button>
-    <button data-section="doctors">Doctors</button>
-    <button data-section="beds">Beds & admissions</button>
-    <button data-section="followups">Follow-ups</button>
-    <button data-section="billing">Billing</button>
-    <button data-section="lab">Lab</button>
-    <button data-section="pharmacy">Pharmacy</button>
-    <button data-section="display">Displays & ads</button>
-    <button data-section="analytics">Admin insights</button>
-    <button data-section="staff">Staff</button>
-    <button data-section="communication">Staff communication</button>
-    <button data-section="setup">Hospital setup</button>
+    <button class="active nav-home" data-section="dashboard">Overview</button>
+
+    <div class="nav-group open">
+      <button class="nav-group-toggle" onclick="toggleNavGroup(this)">Front desk <span>⌄</span></button>
+      <div class="nav-sub">
+        <button data-section="queue">Queue board</button>
+        <button data-section="appointments">Appointments</button>
+        <button data-section="patients">Patients</button>
+        <button data-section="followups">Follow-ups</button>
+        <a class="nav-link" href="/patient/" target="_blank" rel="noopener">Patient portal <small>Test</small></a>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <button class="nav-group-toggle" onclick="toggleNavGroup(this)">Clinical <span>⌄</span></button>
+      <div class="nav-sub">
+        <button data-section="doctor-room">Doctor Room</button>
+        <button data-section="doctors">Doctors</button>
+        <button data-section="lab">Lab</button>
+        <button data-section="pharmacy">Pharmacy</button>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <button class="nav-group-toggle" onclick="toggleNavGroup(this)">Inpatient care <span>⌄</span></button>
+      <div class="nav-sub">
+        <button data-section="beds">Beds & admissions</button>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <button class="nav-group-toggle" onclick="toggleNavGroup(this)">Finance <span>⌄</span></button>
+      <div class="nav-sub">
+        <button data-section="billing">Billing & payments</button>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <button class="nav-group-toggle" onclick="toggleNavGroup(this)">Operations <span>⌄</span></button>
+      <div class="nav-sub">
+        <button data-section="analytics">Admin insights</button>
+        <button data-section="communication">Staff communication</button>
+        <button data-section="display">Displays & ads</button>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <button class="nav-group-toggle" onclick="toggleNavGroup(this)">Administration <span>⌄</span></button>
+      <div class="nav-sub">
+        <button data-section="staff">Staff & access</button>
+        <button data-section="setup">Hospital setup</button>
+      </div>
+    </div>
   </nav>
   <div class="sidebar-footer">Staff workspace · Clinical records are documentation tools; clinical decisions remain with qualified clinicians.</div>
 </aside>
@@ -174,7 +211,8 @@ function restoreSection(){
   showSection(id,false);
 }
 window.addEventListener('hashchange',restoreSection);
-document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>showSection(b.dataset.section));
+function toggleNavGroup(btn){const group=btn.closest('.nav-group');group.classList.toggle('open')}
+document.querySelectorAll('.nav-sub button[data-section]').forEach(b=>b.onclick=()=>showSection(b.dataset.section));
 function openModal(id){document.getElementById(id).classList.add('open')} function closeModal(id){document.getElementById(id).classList.remove('open')}
 function prettyStatus(s){
  const map={waiting:'Waiting',vitals:'Vitals pending',doctor:'With doctor',lab:'Lab pending',followup:'Follow-up',pharmacy:'Pharmacy',completed:'Completed',no_show:'No-show',cancelled:'Cancelled',pending:'Pending',checked_in:'Checked in',active:'Active',inactive:'Inactive',open:'Open',in_progress:'In progress',paid:'Paid',partial:'Part paid',unpaid:'Unpaid',ipd:'IPD',opd:'OPD',normal:'Normal',high:'High',urgent:'Urgent',registered:'Registered'};
