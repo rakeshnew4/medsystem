@@ -19,6 +19,8 @@
     <button data-section="beds">Beds & admissions</button>
     <button data-section="followups">Follow-ups</button>
     <button data-section="billing">Billing</button>
+    <button data-section="lab">Lab</button>
+    <button data-section="pharmacy">Pharmacy</button>
     <button data-section="analytics">Admin insights</button>
     <button data-section="staff">Staff</button>
     <button data-section="communication">Staff communication</button>
@@ -75,7 +77,9 @@
 <section id="doctors" class="section"><div class="card panel"><div class="panel-head"><h2 class="panel-title">Doctors</h2><button class="btn primary" onclick="openModal('doctorModal')">+ Add doctor</button></div><div id="doctorsTable" class="table-wrap"></div></div></section>
 <section id="followups" class="section"><div class="card panel"><div class="panel-head"><h2 class="panel-title">Follow-ups</h2><button class="btn primary" onclick="openModal('followupModal')">+ Add follow-up</button></div><div id="followupsTable" class="table-wrap"></div></div></section>
 <section id="billing" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Billing & payments</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Simple invoice, paid/partial/unpaid tracking and outstanding dues.</div></div><button class="btn primary" onclick="openModal('billingModal')">+ New invoice</button></div><div id="billingTable" class="table-wrap"></div></div></section>
-<section id="analytics" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Admin insights</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Hospital-level operational dashboard. Filter by date, department, or doctor.</div></div><button class="btn" onclick="loadAnalytics()">Refresh</button></div><div id="analyticsContent" style="margin-top:16px"></div></div></section>
+<section id="analytics" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Admin insights</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Hospital-level operational dashboard. Find bottlenecks, affected patients and actions.</div></div><button class="btn" onclick="loadAnalytics()">Refresh</button></div><div id="analyticsContent" style="margin-top:16px"></div></div><div class="card panel" style="margin-top:16px"><div class="panel-head"><div><h2 class="panel-title">Operations action queue</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Turn a bottleneck into an assigned action and measure whether it is resolved.</div></div><button class="btn primary" onclick="createOpsTask()">+ Assign action</button></div><div id="opsTasks" class="table-wrap"></div></div></section>
+<section id="lab" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Lab investigations</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Order → payment → sample → processing → verification → doctor review.</div></div><button class="btn" onclick="loadLab()">Refresh</button></div><div id="labTable" class="table-wrap" style="margin-top:12px"></div></div></section>
+<section id="pharmacy" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Pharmacy</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Prescription → dispensing → patient exit.</div></div><button class="btn" onclick="loadPharmacy()">Refresh</button></div><div id="pharmacyTable" class="table-wrap" style="margin-top:12px"></div></div></section>
 
 <section id="beds" class="section">
   <div class="card panel">
@@ -132,12 +136,12 @@
 <script src="/analytics.js"></script>
 <script>
 const API='/api';
-let state={dashboard:null,patients:[],doctors:[],appointments:[],followups:[],queue:[],beds:[],billing:[],staff:[],permissionCatalog:[],rolePermissions:[],queueView:'kanban',session:null,doctorRoom:null,doctorRoomTab:'waiting',doctorRoomPatient:null,hospitalConfig:null,communication:null,activeConversation:null,callPeer:null,callId:null,callTimer:null};
+let state={dashboard:null,patients:[],doctors:[],appointments:[],followups:[],queue:[],beds:[],billing:[],lab:[],pharmacy:[],opsTasks:[],staff:[],permissionCatalog:[],rolePermissions:[],queueView:'kanban',session:null,doctorRoom:null,doctorRoomTab:'waiting',doctorRoomPatient:null,hospitalConfig:null,communication:null,activeConversation:null,callPeer:null,callId:null,callTimer:null};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtTime=t=>t?String(t).slice(0,5):'';
 const fmtDate=d=>d?new Date(String(d).slice(0,10)+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
 async function api(path,opts={}){const r=await fetch(API+path,{headers:{'Content-Type':'application/json'},...opts});let j={};try{j=await r.json()}catch{}if(!r.ok)throw Object.assign(Error(j.error||'Request failed'),{status:r.status,data:j});return j}
-const VALID_SECTIONS=['dashboard','queue','doctor-room','appointments','patients','doctors','beds','followups','billing','analytics','staff','communication','setup'];
+const VALID_SECTIONS=['dashboard','queue','doctor-room','appointments','patients','doctors','beds','followups','billing','lab','pharmacy','analytics','staff','communication','setup'];
 function showSection(id,updateUrl=true){
   if(!VALID_SECTIONS.includes(id))id='dashboard';
   try{localStorage.setItem('careflow:lastSection',id)}catch(e){}
@@ -146,7 +150,7 @@ function showSection(id,updateUrl=true){
   document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
   section.classList.add('active');
   document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.section===id));
-  const titles={dashboard:'Hospital overview',queue:'Patient queue','doctor-room':'Doctor Room',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',analytics:'Admin insights',staff:'Staff',communication:'Staff communication',setup:'Hospital setup'};
+  const titles={dashboard:'Hospital overview',queue:'Patient queue','doctor-room':'Doctor Room',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',lab:'Lab investigations',pharmacy:'Pharmacy',analytics:'Admin insights',staff:'Staff',communication:'Staff communication',setup:'Hospital setup'};
   document.getElementById('pageTitle').textContent=titles[id]||id;
   if(updateUrl && location.hash!=='#'+id)history.replaceState(null,'','#'+id);
   if(id==='setup' && can('action.setup.manage'))loadHospitalConfig();if(id==='communication' && can('action.communication.use'))loadCommunication();
@@ -177,7 +181,7 @@ async function checkSession(){
 }
 function can(p){return !!(state.session?.permissions?.[p])}
 function applyPermissions(){
-  const pageMap={dashboard:'page.dashboard',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup'};
+  const pageMap={dashboard:'page.dashboard',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',pharmacy:'action.pharmacy.manage',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup'};
   document.querySelectorAll('.nav button').forEach(b=>{const p=pageMap[b.dataset.section];b.style.display=can(p)?'':'none'});
   document.querySelectorAll('button').forEach(b=>{
     if(b.closest('.modal'))return;
@@ -204,7 +208,7 @@ async function loadAll(){
     if(!setup){if(can('page.setup'))showSection('setup');document.getElementById('stats').innerHTML='<div class="card panel empty" style="grid-column:1/-1">Hospital setup is required. Ask the administrator to complete it.</div>';return}
     const p=state.session.permissions||{};
     const get=(perm,path,fallback)=>p[perm]?api(path):Promise.resolve(fallback);
-    [state.dashboard,state.patients,state.doctors,state.appointments,state.followups,state.queue,state.doctorRoom,state.beds,state.billing]=await Promise.all([
+    [state.dashboard,state.patients,state.doctors,state.appointments,state.followups,state.queue,state.doctorRoom,state.beds,state.billing,state.lab,state.pharmacy]=await Promise.all([
       get('page.dashboard','/dashboard',{hospital:setup,stats:{},appointments:[],followups:[],enquiries:[]}),
       get('page.patients','/patients',[]),
       get('page.doctors','/doctors',[]),
@@ -213,8 +217,11 @@ async function loadAll(){
       get('page.queue','/queue',[]),
       get('action.clinical.view','/doctor-room',null),
       get('page.beds','/beds',[]),
-      get('page.billing','/billing',[])
+      get('page.billing','/billing',[]),
+      get('action.clinical.view','/lab',[]),
+      get('action.pharmacy.manage','/pharmacy',[])
     ]);
+    state.opsTasks=can('page.admin_insights')?await api('/ops-tasks').catch(()=>[]):[];
     if(state.session.staff?.role==='admin'){
       state.staff=await api('/team');
       const pm=await api('/permissions');state.permissionCatalog=pm.permissions;state.rolePermissions=pm.roles;
@@ -223,6 +230,26 @@ async function loadAll(){
     renderAll();populateSelects();applyPermissions();if(can('page.admin_insights'))loadAnalytics();if(can('page.dashboard')&&can('action.ai.use'))loadAIOpsBrief();if(can('action.communication.use')){loadCommunication();loadAvailability()}if(state.session.staff?.role==='doctor'||state.session.staff?.role==='admin')renderDoctorRoom();
     restoreSection();
   }catch(e){if(e.status===401){location.replace('/login?next='+encodeURIComponent(location.pathname));return}if(e.status===403){console.error(e);return}console.error(e);alert(e.message)}
+}
+async function loadOpsTasks(){try{state.opsTasks=await api('/ops-tasks');renderOpsTasks()}catch(e){if(e.status!==403)alert(e.message)}}
+async function createOpsTask(){const title=prompt('Action title:');if(!title)return;const department=prompt('Responsible department:')||'';const patientList=(state.patients||[]).slice(0,80).map(p=>p.id+': '+p.name).join('\n');const patientPick=prompt('Affected patient ID (optional):\n\n'+patientList,'')||'';const staffList=(state.staff||[]).filter(s=>s.active).map(s=>s.id+': '+s.display_name+' · '+s.role).join('\n');const staffPick=prompt('Assign staff ID (optional):\n\n'+staffList,'')||'';const priority=prompt('Priority (normal/high/urgent):','high')||'high';try{await api('/ops-tasks',{method:'POST',body:JSON.stringify({title,department,priority,patient_id:patientPick?Number(patientPick):null,assigned_staff_id:staffPick?Number(staffPick):null})});await loadOpsTasks()}catch(e){alert(e.message)}}
+async function updateOpsTask(id,status){try{await api('/ops-tasks',{method:'PUT',body:JSON.stringify({id,status})});await loadOpsTasks()}catch(e){alert(e.message)}}
+function renderOpsTasks(){const el=document.getElementById('opsTasks');if(!el)return;const rows=state.opsTasks||[];el.innerHTML=table(rows,['Action','Department','Priority','Status','Assigned','Due','Next'],x=>'<td>'+esc(x.title)+'</td><td>'+esc(x.department||'—')+'</td><td>'+status(x.priority)+'</td><td>'+status(x.status)+'</td><td>'+esc(x.assignee_name||'Unassigned')+'</td><td>'+esc(x.due_at?new Date(x.due_at).toLocaleString('en-IN'):'—')+'</td><td>'+(x.status==='open'?'<button class="mini" onclick="updateOpsTask('+x.id+',\'in_progress\')">Start</button>':x.status==='in_progress'?'<button class="mini" onclick="updateOpsTask('+x.id+',\'completed\')">Resolve</button>':'Resolved')+'</td>')}
+async function loadLab(){try{state.lab=await api('/lab');renderLab()}catch(e){if(e.status!==403)alert(e.message)}}
+async function createLabPayment(x){const amount=Number(prompt('Investigation charge (₹):','500'));if(!amount)return;try{const inv=await api('/billing',{method:'POST',body:JSON.stringify({patient_id:x.patient_id,items:[{description:x.test_name,quantity:1,unit_price:amount}],paid:0,payment_method:'cash',notes:'Lab investigation'})});await api('/lab',{method:'PUT',body:JSON.stringify({id:x.id,invoice_id:inv.id})});alert('Invoice '+inv.invoice_number+' created. Collect payment before sample collection.');await loadLab()}catch(e){alert(e.message)}}
+async function collectLabPayment(x){const amount=Number(prompt('Payment received (₹):',String(x.invoice_total||0)));if(!amount)return;try{await api('/billing',{method:'PUT',body:JSON.stringify({id:x.invoice_id,paid:amount,payment_method:'cash'})});await loadLab()}catch(e){alert(e.message)}}
+async function updateLab(id,status,result){try{await api('/lab',{method:'PUT',body:JSON.stringify({id,status,result_summary:result||undefined})});await loadLab();await loadAll()}catch(e){alert(e.message)}}
+function renderLab(){
+ const rows=state.lab||[];
+ const next={ordered:'sample_collected',sample_collected:'processing',processing:'verified'};
+ document.getElementById('labTable').innerHTML=table(rows,['Patient','Test','Doctor','Status','Payment','Result','Next action'],x=>'<td><button class="record-link" onclick="openClinical('+x.patient_id+')"><strong>'+esc(x.patient_name)+'</strong></button></td><td>'+esc(x.test_name)+'</td><td>'+esc(x.doctor_name||'—')+'</td><td>'+status(x.status)+'</td><td>'+(x.invoice_id?(status(x.invoice_status||'unpaid')+' <button class="mini" onclick="collectLabPayment('+JSON.stringify(x).replace(/"/g,'&quot;')+')">Collect</button>'):'<button class="mini" onclick="createLabPayment('+JSON.stringify(x).replace(/"/g,'&quot;')+')">Create bill</button>')+'</td><td>'+esc(x.result_summary||'Pending')+'</td><td>'+(next[x.status]?'<button class="mini" onclick="updateLab('+x.id+',\''+next[x.status]+'\')">'+(next[x.status]==='sample_collected'?'Mark sample':next[x.status]==='processing'?'Start processing':'Verify result')+'</button>':'Doctor notified / review')+'</td>');
+}
+async function loadPharmacy(){try{state.pharmacy=await api('/pharmacy');renderPharmacy()}catch(e){if(e.status!==403)alert(e.message)}}
+async function dispenseMedication(id,pid,enc){const qty=prompt('Quantity dispensed:','1');if(qty===null)return;try{await api('/pharmacy',{method:'POST',body:JSON.stringify({patient_id:pid,medication_id:id,encounter_id:enc||null,quantity:Number(qty)})});await loadPharmacy();await loadAll()}catch(e){alert(e.message)}}
+function renderPharmacy(){
+ const meds=[];(state.patients||[]).forEach(p=>{});
+ const rows=state.pharmacy||[];
+ document.getElementById('pharmacyTable').innerHTML=table(rows,['Patient','Medicine','Dose','Frequency','Duration','Dispensed','Action'],x=>'<td><button class="record-link" onclick="openClinical('+x.patient_id+')"><strong>'+esc(x.patient_name||'—')+'</strong></button></td><td>'+esc(x.medicine_name||'—')+'</td><td>'+esc(x.dose||'—')+'</td><td>'+esc(x.frequency||'—')+'</td><td>'+esc(x.duration||'—')+'</td><td>'+esc(x.dispensed_quantity||0)+'</td><td>'+(x.dispense_status==='pending'?'<button class="mini" onclick="dispenseMedication('+x.medication_id+','+x.patient_id+','+(x.encounter_id||0)+')">Dispense</button>':status(x.dispense_status))+'</td>');
 }
 function renderAll(){
  const d=state.dashboard;if(!d||!d.hospital)return;
@@ -236,7 +263,7 @@ function renderAll(){
  document.getElementById('doctorsTable').innerHTML=table(state.doctors,['Name','Specialty','Phone','Fee'],x=>'<td>'+esc(x.name)+'</td><td>'+esc(x.specialty)+'</td><td>'+esc(x.phone||'—')+'</td><td>'+(x.consultation_fee?'₹'+x.consultation_fee:'—')+'</td>');
  document.getElementById('followupsTable').innerHTML=table(state.followups,['Due','Patient','Doctor','Status'],x=>'<td>'+fmtDate(x.due_date)+'</td><td>'+esc(x.patient_name)+'</td><td>'+esc(x.doctor_name||'—')+'</td><td>'+status(x.status)+'</td>');
  document.getElementById('billingTable').innerHTML=table(state.billing,['Invoice','Date','Patient','Total','Paid','Due','Status'],x=>'<td>'+esc(x.invoice_number)+'</td><td>'+fmtDate(x.created_at)+'</td><td>'+esc(x.patient_name)+'</td><td>₹'+Number(x.total).toFixed(2)+'</td><td>₹'+Number(x.paid).toFixed(2)+'</td><td>₹'+Math.max(0,Number(x.total)-Number(x.paid)).toFixed(2)+'</td><td>'+status(x.status)+'</td>');
- renderQueue();renderBeds();renderStaff();
+ renderQueue();renderBeds();renderStaff();renderLab();renderPharmacy();renderOpsTasks();
  document.getElementById('hospitalName').value=d.hospital.name||'';document.getElementById('hospitalPhone').value=d.hospital.phone||'';document.getElementById('hospitalAddress').value=d.hospital.address||'';document.getElementById('dateLabel').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
 }
 function doctorRoomAge(dob){if(!dob)return '';const d=new Date(String(dob).slice(0,10)+'T00:00:00'),n=new Date();let a=n.getFullYear()-d.getFullYear();if(n.getMonth()<d.getMonth()||(n.getMonth()===d.getMonth()&&n.getDate()<d.getDate()))a--;return a+' yrs'}
@@ -361,9 +388,22 @@ function editBed(id){
   bedModalTitle.textContent='Edit bed';bedSubmit.textContent='Save bed';openModal('bedModal');
 }
 async function discharge(id){
-  const summary=prompt('Discharge summary / notes (optional):')||'';
-  if(!confirm('Discharge this IPD admission and release the bed?'))return;
-  try{await api('/beds',{method:'PUT',body:JSON.stringify({action:'discharge',id,discharge_summary:summary})});await loadAll()}catch(e){alert(e.message)}
+  try{
+    const current=await api('/discharge?admission_id='+id).catch(()=>null);
+    const yes=(label,def=true)=>confirm(label+(def?'':' (optional)'));
+    const clinical=yes('Clinical clearance completed?');
+    const reports=yes('All required reports ready?');
+    const meds=yes('Medication reconciliation completed?');
+    const billing=yes('Billing cleared?');
+    const insurance=prompt('Insurance/TPA status: not_applicable / pending / approved','not_applicable')||'not_applicable';
+    const payment=insurance==='approved'?'approved':(prompt('Final payment status: paid / pending','paid')||'pending');
+    const medicines=prompt('Discharge medicines / instructions (optional):','')||'';
+    const summary=prompt('Discharge summary / notes (optional):','')||'';
+    if(!clinical||!reports||!meds||!billing||!['paid','approved'].includes(payment)){alert('Discharge cannot be completed until clinical clearance, reports, medication reconciliation, billing and final payment/approval are complete.');return}
+    await api('/discharge',{method:current?'PUT':'POST',body:JSON.stringify({admission_id:id,clinical_clearance:clinical,reports_ready:reports,medication_reconciled:meds,billing_cleared:billing,insurance_status:insurance,payment_status:payment,discharge_medicines:medicines,summary})});
+    if(!confirm('Checklist complete. Discharge this patient and release the bed?'))return;
+    await api('/beds',{method:'PUT',body:JSON.stringify({action:'discharge',id,discharge_summary:summary})});await loadAll()
+  }catch(e){alert(e.message)}
 }
 async function editIPDAdmission(id){
   const r=await api('/ipd?admission_id='+id);const a=r.admissions?.[0];if(!a)return;
