@@ -236,7 +236,7 @@ async function loadAll(){
       get('page.beds','/beds',[]),
       get('page.billing','/billing',[]),
       get('action.clinical.view','/lab',[]),
-      get('action.pharmacy.manage','/pharmacy',[]),get('page.setup','/display-admin',{devices:[],campaigns:[],summary:{}})
+      get('action.pharmacy.manage','/pharmacy',[]),get('page.setup','/display-admin',{devices:[],campaigns:[],summary:{}}).catch(()=>({devices:[],campaigns:[],summary:{}}))
     ]);
     state.displayAdmin=state.displayAdmin||{devices:[],campaigns:[],summary:{}};
     state.opsTasks=can('page.admin_insights')?await api('/ops-tasks').catch(()=>[]):[];

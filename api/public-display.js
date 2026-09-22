@@ -6,6 +6,7 @@ export const methods = ["GET"];
 export default async function(req,res){
   const code=String(req.query?.device||"").trim();
   if(!code)return res.status(400).json({error:"device is required"});
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(code))return res.status(400).json({error:"Invalid display device code"});
   const d=await db.query("SELECT d.id,d.hospital_id,d.name,d.location,d.token_percent,d.ad_percent,d.ad_rotation_seconds,d.show_next_tokens,d.show_sound,h.name AS hospital_name FROM display_devices d JOIN hospitals h ON h.id=d.hospital_id WHERE d.device_code=$1 AND d.enabled=true LIMIT 1",[code]);
   if(!d.rows[0])return res.status(404).json({error:"Display not found or disabled"});
   const device=d.rows[0];
