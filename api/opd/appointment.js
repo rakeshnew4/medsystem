@@ -6,6 +6,7 @@ export const methods=["GET","PUT"];
 export default async function(req,res){
   const token=String(req.query?.token||req.body?.token||"").trim();
   if(!token)return res.status(400).json({error:"Booking token is required"});
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(token))return res.status(404).json({error:"Booking not found"});
 
   if(req.method==="GET"){
     const q=await db.query(`

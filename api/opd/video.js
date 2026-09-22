@@ -12,6 +12,7 @@ function allowedWindow(date,time){
 export default async function(req,res){
   const token=String(req.query?.token||req.body?.token||"").trim();
   if(!token)return res.status(400).json({error:"Appointment token is required"});
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(token))return res.status(404).json({error:"Video appointment not found"});
   const q=await db.query(`
     SELECT a.id,a.status,a.consultation_type,a.appointment_date,a.appointment_time,p.name AS patient_name,
            d.name AS doctor_name,d.specialty,h.name AS hospital_name,

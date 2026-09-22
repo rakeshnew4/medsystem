@@ -25,6 +25,18 @@ export default async function(req,res){
   if(type==="online"&&!doctor.rows[0].online_consultation_enabled)return res.status(400).json({error:"Online consultation is not enabled for this doctor"});
 
   const date=String(b.appointment_date),time=String(b.appointment_time).slice(0,5);
+  const dt=new Date(date+"T12:00:00Z"),dow=dt.getUTCDay();
+  const [rules,exceptions]=await Promise.all([
+    db.query("SELECT start_time,end_time,slot_duration_minutes FROM doctor_availability_rules WHERE hospital_id=$1 AND doctor_id=$2 AND day_of_week=$3 AND active=true AND (appointment_type=$4 OR appointment_type='opd') ORDER BY start_time",[h.id,b.doctor_id,dow,type==="online"?"online":"opd"]),
+    db.query("SELECT start_time,end_time,exception_type FROM doctor_availability_exceptions WHERE hospital_id=$1 AND doctor_id=$2 AND exception_date=$3",[h.id,b.doctor_id,date])
+  ]);
+  const toMin=t=>{const p=String(t).slice(0,5).split(":").map(Number);return p[0]*60+p[1]};
+  const tm=toMin(time);
+  let valid=!rules.rows.length;
+  if(!rules.rows.length)valid=tm>=540&&tm<1080;
+  else valid=rules.rows.some(r=>tm>=toMin(r.start_time)&&tm<toMin(r.end_time));
+  for(const e of exceptions.rows)if(["leave","unavailable","closed"].includes(String(e.exception_type).toLowerCase())){const s=e.start_time?toMin(e.start_time):0,en=e.end_time?toMin(e.end_time):1440;if(tm>=s&&tm<en)valid=false}
+  if(!valid)return res.status(409).json({error:"Doctor is not available for this time slot"});
   const conflict=await db.query("SELECT id FROM appointments WHERE hospital_id=$1 AND doctor_id=$2 AND appointment_date=$3 AND appointment_time=$4 AND status <> 'cancelled' LIMIT 1",[h.id,b.doctor_id,date,time]);
   if(conflict.rows[0])return res.status(409).json({error:"That slot is already booked. Please choose another time."});
 
