@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CareFlow — Choose portal</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#f3f7f5;color:#17322a;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:grid;place-items:center}
+.wrap{width:min(900px,calc(100% - 28px));padding:28px 0}.brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}.mark{width:46px;height:46px;border-radius:14px;background:#173f31;color:#fff;display:grid;place-items:center;font-weight:900;font-size:19px}.brand b{font-size:23px}.muted{color:#71817b;font-size:13px}
+.card{background:#fff;border:1px solid #dce7e1;border-radius:24px;padding:28px;box-shadow:0 18px 50px rgba(23,63,49,.09)}h1{font-size:30px;margin:0 0 8px}.intro{margin:0 0 24px;color:#667870;line-height:1.5}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#eef4f1;padding:6px;border-radius:15px}.tab{border:0;background:transparent;padding:13px;border-radius:11px;font-weight:800;color:#496057;cursor:pointer;font-size:15px}.tab.active{background:#fff;color:#173f31;box-shadow:0 3px 12px rgba(23,63,49,.08)}.panel{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:22px}.choice{border:1px solid #dce7e1;border-radius:18px;padding:22px;transition:.15s}.choice:hover{border-color:#9cb9aa;transform:translateY(-1px)}.icon{font-size:28px}.choice h2{margin:12px 0 7px;font-size:20px}.choice p{margin:0 0 16px;color:#667870;font-size:13px;line-height:1.5}.btn{display:inline-block;text-decoration:none;border:0;border-radius:11px;padding:12px 16px;font-weight:800;background:#173f31;color:#fff}.secondary{background:#eef4f1;color:#315248}@media(max-width:650px){.panel{grid-template-columns:1fr}.card{padding:20px}h1{font-size:25px}}
+</style></head><body><main class="wrap">
+<div class="brand"><div class="mark">+</div><div><b>CareFlow</b><div class="muted">Hospital Operations</div></div></div>
+<section class="card"><h1>Welcome to CareFlow</h1><p class="intro">Choose how you want to use the hospital portal.</p>
+<div class="tabs"><button class="tab active" id="staffTab" onclick="show('staff')">Staff</button><button class="tab" id="patientTab" onclick="show('patient')">Patients</button></div>
+<div class="panel">
+<div class="choice"><div class="icon">🏥</div><h2>Staff workspace</h2><p>Reception, doctors, nurses, lab, pharmacy, billing, admissions and hospital operations.</p><a class="btn" href="/login?next=/">Staff sign in</a></div>
+<div class="choice"><div class="icon">👤</div><h2>Patient portal</h2><p>Book an appointment, manage your booking, track your OPD token and join an online consultation.</p><a class="btn" href="/patient/">Open patient portal</a></div>
+</div></section>
+</main><script>
+function show(t){staffTab.classList.toggle('active',t==='staff');patientTab.classList.toggle('active',t==='patient');}
+</script></body></html>
