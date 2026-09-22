@@ -21,6 +21,7 @@
     <button data-section="billing">Billing</button>
     <button data-section="lab">Lab</button>
     <button data-section="pharmacy">Pharmacy</button>
+    <button data-section="display">Displays & ads</button>
     <button data-section="analytics">Admin insights</button>
     <button data-section="staff">Staff</button>
     <button data-section="communication">Staff communication</button>
@@ -80,6 +81,13 @@
 <section id="analytics" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Admin insights</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Hospital-level operational dashboard. Find bottlenecks, affected patients and actions.</div></div><button class="btn" onclick="loadAnalytics()">Refresh</button></div><div id="analyticsContent" style="margin-top:16px"></div></div><div class="card panel" style="margin-top:16px"><div class="panel-head"><div><h2 class="panel-title">Operations action queue</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Turn a bottleneck into an assigned action and measure whether it is resolved.</div></div><button class="btn primary" onclick="createOpsTask()">+ Assign action</button></div><div id="opsTasks" class="table-wrap"></div></div></section>
 <section id="lab" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Lab investigations</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Order → payment → sample → processing → verification → doctor review.</div></div><button class="btn" onclick="loadLab()">Refresh</button></div><div id="labTable" class="table-wrap" style="margin-top:12px"></div></div></section>
 <section id="pharmacy" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Pharmacy</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Prescription → dispensing → patient exit.</div></div><button class="btn" onclick="loadPharmacy()">Refresh</button></div><div id="pharmacyTable" class="table-wrap" style="margin-top:12px"></div></div></section>
+<section id="display" class="section">
+  <div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Displays & advertising</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Turn waiting-room TVs into live token boards plus hospital or paid local advertising.</div></div><button class="btn" onclick="loadDisplayAdmin()">Refresh</button></div>
+  <div id="displaySummary" class="grid stats" style="margin-top:14px"></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn primary" onclick="createDisplayDevice()">+ Add display</button><button class="btn primary" onclick="createDisplayCampaign()">+ Add advertisement</button></div>
+  <div id="displayDevices" style="margin-top:16px"></div>
+  <div id="displayCampaigns" style="margin-top:16px"></div></div>
+</section>
 
 <section id="beds" class="section">
   <div class="card panel">
@@ -140,12 +148,12 @@
 <script src="/analytics.js"></script>
 <script>
 const API='/api';
-let state={dashboard:null,patients:[],doctors:[],appointments:[],followups:[],queue:[],beds:[],billing:[],lab:[],pharmacy:[],opsTasks:[],staff:[],permissionCatalog:[],rolePermissions:[],queueView:'kanban',session:null,doctorRoom:null,doctorRoomTab:'waiting',doctorRoomPatient:null,hospitalConfig:null,communication:null,activeConversation:null,callPeer:null,callId:null,callTimer:null};
+let state={dashboard:null,patients:[],doctors:[],appointments:[],followups:[],queue:[],beds:[],billing:[],lab:[],pharmacy:[],opsTasks:[],staff:[],permissionCatalog:[],rolePermissions:[],queueView:'kanban',session:null,doctorRoom:null,doctorRoomTab:'waiting',doctorRoomPatient:null,hospitalConfig:null,displayAdmin:{devices:[],campaigns:[],summary:{}},communication:null,activeConversation:null,callPeer:null,callId:null,callTimer:null};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtTime=t=>t?String(t).slice(0,5):'';
 const fmtDate=d=>d?new Date(String(d).slice(0,10)+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
 async function api(path,opts={}){const r=await fetch(API+path,{headers:{'Content-Type':'application/json'},...opts});let j={};try{j=await r.json()}catch{}if(!r.ok)throw Object.assign(Error(j.error||'Request failed'),{status:r.status,data:j});return j}
-const VALID_SECTIONS=['dashboard','queue','doctor-room','appointments','patients','doctors','beds','followups','billing','lab','pharmacy','analytics','staff','communication','setup'];
+const VALID_SECTIONS=['dashboard','queue','doctor-room','appointments','patients','doctors','beds','followups','billing','lab','pharmacy','display','analytics','staff','communication','setup'];
 function showSection(id,updateUrl=true){
   if(!VALID_SECTIONS.includes(id))id='dashboard';
   try{localStorage.setItem('careflow:lastSection',id)}catch(e){}
@@ -154,7 +162,7 @@ function showSection(id,updateUrl=true){
   document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
   section.classList.add('active');
   document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.section===id));
-  const titles={dashboard:'Hospital overview',queue:'Patient queue','doctor-room':'Doctor Room',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',lab:'Lab investigations',pharmacy:'Pharmacy',analytics:'Admin insights',staff:'Staff',communication:'Staff communication',setup:'Hospital setup'};
+  const titles={dashboard:'Hospital overview',queue:'Patient queue','doctor-room':'Doctor Room',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',lab:'Lab investigations',pharmacy:'Pharmacy',display:'Displays & ads',analytics:'Admin insights',staff:'Staff',communication:'Staff communication',setup:'Hospital setup'};
   document.getElementById('pageTitle').textContent=titles[id]||id;
   if(updateUrl && location.hash!=='#'+id)history.replaceState(null,'','#'+id);
   if(id==='setup' && can('action.setup.manage'))loadHospitalConfig();if(id==='communication' && can('action.communication.use'))loadCommunication();
@@ -190,7 +198,7 @@ async function checkSession(){
 }
 function can(p){return !!(state.session?.permissions?.[p])}
 function applyPermissions(){
-  const pageMap={dashboard:'page.dashboard',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',pharmacy:'action.pharmacy.manage',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup'};
+  const pageMap={dashboard:'page.dashboard',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',pharmacy:'action.pharmacy.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup'};
   document.querySelectorAll('.nav button').forEach(b=>{const p=pageMap[b.dataset.section];b.style.display=can(p)?'':'none'});
   document.querySelectorAll('button').forEach(b=>{
     if(b.closest('.modal'))return;
@@ -217,7 +225,7 @@ async function loadAll(){
     if(!setup){if(can('page.setup'))showSection('setup');document.getElementById('stats').innerHTML='<div class="card panel empty" style="grid-column:1/-1">Hospital setup is required. Ask the administrator to complete it.</div>';return}
     const p=state.session.permissions||{};
     const get=(perm,path,fallback)=>p[perm]?api(path):Promise.resolve(fallback);
-    [state.dashboard,state.patients,state.doctors,state.appointments,state.followups,state.queue,state.doctorRoom,state.beds,state.billing,state.lab,state.pharmacy]=await Promise.all([
+    [state.dashboard,state.patients,state.doctors,state.appointments,state.followups,state.queue,state.doctorRoom,state.beds,state.billing,state.lab,state.pharmacy,state.displayAdmin]=await Promise.all([
       get('page.dashboard','/dashboard',{hospital:setup,stats:{},appointments:[],followups:[],enquiries:[]}),
       get('page.patients','/patients',[]),
       get('page.doctors','/doctors',[]),
@@ -228,9 +236,11 @@ async function loadAll(){
       get('page.beds','/beds',[]),
       get('page.billing','/billing',[]),
       get('action.clinical.view','/lab',[]),
-      get('action.pharmacy.manage','/pharmacy',[])
+      get('action.pharmacy.manage','/pharmacy',[]),get('page.setup','/display-admin',{devices:[],campaigns:[],summary:{}})
     ]);
+    state.displayAdmin=state.displayAdmin||{devices:[],campaigns:[],summary:{}};
     state.opsTasks=can('page.admin_insights')?await api('/ops-tasks').catch(()=>[]):[];
+    if(can('page.setup'))renderDisplayAdmin();
     if(state.session.staff?.role==='admin'){
       state.staff=await api('/team');
       const pm=await api('/permissions');state.permissionCatalog=pm.permissions;state.rolePermissions=pm.roles;
@@ -240,6 +250,12 @@ async function loadAll(){
     restoreSection();
   }catch(e){if(e.status===401){location.replace('/login?next='+encodeURIComponent(location.pathname));return}if(e.status===403){console.error(e);return}console.error(e);alert(e.message)}
 }
+async function loadDisplayAdmin(){return api('/display-admin').then(r=>{state.displayAdmin=r;renderDisplayAdmin()}).catch(e=>{if(e.status!==403)alert(e.message)})}
+function createDisplayDevice(){const name=prompt('Display name:','Reception TV');if(!name)return;const location=prompt('Location:','Reception');if(location===null)return;const token=Number(prompt('Token area percentage (0-100):','50'));const ad=100-token;const seconds=Number(prompt('Advertisement rotation seconds:','10'));api('/display-admin',{method:'POST',body:JSON.stringify({type:'device',name,location,token_percent:token,ad_percent:ad,ad_rotation_seconds:seconds})}).then(loadDisplayAdmin).catch(e=>alert(e.message))}
+function updateDisplayDevice(d){const token=Number(prompt('Token area percentage (0-100):',String(d.token_percent)));if(Number.isNaN(token))return;const seconds=Number(prompt('Advertisement rotation seconds:',String(d.ad_rotation_seconds)));if(Number.isNaN(seconds))return;api('/display-admin',{method:'PUT',body:JSON.stringify({...d,type:'device',token_percent:Math.max(0,Math.min(100,token)),ad_percent:100-Math.max(0,Math.min(100,token)),ad_rotation_seconds:seconds})}).then(loadDisplayAdmin).catch(e=>alert(e.message))}
+function createDisplayCampaign(){const advertiser=prompt('Advertiser / business name:');if(!advertiser)return;const title=prompt('Advertisement title:');if(!title)return;const body=prompt('Advertisement message (optional):','');const type=prompt('Media type: text / image / video','text')||'text';const media=type==='text'?'':prompt('Public media URL (optional):','');const click=prompt('Click URL (optional):','')||'';const price=Number(prompt('Monthly price charged (₹):','0'));api('/display-admin',{method:'POST',body:JSON.stringify({type:'campaign',advertiser_name:advertiser,title,body,media_type:type,media_url:media,click_url:click,monthly_price:price})}).then(loadDisplayAdmin).catch(e=>alert(e.message))}
+function renderDisplayAdmin(){const d=state.displayAdmin||{devices:[],campaigns:[],summary:{}};const s=d.summary||{};const sum=document.getElementById('displaySummary');if(!sum)return;sum.innerHTML=[['Displays',d.devices.length,'Configured screens'],['Active ads',d.campaigns.filter(x=>x.active).length,'Running campaigns'],['30-day impressions',s.impressions||0,'Recorded display rotations'],['Campaigns',s.campaigns||0,'With impressions in 30 days']].map(x=>'<div class="card stat"><div class="stat-label">'+x[0]+'</div><div class="stat-value">'+x[1]+'</div><div class="stat-note">'+x[2]+'</div></div>').join('');document.getElementById('displayDevices').innerHTML='<div class="panel-head"><h3 class="panel-title">Screens</h3></div>'+table(d.devices,['Display','Location','Split','Rotation','Status','Display URL'],x=>'<td><strong>'+esc(x.name)+'</strong><div class="muted">'+esc(x.device_code)+'</div></td><td>'+esc(x.location||'—')+'</td><td>'+x.token_percent+'% tokens / '+x.ad_percent+'% ads</td><td>'+x.ad_rotation_seconds+' sec</td><td>'+status(x.enabled?'active':'inactive')+'</td><td><button class="mini" onclick="copyDisplayUrl(\''+x.device_code+'\')">Copy URL</button> <button class="mini" onclick="updateDisplayDevice('+JSON.stringify(x).replace(/"/g,'&quot;')+')">Adjust</button></td>');document.getElementById('displayCampaigns').innerHTML='<div class="panel-head"><h3 class="panel-title">Advertisements</h3></div>'+table(d.campaigns,['Advertiser','Creative','Type','Price','Hospital share','Status'],x=>'<td>'+esc(x.advertiser_name)+'</td><td><strong>'+esc(x.title)+'</strong><div class="muted">'+esc(x.body||'')+'</div></td><td>'+esc(x.media_type)+'</td><td>₹'+Number(x.monthly_price||0).toLocaleString('en-IN')+'/month</td><td>'+Number(x.hospital_share_percent||0)+'%</td><td>'+status(x.active?'active':'inactive')+'</td>')}
+function copyDisplayUrl(code){const url=location.origin+'/display/?device='+encodeURIComponent(code);if(navigator.clipboard)navigator.clipboard.writeText(url).then(()=>alert('Display URL copied:\n'+url));else prompt('Display URL',url)}
 async function loadOpsTasks(){try{state.opsTasks=await api('/ops-tasks');renderOpsTasks()}catch(e){if(e.status!==403)alert(e.message)}}
 async function createOpsTask(){const title=prompt('Action title:');if(!title)return;const department=prompt('Responsible department:')||'';const patientList=(state.patients||[]).slice(0,80).map(p=>p.id+': '+p.name).join('\n');const patientPick=prompt('Affected patient ID (optional):\n\n'+patientList,'')||'';const staffList=(state.staff||[]).filter(s=>s.active).map(s=>s.id+': '+s.display_name+' · '+s.role).join('\n');const staffPick=prompt('Assign staff ID (optional):\n\n'+staffList,'')||'';const priority=prompt('Priority (normal/high/urgent):','high')||'high';try{await api('/ops-tasks',{method:'POST',body:JSON.stringify({title,department,priority,patient_id:patientPick?Number(patientPick):null,assigned_staff_id:staffPick?Number(staffPick):null})});await loadOpsTasks()}catch(e){alert(e.message)}}
 async function updateOpsTask(id,status){try{await api('/ops-tasks',{method:'PUT',body:JSON.stringify({id,status})});await loadOpsTasks()}catch(e){alert(e.message)}}

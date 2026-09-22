@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_display_campaigns_active ON display_campaigns(hospital_id, active, starts_at, ends_at)

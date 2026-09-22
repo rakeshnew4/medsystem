@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_display_impressions_campaign ON display_impressions(hospital_id, campaign_id, displayed_at)

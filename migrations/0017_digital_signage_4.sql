@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_display_devices_hospital ON display_devices(hospital_id, enabled)

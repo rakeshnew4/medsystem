@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS display_impressions (id bigserial PRIMARY KEY, hospital_id bigint NOT NULL REFERENCES hospitals(id) ON DELETE CASCADE, device_id bigint REFERENCES display_devices(id) ON DELETE SET NULL, campaign_id bigint REFERENCES display_campaigns(id) ON DELETE SET NULL, displayed_at timestamp NOT NULL DEFAULT now(), duration_seconds integer NOT NULL DEFAULT 0)
