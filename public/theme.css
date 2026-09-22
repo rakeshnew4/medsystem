@@ -27,6 +27,8 @@ button,input,select,textarea{font:inherit}
 .nav button{border:0;background:transparent;color:#dceee9;text-align:left;padding:11px 12px;border-radius:10px;cursor:pointer}
 .nav button.active,.nav button:hover{background:rgba(255,255,255,.10);color:#fff}
 .nav-group{display:grid;gap:2px}
+.nav-group:not(.open) .nav-sub{display:none}
+.nav-group.open .nav-sub{display:grid}
 .nav-group-toggle{width:100%;display:flex!important;justify-content:space-between;align-items:center;font-weight:700;opacity:.9}
 .nav-group-toggle span{font-size:12px;transition:transform .15s}
 .nav-group.open .nav-group-toggle span{transform:rotate(180deg)}
