@@ -1,0 +1,1 @@
+ALTER TABLE display_devices ADD COLUMN IF NOT EXISTS footer_text text NOT NULL DEFAULT 'Please keep your token ready. Follow hospital staff instructions.'

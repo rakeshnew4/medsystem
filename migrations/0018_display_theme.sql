@@ -1,0 +1,1 @@
+ALTER TABLE display_devices ADD COLUMN IF NOT EXISTS theme text NOT NULL DEFAULT 'dark'

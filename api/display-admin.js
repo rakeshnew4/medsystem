@@ -12,7 +12,7 @@ export default async function(req,res){
 
   if(req.method==="GET"){
     const [devices,campaigns,summary]=await Promise.all([
-      db.query("SELECT id,name,location,device_code,enabled,token_percent,ad_percent,ad_rotation_seconds,show_next_tokens,show_sound,created_at FROM display_devices WHERE hospital_id=$1 ORDER BY name",[hid]),
+      db.query("SELECT id,name,location,device_code,enabled,token_percent,ad_percent,ad_rotation_seconds,show_next_tokens,show_sound,layout_template,theme,footer_text,created_at FROM display_devices WHERE hospital_id=$1 ORDER BY name",[hid]),
       db.query("SELECT id,advertiser_name,title,body,media_type,media_url,click_url,active,starts_at,ends_at,priority,monthly_price,hospital_share_percent,created_at FROM display_campaigns WHERE hospital_id=$1 ORDER BY active DESC,priority,title",[hid]),
       db.query("SELECT count(*)::int AS impressions,count(DISTINCT campaign_id)::int AS campaigns FROM display_impressions WHERE hospital_id=$1 AND displayed_at>=now()-interval '30 days'",[hid])
     ]);
@@ -22,7 +22,7 @@ export default async function(req,res){
   const b=req.body||{};
   if(req.method==="POST"){
     if(b.type==="device"){
-      const r=await db.query("INSERT INTO display_devices(hospital_id,name,location,token_percent,ad_percent,ad_rotation_seconds,show_next_tokens,show_sound) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *",[hid,String(b.name||"Reception display").slice(0,120),String(b.location||"").slice(0,120),Math.max(0,Math.min(100,Number(b.token_percent??50))),Math.max(0,Math.min(100,Number(b.ad_percent??50))),Math.max(3,Math.min(300,Number(b.ad_rotation_seconds??10))),b.show_next_tokens!==false,b.show_sound===true]);
+      const r=await db.query("INSERT INTO display_devices(hospital_id,name,location,token_percent,ad_percent,ad_rotation_seconds,show_next_tokens,show_sound,layout_template,theme,footer_text) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *",[hid,String(b.name||"Reception display").slice(0,120),String(b.location||"").slice(0,120),Math.max(0,Math.min(100,Number(b.token_percent??50))),Math.max(0,Math.min(100,Number(b.ad_percent??50))),Math.max(3,Math.min(300,Number(b.ad_rotation_seconds??10))),b.show_next_tokens!==false,b.show_sound===true,"split","dark","Please keep your token ready. Follow hospital staff instructions."]);
       return res.json(r.rows[0]);
     }
     if(b.type==="campaign"){
@@ -34,7 +34,8 @@ export default async function(req,res){
 
   if(req.method==="PUT"){
     if(b.type==="device"){
-      const r=await db.query("UPDATE display_devices SET name=$1,location=$2,enabled=$3,token_percent=$4,ad_percent=$5,ad_rotation_seconds=$6,show_next_tokens=$7,show_sound=$8,updated_at=now() WHERE id=$9 AND hospital_id=$10 RETURNING *",[String(b.name||"Display").slice(0,120),String(b.location||"").slice(0,120),b.enabled!==false,Math.max(0,Math.min(100,Number(b.token_percent??50))),Math.max(0,Math.min(100,Number(b.ad_percent??50))),Math.max(3,Math.min(300,Number(b.ad_rotation_seconds??10))),b.show_next_tokens!==false,b.show_sound===true,Number(b.id),hid]);
+      const layouts=["split","token-focus","ad-focus","stacked","token-full","ad-full"];const themes=["dark","light","teal"];
+      const r=await db.query("UPDATE display_devices SET name=$1,location=$2,enabled=$3,token_percent=$4,ad_percent=$5,ad_rotation_seconds=$6,show_next_tokens=$7,show_sound=$8,layout_template=$9,theme=$10,footer_text=$11,updated_at=now() WHERE id=$12 AND hospital_id=$13 RETURNING *",[String(b.name||"Display").slice(0,120),String(b.location||"").slice(0,120),b.enabled!==false,Math.max(0,Math.min(100,Number(b.token_percent??50))),Math.max(0,Math.min(100,Number(b.ad_percent??50))),Math.max(3,Math.min(300,Number(b.ad_rotation_seconds??10))),b.show_next_tokens!==false,b.show_sound===true,layouts.includes(b.layout_template)?b.layout_template:"split",themes.includes(b.theme)?b.theme:"dark",String(b.footer_text??"Please keep your token ready. Follow hospital staff instructions.").slice(0,300),Number(b.id),hid]);
       if(!r.rows[0])return res.status(404).json({error:"Display not found"});
       return res.json(r.rows[0]);
     }

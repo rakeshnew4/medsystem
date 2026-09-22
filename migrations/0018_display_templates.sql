@@ -1,0 +1,1 @@
+ALTER TABLE display_devices ADD COLUMN IF NOT EXISTS layout_template text NOT NULL DEFAULT 'split'
