@@ -40,8 +40,14 @@ export default async function(req,res){
       patient=r.rows[0];
       await logWorkflowEvent(ctx,{patientId:patient.id,eventType:"patient_registered",stage:"registration",entityType:"patient",entityId:patient.id,metadata:{source:"appointment"}});
     }
-    const r=await db.query("INSERT INTO appointments(hospital_id,patient_id,doctor_id,appointment_date,appointment_time,status,source,reason) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id,appointment_date,appointment_time,status,patient_id,doctor_id",[hid,patient.id,b.doctor_id,b.appointment_date,b.appointment_time,b.status||"pending",b.source||"reception",b.reason||null]);
-    await logWorkflowEvent(ctx,{patientId:patient.id,eventType:"appointment_booked",stage:"appointment",entityType:"appointment",entityId:r.rows[0].id,metadata:{doctor_id:b.doctor_id,source:b.source||"reception"}});
+    const consultationType=b.consultation_type==="online"?"online":"in_person";
+    const r=await db.query("INSERT INTO appointments(hospital_id,patient_id,doctor_id,appointment_date,appointment_time,status,source,reason,consultation_type,video_status) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id,appointment_date,appointment_time,status,patient_id,doctor_id,consultation_type,video_status,public_token",[hid,patient.id,b.doctor_id,b.appointment_date,b.appointment_time,b.status||"pending",b.source||"reception",b.reason||null,consultationType,consultationType==="online"?"scheduled":"not_required"]);
+    if(consultationType==="online"){
+      const room="CareFlow-OPD-"+crypto.randomUUID().replaceAll("-","");
+      await db.query("INSERT INTO video_sessions(hospital_id,appointment_id,provider,room_name,scheduled_start,status) VALUES($1,$2,'jitsi',$3,$4,'scheduled')",[hid,r.rows[0].id,room,String(b.appointment_date)+" "+String(b.appointment_time).slice(0,5)+":00"]);
+      await db.query("UPDATE appointments SET video_provider='jitsi',video_room=$1 WHERE id=$2",[room,r.rows[0].id]);
+    }
+    await logWorkflowEvent(ctx,{patientId:patient.id,eventType:"appointment_booked",stage:"appointment",entityType:"appointment",entityId:r.rows[0].id,metadata:{doctor_id:b.doctor_id,source:b.source||"reception",consultation_type:consultationType}});
     return res.json({...r.rows[0],patient});
   }
 
@@ -84,7 +90,7 @@ export default async function(req,res){
 
   const localDate=await hospitalLocalDate(hid);
   const r=await db.query(
-   "SELECT a.id,a.appointment_date,a.appointment_time,a.status,a.patient_id,a.doctor_id,a.reason,p.name AS patient_name,p.uhid,p.phone,d.name AS doctor_name,q.id AS queue_id,q.token,q.token_date,q.token_number,q.stage AS queue_stage FROM appointments a JOIN patients p ON p.id=a.patient_id JOIN doctors d ON d.id=a.doctor_id LEFT JOIN LATERAL (SELECT q.* FROM queue_entries q WHERE q.hospital_id=a.hospital_id AND q.appointment_id=a.id AND q.completed_at IS NULL AND q.token_date=$2 ORDER BY q.id DESC LIMIT 1) q ON true WHERE a.hospital_id=$1 ORDER BY a.appointment_date DESC,a.appointment_time DESC LIMIT 300",
+   "SELECT a.id,a.appointment_date,a.appointment_time,a.status,a.patient_id,a.doctor_id,a.reason,a.consultation_type,a.video_status,p.name AS patient_name,p.uhid,p.phone,d.name AS doctor_name,q.id AS queue_id,q.token,q.token_date,q.token_number,q.stage AS queue_stage FROM appointments a JOIN patients p ON p.id=a.patient_id JOIN doctors d ON d.id=a.doctor_id LEFT JOIN LATERAL (SELECT q.* FROM queue_entries q WHERE q.hospital_id=a.hospital_id AND q.appointment_id=a.id AND q.completed_at IS NULL AND q.token_date=$2 ORDER BY q.id DESC LIMIT 1) q ON true WHERE a.hospital_id=$1 ORDER BY a.appointment_date DESC,a.appointment_time DESC LIMIT 300",
    [hid,localDate]
   );
   res.json(r.rows);
