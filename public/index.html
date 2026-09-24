@@ -299,6 +299,8 @@ async function loadAll(){
     } else {state.staff=[]}
     renderAll();populateSelects();applyPermissions();if(can('page.admin_insights'))loadAnalytics();if(can('page.dashboard')&&can('action.ai.use'))loadAIOpsBrief();if(can('action.communication.use')){loadCommunication();loadAvailability()}if(state.session.staff?.role==='doctor'||state.session.staff?.role==='admin')renderDoctorRoom();
     restoreSection();
+    const deepPatient=new URLSearchParams(location.search).get('patient_id');
+    if(deepPatient&&Number(deepPatient)>0)openClinical(Number(deepPatient));
   }catch(e){if(e.status===401){location.replace('/login?next='+encodeURIComponent(location.pathname));return}if(e.status===403){console.error(e);return}console.error(e);alert(e.message)}
 }
 async function loadDisplayAdmin(){return api('/display-admin').then(r=>{state.displayAdmin=r;renderDisplayAdmin()}).catch(e=>{if(e.status!==403)alert(e.message)})}
@@ -639,7 +641,7 @@ async function workspaceCompleteDischarge(pid,admissionId){
  if(!confirm('Discharge this patient and release the bed?'))return;
  try{await api('/beds',{method:'PUT',body:JSON.stringify({action:'discharge',id:admissionId,discharge_summary:d.summary||null})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
 }
-function patientAppointments(a){return a.length?a.slice(0,8).map(x=>'<div class="compact-record"><div><strong>'+fmtDate(x.appointment_date)+' · '+fmtTime(x.appointment_time)+'</strong><span>'+esc(x.doctor_name||'Doctor')+' · '+esc(x.consultation_type||'in_person')+'</span></div><div>'+status(x.status)+(x.queue_stage?'<small>'+esc(prettyStatus(x.queue_stage))+'</small>':'')+'</div></div>').join(''):'<div class="empty">No appointments found.</div>'}
+function patientAppointments(a){return a.length?a.slice(0,8).map(x=>'<div class="compact-record"><div><strong>'+fmtDate(x.appointment_date)+' · '+fmtTime(x.appointment_time)+'</strong><span>'+esc(x.doctor_name||'Doctor')+' · '+esc(x.consultation_type||'in_person')+'</span></div><div>'+status(x.status)+(x.queue_stage?'<small>'+esc(prettyStatus(x.queue_stage))+'</small>':'')+(x.consultation_type==='online'&&x.public_token?'<button class="mini" onclick="openStaffVideo('+x.id+')">Join video</button>':'')+'</div></div>').join(''):'<div class="empty">No appointments found.</div>'}
 function patientClinicalSummary(c){
  if(!c)return '<div class="empty">No clinical data available.</div>';
  const m=c.medications?.[0],l=c.lab_orders?.[0],v=c.vitals?.[0],r=c.visits?.[0];

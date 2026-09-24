@@ -29,6 +29,7 @@ export default async function(req,res){
   if(!row)return res.status(404).json({error:"Video appointment not found"});
   if(row.consultation_type!=="online")return res.status(409).json({error:"This is not an online consultation"});
   if(["cancelled","completed","no_show"].includes(row.status))return res.status(409).json({error:"This appointment is no longer active"});
+  if(row.video_status==="completed")return res.status(409).json({error:"This video consultation has ended"});
   if(!allowedWindow(row.appointment_date,row.appointment_time))return res.status(403).json({error:"The video room opens 45 minutes before the appointment and closes 45 minutes after it"});
   if(req.method==="POST"){
     const action=req.body?.action;
@@ -36,8 +37,10 @@ export default async function(req,res){
       await db.query("UPDATE video_sessions SET status='active',started_at=COALESCE(started_at,now()),updated_at=now() WHERE appointment_id=$1",[row.id]);
       await db.query("UPDATE appointments SET video_status='active',updated_at=now() WHERE id=$1",[row.id]);
     }else if(action==="leave"){
-      await db.query("UPDATE video_sessions SET status='completed',ended_at=now(),updated_at=now() WHERE appointment_id=$1",[row.id]);
-      await db.query("UPDATE appointments SET video_status='completed',updated_at=now() WHERE id=$1",[row.id]);
+      // Patient leaving the browser is not the same as ending the clinical consultation.
+      // Only staff/doctor may complete the video session.
+      // Keep the session active so the patient can reconnect while the doctor is still present.
+      await db.query("UPDATE video_sessions SET updated_at=now() WHERE appointment_id=$1 AND status <> 'completed'",[row.id]);
     }
   }
   const current=await db.query("SELECT provider,room_name,status FROM video_sessions WHERE appointment_id=$1",[row.id]);
