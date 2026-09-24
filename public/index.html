@@ -73,6 +73,7 @@
   <div class="topbar-heading"><button class="mobile-menu-btn btn" aria-label="Open menu" onclick="openMobileNav()">☰</button><div><div class="kicker" id="dateLabel">Today</div><h1 class="title" id="pageTitle">Hospital overview</h1><div id="userBadge" style="font-size:12px;color:var(--muted);margin-top:6px"></div></div></div>
   <div class="top-actions"><button class="btn pin-btn" id="pinScreenBtn" onclick="togglePinnedScreen()" title="Keep this screen open">☆ <span>Pin</span></button><button class="btn" onclick="loadAll()">Refresh</button><button class="btn" onclick="signOut()">Sign out</button><button class="btn primary" onclick="openModal('appointmentModal')">+ Appointment</button></div>
 </header>
+<div id="roleWorkspaceBar" class="role-workspace-bar" style="display:none"></div>
 
 <section id="dashboard" class="section active">
   <div id="stats" class="grid stats"></div>
@@ -205,11 +206,30 @@ const fmtTime=t=>t?String(t).slice(0,5):'';
 const fmtDate=d=>d?new Date(String(d).slice(0,10)+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
 async function api(path,opts={}){const r=await fetch(API+path,{headers:{'Content-Type':'application/json'},...opts});let j={};try{j=await r.json()}catch{}if(!r.ok)throw Object.assign(Error(j.error||'Request failed'),{status:r.status,data:j});return j}
 const VALID_SECTIONS=['dashboard','queue','doctor-room','appointments','patients','doctors','beds','followups','billing','lab','pharmacy','display','analytics','staff','communication','setup'];
-const ROLE_DEFAULT_SECTIONS={admin:'dashboard',doctor:'doctor-room',nurse:'queue',receptionist:'queue',lab:'lab',pharmacy:'pharmacy',billing:'billing',pending:'dashboard'};
+const ROLE_DEFAULT_SECTIONS={admin:'dashboard',doctor:'doctor-room',nurse:'beds',receptionist:'queue',lab:'lab',pharmacy:'pharmacy',billing:'billing',pending:'dashboard'};
 const SECTION_TITLES={dashboard:'Hospital overview',queue:'Patient queue','doctor-room':'Doctor Room',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',lab:'Lab investigations',pharmacy:'Pharmacy',display:'Displays & ads',analytics:'Admin insights',staff:'Staff',communication:'Staff communication',setup:'Hospital setup'};
 const SECTION_PERMISSIONS={dashboard:'page.dashboard',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',pharmacy:'action.pharmacy.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup'};
 function staffStorageKey(kind){return 'careflow:'+kind+':'+encodeURIComponent(state.session?.user?.email||'default')}
 function roleDefaultSection(){return ROLE_DEFAULT_SECTIONS[state.session?.staff?.role]||'dashboard'}
+function renderRoleWorkspace(){
+  const el=document.getElementById('roleWorkspaceBar');if(!el)return;
+  const role=state.session?.staff?.role||'admin';
+  const configs={
+    admin:{title:'Command Center',sub:'Hospital-wide operations and administration',actions:[['dashboard','Overview'],['analytics','Insights'],['staff','Staff'],['setup','Setup']]},
+    doctor:{title:'Doctor Workspace',sub:'Consultation queue, patient records and clinical workflow',actions:[['doctor-room','My Queue'],['patients','Patients'],['followups','Follow-ups'],['appointments','Appointments']]},
+    nurse:{title:'Nursing Station',sub:'Ward patients, beds and the next nursing action',actions:[['beds','Ward & Beds'],['queue','OPD Queue'],['patients','Patients'],['lab','Investigations']]},
+    receptionist:{title:'OPD Desk',sub:'Registration, appointments, queue and patient flow',actions:[['queue','Queue'],['appointments','Appointments'],['patients','Patients'],['billing','Billing']]},
+    lab:{title:'Lab Workbench',sub:'Samples, processing, verification and patient context',actions:[['lab','Lab Queue'],['patients','Patients'],['queue','OPD Queue'],['billing','Billing']]},
+    pharmacy:{title:'Pharmacy Desk',sub:'Prescriptions, dispensing and patient context',actions:[['pharmacy','Dispensing'],['patients','Patients'],['billing','Billing'],['queue','OPD Queue']]},
+    billing:{title:'Billing Desk',sub:'Invoices, collections and patient accounts',actions:[['billing','Billing'],['patients','Patients'],['appointments','Appointments'],['queue','Queue']]}
+  };
+  const cfg=configs[role]||configs.admin;
+  const roleSectionTitles={nurse:{beds:'Nursing Station · Ward'},receptionist:{queue:'OPD Desk · Queue'},lab:{lab:'Lab Workbench'},pharmacy:{pharmacy:'Pharmacy Desk'},billing:{billing:'Billing Desk'},doctor:{'doctor-room':'Doctor Room'}};
+  Object.entries(roleSectionTitles[role]||{}).forEach(([id,title])=>{const h=document.querySelector('#'+id+' .panel-title');if(h)h.textContent=title});
+  const buttons=cfg.actions.filter(x=>canSection(x[0])).map(x=>'<button class="workspace-nav-btn '+(document.querySelector('.section.active')?.id===x[0]?'active':'')+'" onclick="showSection(\''+x[0]+'\');closeMobileNav()">'+esc(x[1])+'</button>').join('');
+  el.innerHTML='<div class="workspace-identity"><div class="workspace-icon">+</div><div><strong>'+esc(cfg.title)+'</strong><span>'+esc(cfg.sub)+'</span></div></div><div class="workspace-nav">'+buttons+'</div>';
+  el.style.display=buttons?'flex':'none';
+}
 function canSection(id){const p=SECTION_PERMISSIONS[id];return !p||can(p)}
 function showSection(id,updateUrl=true){
   if(!VALID_SECTIONS.includes(id)||!canSection(id))id=roleDefaultSection();
@@ -220,6 +240,7 @@ function showSection(id,updateUrl=true){
   document.getElementById('pageTitle').textContent=SECTION_TITLES[id]||id;
   if(updateUrl && location.hash!=='#'+id)history.replaceState(null,'','#'+id);
   updatePinButton();
+  renderRoleWorkspace();
   if(id==='setup' && can('action.setup.manage'))loadHospitalConfig();if(id==='communication' && can('action.communication.use'))loadCommunication();
 }
 function restoreSection(){
@@ -320,7 +341,7 @@ async function loadAll(){
       const pm=await api('/permissions');state.permissionCatalog=pm.permissions;state.rolePermissions=pm.roles;
       renderPermissionMatrix();
     } else {state.staff=[]}
-    renderAll();populateSelects();applyPermissions();if(can('page.admin_insights'))loadAnalytics();if(can('page.dashboard')&&can('action.ai.use'))loadAIOpsBrief();if(can('action.communication.use')){loadCommunication();loadAvailability()}if(state.session.staff?.role==='doctor'||state.session.staff?.role==='admin')renderDoctorRoom();
+    renderAll();populateSelects();applyPermissions();renderRoleWorkspace();if(can('page.admin_insights'))loadAnalytics();if(can('page.dashboard')&&can('action.ai.use'))loadAIOpsBrief();if(can('action.communication.use')){loadCommunication();loadAvailability()}if(state.session.staff?.role==='doctor'||state.session.staff?.role==='admin')renderDoctorRoom();
     restoreSection();
     const deepPatient=new URLSearchParams(location.search).get('patient_id');
     if(deepPatient&&Number(deepPatient)>0)openClinical(Number(deepPatient));
