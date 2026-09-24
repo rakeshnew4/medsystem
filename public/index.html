@@ -659,10 +659,11 @@ function patientCareTeamActions(p,s){
   const active=g.role===role;
   const items=g.items.map(it=>{
    const ready=it[2]===true;
-   const permitted=it[4]===true;
-   const enabled=permitted&&it[3]&& (ready || ['Prescription','Investigation','Follow-up','Appointments','Open billing'].includes(it[0]));
-   const label=ready?'Do now':(permitted?'Open':'');
-   return '<div class="care-team-action '+(active?'current-role':'')+(ready?' action-ready':'')+'"><div><strong>'+esc(it[0])+'</strong><span>'+esc(it[1])+'</span></div>'+(enabled?'<button type="button" class="mini '+(ready?'primary':'')+'" onclick="'+it[3]+'">'+label+'</button>':'<span class="care-team-hint">'+(active?(permitted?'Available when needed':'No permission'):'Handled by '+g.label)+'</span>')+'</div>';
+   const permitted=active&&it[4]===true;
+   const alwaysOpen=['AI Listen Summary','Prescription','Investigation','Follow-up','Appointments','Open billing'].includes(it[0]);
+   const enabled=permitted&&it[3]&&(ready||alwaysOpen);
+   const label=ready?'Do now':(permitted?(alwaysOpen?'Open':'Waiting'):'');
+   return '<div class="care-team-action '+(active?'current-role':'')+(ready?' action-ready':'')+'"><div><strong>'+esc(it[0])+'</strong><span>'+esc(it[1])+'</span></div>'+(permitted&&it[3]?(enabled?'<button type="button" class="mini '+(ready?'primary':'')+'" onclick="'+it[3]+'">'+label+'</button>':'<button type="button" class="mini" disabled>Waiting</button>'):'<span class="care-team-hint">'+(active?'No permission':'Handled by '+g.label)+'</span>')+'</div>';
   }).join('');
   return '<section class="care-team-group '+(active?'current-role':'')+'"><div class="care-team-group-head"><div><span class="care-team-step">'+g.step+'</span><strong>'+esc(g.label)+'</strong></div><span>'+ (active?'YOUR ROLE':'CARE TEAM')+'</span></div>'+items+'</section>';
  }).join('');
