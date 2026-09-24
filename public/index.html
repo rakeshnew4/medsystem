@@ -6,8 +6,9 @@
 <link rel="stylesheet" href="/theme.css">
 </head>
 <body>
+<div class="mobile-backdrop" id="mobileBackdrop" onclick="closeMobileNav()"></div>
 <div class="app-shell">
-<aside class="sidebar">
+<aside class="sidebar" id="appSidebar">
   <div class="brand"><div class="brand-mark">+</div><div><div class="brand-title">CareFlow</div><div class="brand-sub">Hospital Operations</div></div></div>
   <nav class="nav">
     <button class="active nav-home" data-section="dashboard">Overview</button>
@@ -69,8 +70,8 @@
 
 <main class="main">
 <header class="topbar">
-  <div><div class="kicker" id="dateLabel">Today</div><h1 class="title" id="pageTitle">Hospital overview</h1><div id="userBadge" style="font-size:12px;color:var(--muted);margin-top:6px"></div></div>
-  <div class="top-actions"><button class="btn" onclick="loadAll()">Refresh</button><button class="btn" onclick="signOut()">Sign out</button><button class="btn primary" onclick="openModal('appointmentModal')">+ Appointment</button></div>
+  <div class="topbar-heading"><button class="mobile-menu-btn btn" aria-label="Open menu" onclick="openMobileNav()">☰</button><div><div class="kicker" id="dateLabel">Today</div><h1 class="title" id="pageTitle">Hospital overview</h1><div id="userBadge" style="font-size:12px;color:var(--muted);margin-top:6px"></div></div></div>
+  <div class="top-actions"><button class="btn pin-btn" id="pinScreenBtn" onclick="togglePinnedScreen()" title="Keep this screen open">☆ <span>Pin</span></button><button class="btn" onclick="loadAll()">Refresh</button><button class="btn" onclick="signOut()">Sign out</button><button class="btn primary" onclick="openModal('appointmentModal')">+ Appointment</button></div>
 </header>
 
 <section id="dashboard" class="section active">
@@ -207,25 +208,39 @@ const VALID_SECTIONS=['dashboard','queue','doctor-room','appointments','patients
 function showSection(id,updateUrl=true){
   if(!VALID_SECTIONS.includes(id))id='dashboard';
   try{localStorage.setItem('careflow:lastSection',id)}catch(e){}
-  const section=document.getElementById(id);
-  if(!section)return;
-  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
-  section.classList.add('active');
+  const section=document.getElementById(id);if(!section)return;
+  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));section.classList.add('active');
   document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.section===id));
   const titles={dashboard:'Hospital overview',queue:'Patient queue','doctor-room':'Doctor Room',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',lab:'Lab investigations',pharmacy:'Pharmacy',display:'Displays & ads',analytics:'Admin insights',staff:'Staff',communication:'Staff communication',setup:'Hospital setup'};
   document.getElementById('pageTitle').textContent=titles[id]||id;
   if(updateUrl && location.hash!=='#'+id)history.replaceState(null,'','#'+id);
+  updatePinButton();
   if(id==='setup' && can('action.setup.manage'))loadHospitalConfig();if(id==='communication' && can('action.communication.use'))loadCommunication();
 }
 function restoreSection(){
   let id=(location.hash||'').slice(1);
-  if(!VALID_SECTIONS.includes(id)){try{id=localStorage.getItem('careflow:lastSection')||'dashboard'}catch(e){id='dashboard'}}
+  if(!VALID_SECTIONS.includes(id)){try{id=localStorage.getItem('careflow:pinnedSection:'+encodeURIComponent(state.session?.user?.email||'default'))||localStorage.getItem('careflow:lastSection')||'dashboard'}catch(e){id='dashboard'}}
   if(!VALID_SECTIONS.includes(id))id='dashboard';
   showSection(id,false);
 }
 window.addEventListener('hashchange',restoreSection);
 function toggleNavGroup(btn){const group=btn.closest('.nav-group');group.classList.toggle('open')}
-document.querySelectorAll('.nav-sub button[data-section]').forEach(b=>b.onclick=()=>showSection(b.dataset.section));
+function openMobileNav(){document.body.classList.add('mobile-nav-open')}
+function closeMobileNav(){document.body.classList.remove('mobile-nav-open')}
+function togglePinnedScreen(){
+  const id=document.querySelector('.section.active')?.id||'dashboard';
+  let pinned=null;try{pinned=localStorage.getItem('careflow:pinnedSection:'+encodeURIComponent(state.session?.user?.email||'default'))}catch(e){}
+  try{if(pinned===id){localStorage.removeItem('careflow:pinnedSection:'+encodeURIComponent(state.session?.user?.email||'default'))}else{localStorage.setItem('careflow:pinnedSection:'+encodeURIComponent(state.session?.user?.email||'default'),id)}}catch(e){}
+  updatePinButton();
+}
+function updatePinButton(){
+  const b=document.getElementById('pinScreenBtn');if(!b)return;
+  let pinned=null;try{pinned=localStorage.getItem('careflow:pinnedSection:'+encodeURIComponent(state.session?.user?.email||'default'))}catch(e){}
+  const active=document.querySelector('.section.active')?.id||'dashboard';
+  const on=pinned===active;b.classList.toggle('primary',on);b.innerHTML=(on?'★':'☆')+' <span>'+ (on?'Pinned':'Pin') +'</span>';
+  b.title=on?'This screen is pinned and will open next time':'Pin this screen so it opens next time';
+}
+document.querySelectorAll('.nav-sub button[data-section],.nav-home').forEach(b=>b.onclick=()=>{showSection(b.dataset.section);closeMobileNav()});
 function openModal(id){document.getElementById(id).classList.add('open')} function closeModal(id){document.getElementById(id).classList.remove('open')}
 function prettyStatus(s){
  const map={waiting:'Waiting',vitals:'Vitals pending',doctor:'With doctor',lab:'Lab pending',followup:'Follow-up',pharmacy:'Pharmacy',completed:'Completed',no_show:'No-show',cancelled:'Cancelled',pending:'Pending',checked_in:'Checked in',active:'Active',inactive:'Inactive',open:'Open',in_progress:'In progress',paid:'Paid',partial:'Part paid',unpaid:'Unpaid',ipd:'IPD',opd:'OPD',normal:'Normal',high:'High',urgent:'Urgent',registered:'Registered'};
