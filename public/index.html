@@ -549,20 +549,20 @@ function patientNextActions(p,s){
    else add('ipd','Review admission','Open admission actions for bed, transfer or discharge.','workspaceIPDPanel('+p.id+','+activeAdm.id+')');
  } else if(q==='waiting'){
    if(clinical)add('vitals','Record vitals','Patient is waiting for clinical assessment.','workspaceVitals('+p.id+')');
-   else add('doctor','Open queue','Move the patient through the OPD queue.','showSection(\\'queue\\')');
+   else add('doctor','Open queue','Move the patient through the OPD queue.','showSection(\'queue\')');
  } else if(q==='vitals'){
    if(clinical)add('doctor','Open Doctor Room','Vitals are recorded; continue the consultation workflow.','workspaceOpenDoctor('+p.id+')');
  } else if(q==='doctor'){
    if(clinical)add('consult','Continue consultation','Open the consultation workspace for notes, orders and completion.','workspaceOpenDoctor('+p.id+')');
  } else if(q==='lab'){
-   if(latestLab?.status==='ordered'&&clinical)add('sample','Collect lab sample','The latest investigation is ordered and awaiting sample collection.','workspaceLabStatus('+latestLab.id+',\\'sample_collected\\','+p.id+')');
-   else if(latestLab?.status==='sample_collected'&&clinical)add('processing','Start processing','Sample is collected and ready for lab processing.','workspaceLabStatus('+latestLab.id+',\\'processing\\','+p.id+')');
+   // if(latestLab?.status==='ordered'&&clinical)add('sample','Collect lab sample','The latest investigation is ordered and awaiting sample collection.','workspaceLabStatus('+latestLab.id+',\\'sample_collected\\','+p.id+')');
+   // else if(latestLab?.status==='sample_collected'&&clinical)add('processing','Start processing','Sample is collected and ready for lab processing.','workspaceLabStatus('+latestLab.id+',\\'processing\\','+p.id+')');
    else if(latestLab?.status==='processing'&&clinical)add('verify','Verify result','Enter/verify the latest laboratory result.','workspaceVerifyLab('+latestLab.id+','+p.id+')');
    else if(latestLab?.status==='verified'&&clinical)add('review','Review result','A verified result is ready for clinician review.','workspaceOpenDoctor('+p.id+')');
-   else add('lab','Open lab','Review the latest investigation and its status.','showSection(\\'lab\\')');
+   else add('lab','Open lab','Review the latest investigation and its status.','showSection(\'lab\')');
  } else if(q==='pharmacy'){
    if(pharmacy&&latestMed&&!['dispensed','completed'].includes(String(latestMed.dispense_status||'').toLowerCase()))add('pharmacy','Dispense medicine','A prescription is awaiting pharmacy dispensing.','workspaceDispenseForm('+latestMed.medication_id+','+p.id+')');
-   else add('pharmacy','Review pharmacy','Review prescriptions and dispensing.','showSection(\\'pharmacy\\')');
+   // else add('pharmacy','Review pharmacy','Review prescriptions and dispensing.','showSection(\\'pharmacy\\')');
  } else if(q==='followup'){
    add('followup','Schedule follow-up','Continue the patient journey with the next planned visit.','workspaceFollowupForm('+p.id+')');
  } else if(outstanding>0&&billing){
