@@ -42,6 +42,7 @@ export default async function(req,res){
       await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId:er.rows[0].id,eventType:"opd_registered",stage:"waiting",entityType:"queue",entityId:r.rows[0].id,metadata:{token:token.token,token_date:token.tokenDate}});
     }
     await logWorkflowEvent(ctx,{patientId:b.patient_id,eventType:"queue_created",stage,entityType:"queue",entityId:r.rows[0].id,metadata:{token:token.token,token_date:token.tokenDate,priority:b.priority||"normal"}});
+    await notifyStage({hospitalId:hid,stage,title:"Patient added to queue",body:"Token "+(token.token||"—")+" is ready for "+(stage==="waiting"?"nurse vitals":"the next workflow step")+".",entityType:"queue",entityId:r.rows[0].id,patientId:b.patient_id,excludeStaffId:ctx.staff.id,doctorId:b.doctor_id||null});
     return res.json({...r.rows[0],token});
   }
 

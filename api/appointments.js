@@ -2,6 +2,7 @@ import { db } from "hatchable";
 import { requirePermission } from "../lib/authz.js";
 import { logWorkflowEvent, findOpenEncounter } from "../lib/workflow.js";
 import { allocateOpdToken, hospitalLocalDate } from "../lib/opd.js";
+import { notifyStage } from "../lib/staff-notifications.js";
 
 export const access="user";
 export const methods=["GET","POST","PUT"];
@@ -79,6 +80,7 @@ export default async function(req,res){
         await logWorkflowEvent(ctx,{patientId:q.rows[0].patient_id,encounterId:er.rows[0].id,eventType:"opd_registered",stage:"waiting",entityType:"appointment",entityId:b.id,metadata:{token:qr.rows[0].token,token_date:qr.rows[0].token_date}});
       }
       await logWorkflowEvent(ctx,{patientId:q.rows[0].patient_id,eventType:"patient_checked_in",stage,entityType:"appointment",entityId:b.id,metadata:{queue_id:qr.rows[0].id,token:qr.rows[0].token,token_date:qr.rows[0].token_date}});
+      await notifyStage({hospitalId:hid,stage,title:"Patient checked in",body:"Token "+(qr.rows[0].token||"—")+" is ready for "+(stage==="waiting"?"nurse vitals":"the next workflow step")+".",entityType:"queue",entityId:qr.rows[0].id,patientId:q.rows[0].patient_id,excludeStaffId:ctx.staff.id,doctorId:q.rows[0].doctor_id});
       return res.json({ok:true,queue:qr.rows[0]});
     }
 
