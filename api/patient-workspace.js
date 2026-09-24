@@ -1,4 +1,4 @@
-import { db } from "hatchable";
+import { db } from "../lib/db.js";
 import { requirePermission, getPermissions } from "../lib/authz.js";
 
 export const access="user";

@@ -1,4 +1,4 @@
-import { db } from "hatchable";
+import { db } from "../lib/db.js";
 export const access = "scheduler";
 export const schedule = "15 * * * *";
 

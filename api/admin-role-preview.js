@@ -1,4 +1,5 @@
-import { auth, db } from "hatchable";
+import { auth } from "hatchable";
+import { db } from "../lib/db.js";
 import { PRIMARY_ADMIN_EMAIL } from "../lib/authz.js";
 // Web Crypto is available in the Hatchable runtime.
 

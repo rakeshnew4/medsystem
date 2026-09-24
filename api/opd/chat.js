@@ -1,4 +1,4 @@
-import { db } from "hatchable";
+import { db } from "../../lib/db.js";
 import { litellmChat } from "../../lib/llm.js";
 export const access="public";
 export const methods=["POST"];

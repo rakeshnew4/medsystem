@@ -1,4 +1,4 @@
-import { db } from "hatchable";
+import { db } from "../lib/db.js";
 import { requirePermission } from "../lib/authz.js";
 import { logWorkflowEvent } from "../lib/workflow.js";
 import { notifyRoles } from "../lib/staff-notifications.js";

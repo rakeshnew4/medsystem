@@ -1,4 +1,4 @@
-import { db } from "hatchable";
+import { db } from "../lib/db.js";
 import { requirePermission } from "../lib/authz.js";
 import { litellmChat } from "../lib/llm.js";
 export const access="user";

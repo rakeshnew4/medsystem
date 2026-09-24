@@ -1,4 +1,5 @@
-import { auth, db } from "hatchable";
+import { auth } from "hatchable";
+import { db } from "../lib/db.js";
 import { requireStaff } from "../lib/authz.js";
 export const access="user";
 export const methods=["GET","PUT"];

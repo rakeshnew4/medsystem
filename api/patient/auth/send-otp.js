@@ -1,4 +1,5 @@
-import { db, email } from "hatchable";
+import { email } from "hatchable";
+import { db } from "../../../lib/db.js";
 
 export const access="public";
 export const methods=["POST"];

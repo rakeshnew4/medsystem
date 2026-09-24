@@ -66,3 +66,13 @@ expose = true
 [[secret]]
 name = "SUPABASE_DATABASE_URL"
 expose = true
+
+# Generic PostgreSQL connection string for portable deployments.
+# Server-side only; never expose to browser code.
+[[secret]]
+name = "DATABASE_URL"
+expose = true
+
+[[secret]]
+name = "DATABASE_PROVIDER"
+expose = true

@@ -1,4 +1,4 @@
-import { db } from "hatchable";
+import { db } from "../../../lib/db.js";
 export const access="public";
 export const methods=["POST"];
 async function sha256(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("")}

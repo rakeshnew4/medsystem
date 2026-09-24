@@ -1,4 +1,5 @@
-import { auth, db } from "hatchable";
+import { auth } from "hatchable";
+import { db } from "../lib/db.js";
 import { PRIMARY_ADMIN_EMAIL, getPermissions, getPreviewRole } from "../lib/authz.js";
 export const access="public";
 export const methods=["GET"];

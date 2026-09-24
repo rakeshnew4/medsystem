@@ -1,4 +1,5 @@
-import { db, browser } from "hatchable";
+import { browser } from "hatchable";
+import { db } from "../lib/db.js";
 export const access="user";
 export const methods=["GET"];
 export default async function(req,res){

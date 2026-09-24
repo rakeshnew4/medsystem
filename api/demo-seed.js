@@ -1,4 +1,4 @@
-import { db } from "hatchable";
+import { db } from "../lib/db.js";
 export const access = "admin";
 export const methods = ["POST"];
 

@@ -1,4 +1,4 @@
-import { db } from "hatchable";
+import { db } from "../../../lib/db.js";
 export const access="public";
 export const methods=["GET"];
 function getCookie(req,name){const s=String(req.headers?.cookie||"");for(const part of s.split(";")){const i=part.trim().indexOf("=");if(i>0&&part.trim().slice(0,i)===name)return decodeURIComponent(part.trim().slice(i+1))}return null}

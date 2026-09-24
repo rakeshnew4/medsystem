@@ -1,4 +1,4 @@
-import { db } from "hatchable";
+import { db } from "../lib/db.js";
 import { requirePermission } from "../lib/authz.js";
 import { logWorkflowEvent } from "../lib/workflow.js";
 import { hospitalLocalDate } from "../lib/opd.js";

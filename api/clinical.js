@@ -1,4 +1,4 @@
-import { db } from "hatchable"; import { requirePermission } from "../lib/authz.js";
+import { db } from "../lib/db.js"; import { requirePermission } from "../lib/authz.js";
 import { logWorkflowEvent, findOpenEncounter } from "../lib/workflow.js";
 import { notifyRoles } from "../lib/staff-notifications.js";
 export const access="user"; export const methods=["GET","POST","PUT"];
