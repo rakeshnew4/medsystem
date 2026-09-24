@@ -283,7 +283,7 @@ function prettyStatus(s){
  return map[String(s||'').toLowerCase()]||String(s||'').replaceAll('_',' ');
 }
 function status(s){return '<span class="status '+esc(s)+'" title="'+esc(prettyStatus(s))+'">'+esc(prettyStatus(s))+'</span>'}
-function showQueueForPatient(pid){showSection('queue');setTimeout(()=>{const q=state.queue.find(x=>Number(x.patient_id)===Number(pid));if(q)openClinical(pid)},50)}
+function showQueueForPatient(pid){openPatientWorkspace(pid,'workspace')}
 function table(rows,heads,renderer){if(!rows.length)return '<div class="empty">Nothing here yet.</div>';return '<table><thead><tr>'+heads.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(x=>'<tr>'+renderer(x)+'</tr>').join('')+'</tbody></table>'}
 
 async function checkSession(){
@@ -777,9 +777,10 @@ function workspaceIPDAction(action,pid,admissionId){
 async function workspaceIPDRequest(body,pid){
  try{await api('/beds',{method:'PUT',body:JSON.stringify(body)});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
 }
-async function openPatientWorkspace(pid){
+async function openPatientWorkspace(pid,action){
  try{
-  saveWorkingContext({section:'patients',patientId:Number(pid),mode:'workspace'});
+  const p=state.patients.find(x=>Number(x.id)===Number(pid));
+  saveWorkingContext({section:'patients',patientId:Number(pid),patientName:p?.name||'',mode:'workspace',action:action||'workspace'});
   showSection('patients');
   const p=state.patients.find(x=>Number(x.id)===Number(pid));
   if(p){state.activePatientRecord={patient:p};renderPatientDirectory();}
@@ -788,6 +789,12 @@ async function openPatientWorkspace(pid){
   document.getElementById('patientWorkspaceBody').innerHTML='<div class="empty">Loading patient workspace…</div>';
   const r=await api('/patient-workspace?patient_id='+encodeURIComponent(pid));
   state.activePatientRecord=r;renderPatientWorkspace();
+  const a=String(action||'');
+  if(a==='vitals')workspaceVitals(pid);
+  else if(a==='prescription')workspacePrescription(pid);
+  else if(a==='lab')workspaceLab(pid);
+  else if(a==='followup')workspaceFollowupForm(pid);
+  else if(a==='billing'||a==='invoice'||a==='payment')workspaceInvoice(pid);
  }catch(e){alert(e.message)}
 }
 function editPatientFromRecord(){const pid=state.activePatientRecord?.patient?.id;if(pid){closeModal('clinicalModal');editPatient(pid)}}
@@ -803,7 +810,7 @@ async function editClinicalVisit(id,pid){const r=await api('/clinical?patient_id
 async function editClinicalMedicine(id,pid){const r=await api('/clinical?patient_id='+pid);const d=(r.medications||[]).find(x=>Number(x.id)===Number(id))||{id};document.getElementById('clinicalBody').insertAdjacentHTML('afterbegin',clinicalForm('medicine',pid,d));}
 function clinicalForm(type,pid,d){const id='cf_'+Date.now();let body='';if(type==='vitals')body='<input name="patient_id" value="'+(pid||'')+'" type="hidden"><div class="field"><label>BP systolic</label><input name="blood_pressure_systolic" value="'+(d.blood_pressure_systolic||'')+'"></div><div class="field"><label>BP diastolic</label><input name="blood_pressure_diastolic" value="'+(d.blood_pressure_diastolic||'')+'"></div><div class="field"><label>Pulse</label><input name="pulse" value="'+(d.pulse||'')+'"></div><div class="field"><label>Temperature</label><input name="temperature" value="'+(d.temperature||'')+'"></div><div class="field"><label>Weight kg</label><input name="weight_kg" value="'+(d.weight_kg||'')+'"></div><div class="field"><label>Height cm</label><input name="height_cm" value="'+(d.height_cm||'')+'"></div><div class="field"><label>SpO₂</label><input name="spo2" value="'+(d.spo2||'')+'"></div><div class="field"><label>Respiratory rate</label><input name="respiratory_rate" value="'+(d.respiratory_rate||'')+'"></div><div class="field full"><label>Notes</label><textarea name="notes">'+esc(d.notes||'')+'</textarea></div>';if(type==='visit')body='<input name="patient_id" value="'+(pid||'')+'" type="hidden"><div class="field full"><label>Doctor summary / clinical notes</label><textarea name="clinical_notes" rows="5">'+esc(d.clinical_notes||'')+'</textarea></div><div class="field"><label>Status</label><select name="visit_status"><option value="open">Open</option><option value="completed">Completed</option></select></div>';if(type==='medicine')body='<input name="patient_id" value="'+(pid||'')+'" type="hidden"><div class="field"><label>Medicine</label><input name="medicine_name" required value="'+esc(d.medicine_name||'')+'"></div><div class="field"><label>Dose</label><input name="dose" value="'+esc(d.dose||'')+'"></div><div class="field"><label>Frequency</label><input name="frequency" placeholder="e.g. 1-0-1" value="'+esc(d.frequency||'')+'"></div><div class="field"><label>Duration</label><input name="duration" placeholder="e.g. 5 days" value="'+esc(d.duration||'')+'"></div><div class="field full"><label>Instructions</label><textarea name="instructions">'+esc(d.instructions||'')+'</textarea></div>';return '<form class="card panel clinical-form" onsubmit="saveClinicalForm(event,\''+type+'\','+(d.id||'null')+','+(pid||'null')+')"><div class="panel-head"><h3 class="panel-title">'+(d.id?'Edit ':'Add ')+(type==='visit'?'doctor summary':type==='medicine'?'prescription':'vitals')+'</h3><button type="button" class="btn" onclick="this.closest(\'.clinical-form\').remove()">Cancel</button></div><div class="form-grid">'+body+'</div><button class="btn primary">Save</button></form>'}
 async function saveClinicalForm(e,type,id,pid){e.preventDefault();const p=state.patients.find(x=>Number(x.id)===Number(pid));saveWorkingContext({section:'patients',patientId:Number(pid),patientName:p?.name||'',mode:'clinical',action:type==='vitals'?'vitals':type==='medicine'?'prescription':'clinical'});const b=Object.fromEntries(new FormData(e.target).entries());b.type=type;if(type==='vitals'){b.patient_id=pid;await api('/vitals',{method:id?'PUT':'POST',body:JSON.stringify({...b,id: id||undefined})})}else{if(pid)b.patient_id=pid;await api('/clinical',{method:id?'PUT':'POST',body:JSON.stringify({...b,id:id||undefined})})}e.target.remove();openClinical(pid||patientId.value)}
-async function openClinicalFollowup(pid){const p=state.patients.find(x=>Number(x.id)===Number(pid));saveWorkingContext({section:'patients',patientId:Number(pid),patientName:p?.name||'',mode:'clinical',action:'followup'});
+async function openClinicalFollowup(pid){return workspaceFollowupForm(pid);/* legacy modal entry retained below for compatibility */\n/* const p=state.patients.find(x=>Number(x.id)===Number(pid));saveWorkingContext({section:'patients',patientId:Number(pid),patientName:p?.name||'',mode:'clinical',action:'followup'}); */
  const options=(state.doctors||[]).filter(d=>d.active!==false).map(d=>d.id+': '+d.name+(d.online_consultation_enabled?' · online':'')).join('\n');
  const doctor=prompt('Doctor ID for follow-up:\n\n'+options,'');
  if(!doctor)return;
@@ -831,7 +838,7 @@ function queueActions(x){const next={waiting:'vitals',vitals:'doctor',doctor:'la
 function dropQueue(e,stage){const id=e.dataTransfer.getData('text/plain');if(id)moveQueue(id,stage)}
 function setQueueView(v){state.queueView=v;document.getElementById('kanbanBtn').classList.toggle('primary',v==='kanban');document.getElementById('listBtn').classList.toggle('primary',v==='list');renderQueue()}
 async function moveQueue(id,stage){try{await api('/queue',{method:'PUT',body:JSON.stringify({id:Number(id),stage})});await loadAll()}catch(e){alert(e.message)}}
-function openVitals(qid,pid){document.getElementById('vitalsPatient').value=pid;document.getElementById('vitalsForm').dataset.queue=qid;openModal('vitalsModal')}
+function openVitals(qid,pid){openPatientWorkspace(pid,'vitals')}
 
 function renderBeds(){
   if(!state.beds.length){document.getElementById('bedsGrid').innerHTML='<div class="empty">No beds configured yet.</div>';return}
@@ -997,6 +1004,10 @@ async function addDoctorRule(){const day=prompt('OPD day: 0 Sun ... 6 Sat','1');
 async function addDoctorException(){const date=prompt('Date YYYY-MM-DD');const type=prompt('Exception type: leave, unavailable, extra','leave');if(!date||!type)return;const start=prompt('Start time (blank = whole day)');const end=prompt('End time (blank = whole day)');const reason=prompt('Reason');await api('/staff-availability',{method:'POST',body:JSON.stringify({action:'doctor-exception',exception_date:date,exception_type:type,start_time:start||null,end_time:end||null,reason:reason||null})});await loadAvailability()}
 async function deleteAvailability(kind,id){if(!confirm('Remove this schedule?'))return;await api('/staff-availability?action='+encodeURIComponent(kind)+'&id='+id,{method:'DELETE'});await loadAvailability()}
 async function signOut(){await hatchable.auth.signOut();location.replace('/login')}
+
+// Canonical patient-detail entry point. Older clinical-detail helpers remain for their edit forms,
+// but every staff-facing patient link resolves to the same Patient Workspace.
+async function openClinical(pid,action){return openPatientWorkspace(pid,action||'workspace')}
 window.addEventListener('DOMContentLoaded',()=>loadAll());
 </script>
 
