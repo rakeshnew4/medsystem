@@ -40,39 +40,13 @@ expose = true
 name = "LITELLM_MODEL"
 expose = true
 
-# Optional external Supabase PostgreSQL/Data API.
-# When configured and enabled, CareFlow can use the external database adapter.
-# When absent, the app continues using Hatchable's built-in PostgreSQL.
-[[secret]]
-name = "SUPABASE_URL"
-expose = true
-
-[[secret]]
-name = "SUPABASE_SECRET_KEY"
-expose = true
-
-[[secret]]
-name = "SUPABASE_ENABLED"
-expose = true
-
-# Optional Supabase Management API access token for database/project administration.
-# Keep this server-side only; do not expose it to browser code.
-[[secret]]
-name = "SUPABASE_MANAGEMENT_KEY"
-expose = true
-
-# Supabase PostgreSQL direct connection / transaction pooler URL.
-# Server-side only; never expose to browser code.
-[[secret]]
-name = "SUPABASE_DATABASE_URL"
-expose = true
-
 # Generic PostgreSQL connection string for portable deployments.
 # Server-side only; never expose to browser code.
 [[secret]]
 name = "DATABASE_URL"
 expose = true
 
+# Generic PostgreSQL adapter configuration. Server-side only.
 [[secret]]
 name = "DATABASE_PROVIDER"
 expose = true
