@@ -65,13 +65,13 @@
       </div>
     </div>
   </nav>
-  <div class="sidebar-footer">Staff workspace · Clinical records are documentation tools; clinical decisions remain with qualified clinicians.</div>
+  <div class="sidebar-footer"><div class="sidebar-account"><div class="sidebar-account-label">Signed in</div><div id="sidebarUserEmail" class="sidebar-account-email"></div></div><button class="sidebar-signout" type="button" onclick="signOut()">↪ Sign out</button><div class="sidebar-footer-note">Staff workspace · Clinical records are documentation tools; clinical decisions remain with qualified clinicians.</div></div>
 </aside>
 
 <main class="main">
 <header class="topbar">
   <div class="topbar-heading"><button class="mobile-menu-btn btn" aria-label="Open menu" onclick="openMobileNav()">☰</button><div><div class="kicker" id="dateLabel">Today</div><h1 class="title" id="pageTitle">Hospital overview</h1><div id="userBadge" style="font-size:12px;color:var(--muted);margin-top:6px"></div></div></div>
-  <div class="top-actions"><button class="btn pin-btn" id="pinScreenBtn" onclick="togglePinnedScreen()" title="Keep this screen open">☆ <span>Pin</span></button><button class="btn" onclick="loadAll()">Refresh</button><button class="btn" onclick="signOut()">Sign out</button><button class="btn primary" onclick="openModal('appointmentModal')">+ Appointment</button></div>
+  <div class="top-actions"><button class="btn icon-action pin-btn" id="pinScreenBtn" onclick="togglePinnedScreen()" title="Keep this screen open" aria-label="Pin screen">☆</button><button class="btn icon-action" onclick="loadAll()" title="Refresh" aria-label="Refresh">↻</button><button class="btn primary appointment-action" onclick="openModal('appointmentModal')"><span class="desktop-action-label">+ Appointment</span><span class="mobile-action-label">+ Add</span></button></div>
 </header>
 <div id="roleWorkspaceBar" class="role-workspace-bar" style="display:none"></div><div id="resumeContextBar" class="resume-context-bar" style="display:none"></div>
 
@@ -293,7 +293,7 @@ async function checkSession(){
   if(!s.staff){
     document.body.innerHTML='<div style="min-height:100vh;display:grid;place-items:center;padding:24px;font-family:system-ui;background:#f6f8f7"><div class="card panel" style="max-width:560px;text-align:center"><h1>Email not registered</h1><p style="color:#6b7d77">This email can authenticate with the platform, but it has not been registered by the hospital administrator. Ask the administrator to add your exact email address first.</p><button class="btn" onclick="hatchable.auth.signOut().then(()=>location.replace(\'/login\'))">Sign out</button></div></div>';return false
   }
-  document.getElementById('userBadge').textContent=(s.user?.email||'')+(s.staff?.role?' · '+s.staff.role:'');
+  document.getElementById('userBadge').textContent=(s.user?.email||'')+(s.staff?.role?' · '+s.staff.role:'');const sidebarEmail=document.getElementById('sidebarUserEmail');if(sidebarEmail)sidebarEmail.textContent=s.user?.email||'';
   applyPermissions();
   if(s.staff && (!s.staff.active || s.staff.role==='pending')){document.body.innerHTML='<div style="min-height:100vh;display:grid;place-items:center;padding:24px;font-family:system-ui;background:#f6f8f7"><div class="card panel" style="max-width:520px;text-align:center"><h1>Account awaiting activation</h1><p style="color:#6b7d77">Your email is registered, but an administrator has not activated your staff account yet.</p><button class="btn primary" onclick="hatchable.auth.signOut().then(()=>location.replace(\'/login\'))">Sign out</button></div></div>';return false}
   return true;
