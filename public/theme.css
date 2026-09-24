@@ -290,17 +290,18 @@ button:disabled,.btn:disabled{opacity:.55;cursor:not-allowed}
 .workspace-nav{width:100%;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}
 .workspace-nav-btn{white-space:nowrap;flex:0 0 auto}.patient-workspace{grid-template-columns:1fr}.patient-list{max-height:280px}.patient-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.patient-grid{grid-template-columns:1fr}.patient-detail-head{flex-direction:column}.patient-detail-actions{justify-content:flex-start}}
 /* Responsive staff workspace */
-.mobile-menu-btn{display:none;align-items:center;justify-content:center;padding:9px 11px;font-size:18px;line-height:1}
+.mobile-menu-btn{display:none;align-items:center;justify-content:center;padding:9px 11px;font-size:18px;line-height:1}.mobile-nav-close{display:none}
 .mobile-backdrop{display:none}
 .topbar-heading{display:flex;align-items:flex-start;gap:10px;min-width:0}
 .pin-btn{white-space:nowrap}
 @media(max-width:900px){
   .app-shell{grid-template-columns:1fr}
   .sidebar{position:fixed;z-index:1000;left:0;top:0;bottom:0;width:min(84vw,320px);height:100dvh;overflow-y:auto;transform:translateX(-105%);transition:transform .2s ease;box-shadow:18px 0 40px rgba(0,0,0,.2)}
-  body.mobile-nav-open .sidebar{transform:translateX(0)}
+  body.mobile-nav-open .sidebar{transform:translateX(0)!important;visibility:visible!important;opacity:1!important}
   .mobile-backdrop{position:fixed;inset:0;background:rgba(10,30,25,.42);z-index:999}
   body.mobile-nav-open .mobile-backdrop{display:block}
   .mobile-menu-btn{display:inline-flex}
+  .mobile-nav-close{display:grid;place-items:center;width:40px;height:40px;margin-left:auto;border:1px solid rgba(255,255,255,.15);border-radius:10px;background:rgba(255,255,255,.06);color:#fff;font-size:24px;line-height:1;cursor:pointer}
   .main{padding:16px;max-width:none}
   .topbar{align-items:center;margin-bottom:16px;gap:10px}
   .title{font-size:24px}
