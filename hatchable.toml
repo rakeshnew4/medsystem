@@ -76,3 +76,12 @@ expose = true
 [[secret]]
 name = "DATABASE_PROVIDER"
 expose = true
+
+# External PostgreSQL adapter. Server-side only.
+[[secret]]
+name = "DB_ADAPTER_URL"
+expose = true
+
+[[secret]]
+name = "DB_ADAPTER_KEY"
+expose = true
