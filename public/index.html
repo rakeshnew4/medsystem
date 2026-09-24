@@ -205,22 +205,29 @@ const fmtTime=t=>t?String(t).slice(0,5):'';
 const fmtDate=d=>d?new Date(String(d).slice(0,10)+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
 async function api(path,opts={}){const r=await fetch(API+path,{headers:{'Content-Type':'application/json'},...opts});let j={};try{j=await r.json()}catch{}if(!r.ok)throw Object.assign(Error(j.error||'Request failed'),{status:r.status,data:j});return j}
 const VALID_SECTIONS=['dashboard','queue','doctor-room','appointments','patients','doctors','beds','followups','billing','lab','pharmacy','display','analytics','staff','communication','setup'];
+const ROLE_DEFAULT_SECTIONS={admin:'dashboard',doctor:'doctor-room',nurse:'queue',receptionist:'queue',lab:'lab',pharmacy:'pharmacy',billing:'billing',pending:'dashboard'};
+const SECTION_TITLES={dashboard:'Hospital overview',queue:'Patient queue','doctor-room':'Doctor Room',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',lab:'Lab investigations',pharmacy:'Pharmacy',display:'Displays & ads',analytics:'Admin insights',staff:'Staff',communication:'Staff communication',setup:'Hospital setup'};
+const SECTION_PERMISSIONS={dashboard:'page.dashboard',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',pharmacy:'action.pharmacy.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup'};
+function staffStorageKey(kind){return 'careflow:'+kind+':'+encodeURIComponent(state.session?.user?.email||'default')}
+function roleDefaultSection(){return ROLE_DEFAULT_SECTIONS[state.session?.staff?.role]||'dashboard'}
+function canSection(id){const p=SECTION_PERMISSIONS[id];return !p||can(p)}
 function showSection(id,updateUrl=true){
-  if(!VALID_SECTIONS.includes(id))id='dashboard';
-  try{localStorage.setItem('careflow:lastSection',id)}catch(e){}
+  if(!VALID_SECTIONS.includes(id)||!canSection(id))id=roleDefaultSection();
+  try{localStorage.setItem(staffStorageKey('lastSection'),id)}catch(e){}
   const section=document.getElementById(id);if(!section)return;
   document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));section.classList.add('active');
   document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.section===id));
-  const titles={dashboard:'Hospital overview',queue:'Patient queue','doctor-room':'Doctor Room',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',lab:'Lab investigations',pharmacy:'Pharmacy',display:'Displays & ads',analytics:'Admin insights',staff:'Staff',communication:'Staff communication',setup:'Hospital setup'};
-  document.getElementById('pageTitle').textContent=titles[id]||id;
+  document.getElementById('pageTitle').textContent=SECTION_TITLES[id]||id;
   if(updateUrl && location.hash!=='#'+id)history.replaceState(null,'','#'+id);
   updatePinButton();
   if(id==='setup' && can('action.setup.manage'))loadHospitalConfig();if(id==='communication' && can('action.communication.use'))loadCommunication();
 }
 function restoreSection(){
   let id=(location.hash||'').slice(1);
-  if(!VALID_SECTIONS.includes(id)){try{id=localStorage.getItem('careflow:pinnedSection:'+encodeURIComponent(state.session?.user?.email||'default'))||localStorage.getItem('careflow:lastSection')||'dashboard'}catch(e){id='dashboard'}}
-  if(!VALID_SECTIONS.includes(id))id='dashboard';
+  if(!VALID_SECTIONS.includes(id)||!canSection(id)){
+    try{id=localStorage.getItem(staffStorageKey('pinnedSection'))||localStorage.getItem(staffStorageKey('lastSection'))||roleDefaultSection()}catch(e){id=roleDefaultSection()}
+  }
+  if(!VALID_SECTIONS.includes(id)||!canSection(id))id=roleDefaultSection();
   showSection(id,false);
 }
 window.addEventListener('hashchange',restoreSection);
@@ -228,15 +235,16 @@ function toggleNavGroup(btn){const group=btn.closest('.nav-group');group.classLi
 function openMobileNav(){document.body.classList.add('mobile-nav-open')}
 function closeMobileNav(){document.body.classList.remove('mobile-nav-open')}
 function togglePinnedScreen(){
-  const id=document.querySelector('.section.active')?.id||'dashboard';
-  let pinned=null;try{pinned=localStorage.getItem('careflow:pinnedSection:'+encodeURIComponent(state.session?.user?.email||'default'))}catch(e){}
-  try{if(pinned===id){localStorage.removeItem('careflow:pinnedSection:'+encodeURIComponent(state.session?.user?.email||'default'))}else{localStorage.setItem('careflow:pinnedSection:'+encodeURIComponent(state.session?.user?.email||'default'),id)}}catch(e){}
+  const id=document.querySelector('.section.active')?.id||roleDefaultSection();
+  if(!canSection(id))return;
+  let pinned=null;try{pinned=localStorage.getItem(staffStorageKey('pinnedSection'))}catch(e){}
+  try{if(pinned===id){localStorage.removeItem(staffStorageKey('pinnedSection'))}else{localStorage.setItem(staffStorageKey('pinnedSection'),id)}}catch(e){}
   updatePinButton();
 }
 function updatePinButton(){
   const b=document.getElementById('pinScreenBtn');if(!b)return;
-  let pinned=null;try{pinned=localStorage.getItem('careflow:pinnedSection:'+encodeURIComponent(state.session?.user?.email||'default'))}catch(e){}
-  const active=document.querySelector('.section.active')?.id||'dashboard';
+  let pinned=null;try{pinned=localStorage.getItem(staffStorageKey('pinnedSection'))}catch(e){}
+  const active=document.querySelector('.section.active')?.id||roleDefaultSection();
   const on=pinned===active;b.classList.toggle('primary',on);b.innerHTML=(on?'★':'☆')+' <span>'+ (on?'Pinned':'Pin') +'</span>';
   b.title=on?'This screen is pinned and will open next time':'Pin this screen so it opens next time';
 }
