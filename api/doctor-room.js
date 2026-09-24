@@ -19,7 +19,7 @@ export default async function(req,res){
   const apptFilter=doctorId ? "AND a.doctor_id=$2" : "";
 
   const queue=await db.query(
-    "SELECT q.id,q.patient_id,q.appointment_id,q.doctor_id,q.stage,q.priority,q.token,q.reason,q.notes,q.checked_in_at,p.name AS patient_name,p.phone,p.date_of_birth,p.status AS patient_status,d.name AS doctor_name FROM queue_entries q JOIN patients p ON p.id=q.patient_id LEFT JOIN doctors d ON d.id=q.doctor_id WHERE q.hospital_id=$1 AND q.completed_at IS NULL "+doctorFilter+" AND q.stage IN ('waiting','vitals','doctor') ORDER BY CASE q.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,q.checked_in_at",
+    "SELECT q.id,q.patient_id,q.appointment_id,q.doctor_id,q.stage,q.priority,q.token,q.reason,q.notes,q.checked_in_at,p.name AS patient_name,p.phone,p.date_of_birth,p.status AS patient_status,d.name AS doctor_name FROM queue_entries q JOIN patients p ON p.id=q.patient_id LEFT JOIN doctors d ON d.id=q.doctor_id WHERE q.hospital_id=$1 AND q.completed_at IS NULL "+doctorFilter+" AND q.stage IN ('waiting','vitals','doctor','in_room') ORDER BY CASE q.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,q.checked_in_at",
     doctorId?[ctx.hospitalId,doctorId]:[ctx.hospitalId]
   );
 
@@ -29,8 +29,8 @@ export default async function(req,res){
   );
 
   const stats={
-    waiting:queue.rows.filter(x=>x.stage!=="doctor").length,
-    in_room:queue.rows.filter(x=>x.stage==="doctor").length,
+    waiting:queue.rows.filter(x=>x.stage!=="doctor"&&x.stage!=="in_room").length,
+    in_room:queue.rows.filter(x=>x.stage==="in_room").length,
     today:appointments.rows.length
   };
 

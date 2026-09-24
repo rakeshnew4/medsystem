@@ -51,7 +51,7 @@ export default async function(req,res){
     const before=await db.query("SELECT stage,patient_id,doctor_id,token FROM queue_entries WHERE id=$1 AND hospital_id=$2",[b.id,hid]);
     const previous=before.rows[0]||null;
     const r=await db.query(
-      "UPDATE queue_entries SET stage=$1,priority=COALESCE($2,priority),doctor_id=COALESCE($3,doctor_id),started_at=CASE WHEN $1 IN ('doctor','vitals','lab','followup') AND started_at IS NULL THEN now() ELSE started_at END,completed_at=CASE WHEN $1='completed' THEN now() ELSE completed_at END,updated_at=now() WHERE id=$4 AND hospital_id=$5 RETURNING id,patient_id,appointment_id,stage,priority,doctor_id,token,token_date,token_number",
+      "UPDATE queue_entries SET stage=$1,priority=COALESCE($2,priority),doctor_id=COALESCE($3,doctor_id),started_at=CASE WHEN $1 IN ('doctor','in_room','vitals','lab','followup') AND started_at IS NULL THEN now() ELSE started_at END,completed_at=CASE WHEN $1='completed' THEN now() ELSE completed_at END,updated_at=now() WHERE id=$4 AND hospital_id=$5 RETURNING id,patient_id,appointment_id,stage,priority,doctor_id,token,token_date,token_number",
       [b.stage,b.priority||null,b.doctor_id||null,b.id,hid]
     );
     if(!r.rows[0])return res.json({error:"Queue item not found"});
@@ -67,7 +67,7 @@ export default async function(req,res){
     if(encounter)await db.query("UPDATE care_encounters SET doctor_id=COALESCE($1,doctor_id),current_stage=$2,priority=$3,updated_at=now() WHERE id=$4",[q.doctor_id,q.stage,q.priority||"normal",encounter.id]);
     await logWorkflowEvent(ctx,{patientId:q.patient_id,encounterId:encounter?.id||null,eventType:q.stage==="completed"?"queue_completed":"queue_stage_changed",stage:q.stage,entityType:"queue",entityId:q.id,metadata:{token:q.token,token_date:q.token_date,priority:q.priority||"normal"}});
     if(previous && previous.stage!==q.stage){
-      const labels={waiting:"Nurse vitals",vitals:"Doctor consultation",doctor:"Next clinical step",lab:"Lab work",followup:"Follow-up desk",pharmacy:"Pharmacy dispensing",completed:"Visit completed"};
+      const labels={waiting:"Nurse vitals",vitals:"Doctor consultation",doctor:"Doctor waiting",in_room:"Doctor consultation",lab:"Lab work",followup:"Follow-up desk",pharmacy:"Pharmacy dispensing",completed:"Visit completed"};
       await notifyStage({hospitalId:hid,stage:q.stage,title:"Patient moved to "+(labels[q.stage]||q.stage),body:"Token "+(q.token||"—")+" is ready for "+(labels[q.stage]||q.stage)+".",entityType:"queue",entityId:q.id,patientId:q.patient_id,excludeStaffId:ctx.staff.id,doctorId:q.doctor_id});
     }
     return res.json(q);
