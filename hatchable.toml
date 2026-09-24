@@ -60,3 +60,9 @@ expose = true
 [[secret]]
 name = "SUPABASE_MANAGEMENT_KEY"
 expose = true
+
+# Supabase PostgreSQL direct connection / transaction pooler URL.
+# Server-side only; never expose to browser code.
+[[secret]]
+name = "SUPABASE_DATABASE_URL"
+expose = true
