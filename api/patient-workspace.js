@@ -53,6 +53,7 @@ export default async function(req,res){
     pharmacy:canPharmacy?pharmacy.rows:[],
     insurance:canBilling?insurance.rows:[],
     discharge:canClinical?discharge.rows[0]||null:null,
+    role:ctx.staff?.role||null,
     permissions
   });
 }
