@@ -64,6 +64,23 @@ button,input,select,textarea{font:inherit}
 .two-col{grid-template-columns:1.35fr .85fr}
 .panel{padding:20px}
 .panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.dashboard-toolbar{display:flex;justify-content:flex-end;align-items:center;gap:14px;margin:0 0 16px;padding:10px 0;border-bottom:1px solid var(--line)}
+.dashboard-toolbar-label{display:flex;align-items:baseline;gap:9px;margin-right:auto}
+.dashboard-toolbar-label strong{font-size:13px}
+.dashboard-toolbar-label span{font-size:11px;color:var(--muted)}
+.dashboard-range-controls{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}
+.dashboard-range-controls select,.dashboard-range-controls input{height:40px;border:1px solid var(--line);background:#fff;color:var(--text);border-radius:10px;padding:0 11px;font:inherit;font-size:13px;outline:none}
+.dashboard-range-controls select{min-width:130px;font-weight:600}
+.dashboard-range-controls input{width:135px}
+.dashboard-range-controls>span{font-size:11px;color:var(--muted)}
+.dashboard-range-controls .btn{height:40px;padding:0 14px}
+@media(max-width:700px){
+  .dashboard-toolbar{align-items:flex-start;flex-direction:column;gap:8px}
+  .dashboard-toolbar-label{display:block;margin:0}
+  .dashboard-toolbar-label span{display:block;margin-top:3px}
+  .dashboard-range-controls{width:100%;justify-content:flex-start}
+  .dashboard-range-controls select{flex:1;min-width:0}
+}
 .panel-title{font-size:17px;font-weight:800;letter-spacing:-.02em;margin:0}
 .table-wrap{overflow:auto}
 table{width:100%;border-collapse:collapse}

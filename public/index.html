@@ -76,7 +76,7 @@
 <div id="roleWorkspaceBar" class="role-workspace-bar" style="display:none"></div><div id="resumeContextBar" class="resume-context-bar" style="display:none"></div><div id="workflowToastHost" class="workflow-toast-host" aria-live="polite"></div>
 
 <section id="dashboard" class="section active">
-  <div class="card panel dashboard-range-bar"><div class="panel-head"><div><strong>Dashboard period</strong><div style="font-size:12px;color:var(--muted);margin-top:3px">Appointments below use this date range. Active IPD always shows currently admitted patients.</div></div><div class="dashboard-range-controls"><select id="dashboardRange" onchange="changeDashboardRange(this.value)"><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="last7">Last 7 days</option><option value="next7">Next 7 days</option><option value="last30">Last 30 days</option><option value="next30">Next 30 days</option><option value="custom">Custom range</option></select><input id="dashboardFrom" type="date" style="display:none" onchange="applyCustomDashboardRange()"><span id="dashboardRangeSep" style="display:none">to</span><input id="dashboardTo" type="date" style="display:none" onchange="applyCustomDashboardRange()"><button class="btn" type="button" onclick="loadAll()">Apply</button></div></div></div>
+  <div class="dashboard-toolbar"><div class="dashboard-toolbar-label"><strong>Dashboard period</strong><span>Appointments follow this range · Active IPD stays current</span></div><div class="dashboard-range-controls"><select id="dashboardRange" aria-label="Dashboard period" onchange="changeDashboardRange(this.value)"><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="last7">Last 7 days</option><option value="next7">Next 7 days</option><option value="last30">Last 30 days</option><option value="next30">Next 30 days</option><option value="custom">Custom range</option></select><input id="dashboardFrom" type="date" aria-label="From date" style="display:none" onchange="applyCustomDashboardRange()"><span id="dashboardRangeSep" style="display:none">to</span><input id="dashboardTo" type="date" aria-label="To date" style="display:none" onchange="applyCustomDashboardRange()"><button class="btn" type="button" onclick="loadAll()">Apply</button></div></div>
   <div id="stats" class="grid stats"></div>
   <div class="grid two-col" style="margin-top:16px">
     <div class="card panel"><div class="panel-head"><h2 class="panel-title">Appointments</h2><button class="btn" onclick="showSection('appointments')">View all</button></div><div id="todayAppointments" class="table-wrap"></div></div>
@@ -223,7 +223,7 @@ function renderRoleWorkspace(){
   const el=document.getElementById('roleWorkspaceBar');if(!el)return;
   const role=state.session?.staff?.role||'admin';
   const configs={
-    admin:{title:'Command Center',sub:'Hospital-wide operations and administration',actions:[['dashboard','Overview'],['analytics','Insights'],['staff','Staff'],['setup','Setup']]},
+    admin:{title:'',sub:'',actions:[]},
     doctor:{title:'Doctor Workspace',sub:'Consultation queue, patient records and clinical workflow',actions:[['doctor-room','My Queue'],['patients','Patients'],['followups','Follow-ups'],['appointments','Appointments']]},
     nurse:{title:'Nursing Station',sub:'Ward patients, beds and the next nursing action',actions:[['beds','Ward & Beds'],['queue','OPD Queue'],['patients','Patients'],['lab','Investigations']]},
     receptionist:{title:'OPD Desk',sub:'Registration, appointments, queue and patient flow',actions:[['queue','Queue'],['appointments','Appointments'],['patients','Patients'],['billing','Billing']]},
@@ -232,7 +232,7 @@ function renderRoleWorkspace(){
     billing:{title:'Billing Desk',sub:'Invoices, collections and patient accounts',actions:[['billing','Billing'],['patients','Patients'],['appointments','Appointments'],['queue','Queue']]}
   };
   const cfg=configs[role];
-  if(!cfg){el.style.display='none';return;}
+  if(!cfg||role==='admin'){el.style.display='none';return;}
   const roleSectionTitles={nurse:{beds:'Nursing Station · Ward'},receptionist:{queue:'OPD Desk · Queue'},lab:{lab:'Lab Workbench'},pharmacy:{pharmacy:'Pharmacy Desk'},billing:{billing:'Billing Desk'},doctor:{'doctor-room':'Doctor Room'}};
   Object.entries(roleSectionTitles[role]||{}).forEach(([id,title])=>{const h=document.querySelector('#'+id+' .panel-title');if(h)h.textContent=title});
   const buttons=cfg.actions.filter(x=>canSection(x[0])).map(x=>'<button class="workspace-nav-btn '+(document.querySelector('.section.active')?.id===x[0]?'active':'')+'" onclick="showSection(\''+x[0]+'\');closeMobileNav()">'+esc(x[1])+'</button>').join('');
