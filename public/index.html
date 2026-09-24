@@ -656,7 +656,7 @@ function patientCareTeamActions(p,s){
   ]}
  ];
  const html=groups.map(g=>{
-  const active=g.role===role;
+  const active=g.role===role || (role==='admin'&&g.role==='doctor');
   const items=g.items.map(it=>{
    const ready=it[2]===true;
    const permitted=active&&it[4]===true;
