@@ -642,7 +642,7 @@ function workspacePayOutstanding(pid){
 function workspaceIPDPanel(pid,admissionId){
  const a=(state.activePatientRecord?.ipd?.admissions||[]).find(x=>Number(x.id)===Number(admissionId));
  const bedText=a?(a.ward||'Ward')+' · '+(a.bed_number||'Unassigned'):'Admission';
- const body='<div class="care-banner"><div><strong>'+esc(bedText)+'</strong><span>'+esc(a?.admission_number||'Active admission')+'</span></div><div><strong>Admitted</strong><span>'+fmtDate(a?.admitted_at)+'</span></div></div><div class="workspace-care-actions"><button class="btn" onclick="workspaceIPDAction(\\'edit\\','+pid+','+admissionId+')">Edit admission</button><button class="btn" onclick="workspaceIPDAction(\\'transfer\\','+pid+','+admissionId+')">Transfer bed</button><button class="btn" onclick="workspaceDischargeChecklist('+pid+','+admissionId+')">Discharge checklist</button></div>';
+ const body='<div class="care-banner"><div><strong>'+esc(bedText)+'</strong><span>'+esc(a?.admission_number||'Active admission')+'</span></div><div><strong>Admitted</strong><span>'+fmtDate(a?.admitted_at)+'</span></div></div><div class="workspace-care-actions"><button class="btn" onclick="workspaceIPDAction(\'edit\','+pid+','+admissionId+')">Edit admission</button><button class="btn" onclick="workspaceIPDAction(\'transfer\','+pid+','+admissionId+')">Transfer bed</button><button class="btn" onclick="workspaceDischargeChecklist('+pid+','+admissionId+')">Discharge checklist</button></div>';
  workspaceActionPanel({title:'IPD actions',body},pid);
 }
 function workspaceVitals(pid){
