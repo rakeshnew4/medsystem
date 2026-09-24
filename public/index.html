@@ -429,6 +429,67 @@ function patientWorkspaceActionButtons(p){
  const finance=s.permissions?.billing?'<button class="btn" onclick="workspaceInvoice('+id+')">+ Bill</button>':'';
  return '<div class="patient-quick-actions">'+a+q+ap+clinical+finance+'<button class="btn primary" onclick="openClinical('+id+')">Full clinical record</button></div>';
 }
+function patientNextActions(p,s){
+ const clinical=!!s.permissions?.clinical, billing=!!s.permissions?.billing, pharmacy=!!s.permissions?.pharmacy;
+ const q=String(p.queue_stage||'').toLowerCase();
+ const labs=(s.clinical?.lab_orders||[]), latestLab=labs[0];
+ const meds=(s.clinical?.medications||[]), latestMed=meds[0];
+ const bills=s.billing||[], outstanding=bills.reduce((n,x)=>n+Math.max(0,Number(x.due||Number(x.total||0)-Number(x.paid||0))),0);
+ const activeAdm=(s.ipd?.admissions||[]).find(a=>!a.discharged_at);
+ const actions=[];
+ const add=(key,title,desc,fn,primary=true)=>actions.push('<div class="next-action '+(primary?'primary':'')+'"><div><strong>'+esc(title)+'</strong><span>'+esc(desc)+'</span></div><button class="btn '+(primary?'primary':'')+'" onclick="'+fn+'">'+esc(primary?'Do now':'Open')+'</button></div>');
+ if(activeAdm){
+   if(outstanding>0&&billing)add('bill','Collect outstanding payment','₹'+outstanding.toFixed(2)+' remains due.','showSection(\\'billing\\')');
+   else add('ipd','Open IPD / bed','Review admission, ward, bed or discharge status.','showSection(\\'beds\\')');
+ } else if(q==='waiting'){
+   if(clinical)add('vitals','Record vitals','Patient is waiting for clinical assessment.','workspaceVitals('+p.id+')');
+   else add('doctor','Open queue','Move the patient through the OPD queue.','showSection(\\'queue\\')');
+ } else if(q==='vitals'){
+   if(clinical)add('doctor','Open Doctor Room','Vitals are recorded; continue the consultation workflow.','showSection(\\'doctor-room\\')');
+ } else if(q==='doctor'){
+   if(clinical)add('consult','Complete consultation','Open the doctor workspace to document the visit and next steps.','showSection(\\'doctor-room\\')');
+ } else if(q==='lab'){
+   if(latestLab?.status==='ordered'&&clinical)add('sample','Collect lab sample','The latest investigation is ordered and awaiting sample collection.','workspaceLabStatus('+latestLab.id+\\',\\'sample_collected\\','+p.id+')');
+   else if(latestLab?.status==='sample_collected'&&clinical)add('processing','Start processing','Sample is collected and ready for lab processing.','workspaceLabStatus('+latestLab.id+\\',\\'processing\\','+p.id+')');
+   else if(latestLab?.status==='processing'&&clinical)add('verify','Verify result','Enter/verify the latest laboratory result.','workspaceVerifyLab('+latestLab.id+','+p.id+')');
+   else if(latestLab?.status==='verified'&&clinical)add('review','Review result','A verified result is ready for clinician review.','showSection(\\'doctor-room\\')');
+   else add('lab','Open lab','Review the latest investigation and its status.','showSection(\\'lab\\')');
+ } else if(q==='pharmacy'){
+   if(pharmacy&&latestMed&&!['dispensed','completed'].includes(String(latestMed.dispense_status||'').toLowerCase()))add('pharmacy','Dispense medicine','A prescription is awaiting pharmacy dispensing.','workspaceDispenseMedicine('+latestMed.medication_id+','+p.id+')');
+   else add('pharmacy','Open pharmacy','Review prescriptions and dispensing.','showSection(\\'pharmacy\\')');
+ } else if(q==='followup'){
+   add('followup','Schedule follow-up','Continue the patient journey with the next planned visit.','openClinicalFollowup('+p.id+')');
+ } else if(outstanding>0&&billing){
+   add('bill','Collect outstanding payment','₹'+outstanding.toFixed(2)+' remains due.','showSection(\\'billing\\')');
+ } else if(!p.today_token){
+   add('opd','Register OPD','Start an outpatient visit for this patient.','openOpdRegistration('+p.id+')');
+ } else {
+   add('record','Review patient','Open the full patient record and current journey.','openClinical('+p.id+')',false);
+ }
+ return actions.length?'<div class="next-actions"><div class="next-actions-head"><div><h3 class="panel-title">Next action</h3><div class="record-section-note">Context-aware workflow guidance; staff remain in control of the action.</div></div><span class="status active">'+esc(prettyStatus(q||'registered'))+'</span></div>'+actions.join('')+'</div>':'';
+}
+async function workspaceLabStatus(id,status,pid){
+ try{await api('/lab',{method:'PUT',body:JSON.stringify({id,status})});await refreshPatientWorkspace(pid)}
+ catch(x){alert(x.message)}
+}
+function workspaceVerifyLab(id,pid){
+ const result=prompt('Enter the verified lab result / summary:');
+ if(result===null)return;
+ workspaceLabStatusWithResult(id,pid,result);
+}
+async function workspaceLabStatusWithResult(id,pid,result_summary){
+ try{await api('/lab',{method:'PUT',body:JSON.stringify({id,status:'verified',result_summary})});await refreshPatientWorkspace(pid)}
+ catch(x){alert(x.message)}
+}
+function workspaceDispenseMedicine(medication_id,pid){
+ const quantity=prompt('Quantity to dispense','1');
+ if(quantity===null)return;
+ workspaceSaveDispense(medication_id,pid,quantity);
+}
+async function workspaceSaveDispense(medication_id,pid,quantity){
+ try{await api('/pharmacy',{method:'POST',body:JSON.stringify({patient_id:pid,medication_id,quantity:Number(quantity||1)})});await refreshPatientWorkspace(pid)}
+ catch(x){alert(x.message)}
+}
 function patientWorkspacePanel(title,body){
  return '<div class="workspace-card patient-action-panel"><div class="panel-head"><h3 class="panel-title">'+esc(title)+'</h3><button class="btn" type="button" onclick="this.closest(\'.patient-action-panel\').remove()">Cancel</button></div>'+body+'</div>';
 }
@@ -485,6 +546,7 @@ function renderPatientWorkspace(){
  const currentStep=p.queue_stage?prettyStatus(p.queue_stage):(activeAdm?'Admitted':'Registered');
  const body=document.getElementById('patientWorkspaceBody');
  body.innerHTML='<div class="patient-workspace-header"><div><div class="kicker">'+esc(p.uhid||'Patient record')+'</div><h2 class="patient-workspace-name">'+esc(p.name)+'</h2><div class="patient-workspace-meta">'+(patientAge(p.date_of_birth)?patientAge(p.date_of_birth)+' · ':'')+esc(p.phone||'No phone')+(p.email?' · '+esc(p.email):'')+'</div></div><div>'+patientWorkspaceActionButtons(p)+'</div></div>'+
+ patientNextActions(p,s)+
  '<div class="patient-summary-strip"><div><span>Current care</span><strong>'+esc(activeAdm?'IPD':'OPD')+'</strong></div><div><span>Current step</span><strong>'+esc(currentStep)+'</strong></div><div><span>Visits</span><strong>'+((c?.visits||[]).length)+'</strong></div><div><span>Open follow-ups</span><strong>'+fu.filter(x=>x.status!=='completed').length+'</strong></div><div><span>Outstanding</span><strong>₹'+outstanding.toFixed(2)+'</strong></div></div>'+
  '<div class="patient-workspace-grid"><div class="patient-workspace-column">'+
  '<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Today / current care</h3><div class="record-section-note">What staff need to know before taking the next action.</div></div></div>'+patientCurrentCare(p,activeAdm,latestVitals,lastVisit)+'</div>'+
