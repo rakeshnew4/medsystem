@@ -656,7 +656,8 @@ function patientNextActions(p,s){
  } else if(q==='vitals'){
    if(clinical)add('doctor','Open Doctor Room','Vitals are recorded; continue the consultation workflow.','workspaceOpenDoctor('+p.id+')');
  } else if(q==='doctor'){
-   if(clinical)add('consult','Continue consultation','Open the consultation workspace for notes, orders and completion.','workspaceOpenDoctor('+p.id+')');
+   if(s.role==='doctor')add('consult','Patient ready for consultation','Vitals are completed. The patient is waiting for the doctor.','workspaceOpenDoctor('+p.id+')');
+   else add('doctor','Vitals completed','Patient is now waiting for the doctor to start the consultation.','showSection(\'queue\')',false);
  } else if(q==='lab'){
    // if(latestLab?.status==='ordered'&&clinical)add('sample','Collect lab sample','The latest investigation is ordered and awaiting sample collection.','workspaceLabStatus('+latestLab.id+',\\'sample_collected\\','+p.id+')');
    // else if(latestLab?.status==='sample_collected'&&clinical)add('processing','Start processing','Sample is collected and ready for lab processing.','workspaceLabStatus('+latestLab.id+',\\'processing\\','+p.id+')');
