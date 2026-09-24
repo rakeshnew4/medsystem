@@ -421,8 +421,60 @@ function renderPatientDirectory(){
 }
 function patientAge(dob){return doctorRoomAge(dob)}
 function patientWorkspaceActionButtons(p){
- const q=p.today_token?'<button class="btn" onclick="showSection(\'queue\')">Open queue</button>':'<button class="btn" onclick="openOpdRegistration('+p.id+')">Register OPD</button>';
- return '<div class="patient-quick-actions"><button class="btn" onclick="editPatient('+p.id+')">Edit patient</button>'+q+'<button class="btn" onclick="showSection(\'appointments\')">Appointments</button>'+(state.activePatientRecord?.permissions?.billing?'<button class="btn" onclick="showSection(\'billing\')">Billing</button>':'')+'<button class="btn primary" onclick="openClinical('+p.id+')">Clinical record</button></div>';
+ const s=state.activePatientRecord||{}, id=p.id;
+ const q=p.today_token?'<button class="btn" onclick="movePatient('+id+',\'waiting\');refreshPatientWorkspace('+id+')">Queue</button>':'<button class="btn" onclick="openOpdRegistration('+id+')">Register OPD</button>';
+ const a='<button class="btn" onclick="editPatient('+id+')">Edit patient</button>';
+ const ap='<button class="btn" onclick="patientWorkspaceAppointments('+id+')">Appointments</button>';
+ const clinical=s.permissions?.clinical?'<button class="btn" onclick="workspaceVitals('+id+')">+ Vitals</button><button class="btn" onclick="workspacePrescription('+id+')">+ Prescription</button><button class="btn" onclick="workspaceLab('+id+')">+ Lab order</button>':'';
+ const finance=s.permissions?.billing?'<button class="btn" onclick="workspaceInvoice('+id+')">+ Bill</button>':'';
+ return '<div class="patient-quick-actions">'+a+q+ap+clinical+finance+'<button class="btn primary" onclick="openClinical('+id+')">Full clinical record</button></div>';
+}
+function patientWorkspacePanel(title,body){
+ return '<div class="workspace-card patient-action-panel"><div class="panel-head"><h3 class="panel-title">'+esc(title)+'</h3><button class="btn" type="button" onclick="this.closest(\'.patient-action-panel\').remove()">Cancel</button></div>'+body+'</div>';
+}
+function workspaceActionPanel(html,pid){
+ const body=document.getElementById('patientWorkspaceBody');if(!body)return;
+ body.insertAdjacentHTML('afterbegin',patientWorkspacePanel(html.title,html.body));
+ body.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function workspaceVitals(pid){
+ const b='<form class="form-grid" onsubmit="workspaceSaveVitals(event,'+pid+')"><div class="field"><label>BP systolic</label><input name="blood_pressure_systolic"></div><div class="field"><label>BP diastolic</label><input name="blood_pressure_diastolic"></div><div class="field"><label>Pulse</label><input name="pulse"></div><div class="field"><label>Temperature</label><input name="temperature"></div><div class="field"><label>Weight kg</label><input name="weight_kg"></div><div class="field"><label>Height cm</label><input name="height_cm"></div><div class="field"><label>SpO₂</label><input name="spo2"></div><div class="field"><label>Respiratory rate</label><input name="respiratory_rate"></div><div class="field full"><label>Notes</label><textarea name="notes"></textarea></div><div class="field full"><button class="btn primary">Save vitals</button></div></form>';
+ workspaceActionPanel({title:'Record vitals',body:b},pid);
+}
+function workspacePrescription(pid){
+ const b='<form class="form-grid" onsubmit="workspaceSavePrescription(event,'+pid+')"><div class="field"><label>Medicine</label><input name="medicine_name" required></div><div class="field"><label>Dose</label><input name="dose"></div><div class="field"><label>Frequency</label><input name="frequency" placeholder="1-0-1"></div><div class="field"><label>Duration</label><input name="duration" placeholder="5 days"></div><div class="field full"><label>Instructions</label><textarea name="instructions"></textarea></div><div class="field full"><button class="btn primary">Save prescription</button></div></form>';
+ workspaceActionPanel({title:'Add prescription',body:b},pid);
+}
+function workspaceLab(pid){
+ const b='<form class="form-grid" onsubmit="workspaceSaveLab(event,'+pid+')"><div class="field full"><label>Investigation / test</label><input name="test_name" required placeholder="e.g. CBC"></div><div class="field full"><label>Notes</label><textarea name="notes"></textarea></div><div class="field full"><button class="btn primary">Order investigation</button></div></form>';
+ workspaceActionPanel({title:'Order investigation',body:b},pid);
+}
+function workspaceInvoice(pid){
+ const b='<form class="form-grid" onsubmit="workspaceSaveInvoice(event,'+pid+')"><div class="field full"><label>Description</label><input name="description" required placeholder="Consultation / lab / medicine"></div><div class="field"><label>Amount</label><input name="amount" type="number" min="0" step="0.01" required></div><div class="field"><label>Payment received now</label><input name="paid" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Payment method</label><select name="payment_method"><option value="">Not paid</option><option>cash</option><option>upi</option><option>card</option><option>bank_transfer</option></select></div><div class="field full"><label>Notes</label><textarea name="notes"></textarea></div><div class="field full"><button class="btn primary">Create bill</button></div></form>';
+ workspaceActionPanel({title:'Create bill / collect payment',body:b},pid);
+}
+async function workspaceSaveVitals(e,pid){
+ e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());b.patient_id=pid;await api('/vitals',{method:'POST',body:JSON.stringify(b)});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+}
+async function workspaceSavePrescription(e,pid){
+ e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());b.patient_id=pid;b.type='medicine';await api('/clinical',{method:'POST',body:JSON.stringify(b)});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+}
+async function workspaceSaveLab(e,pid){
+ e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());b.patient_id=pid;await api('/lab',{method:'POST',body:JSON.stringify(b)});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+}
+async function workspaceSaveInvoice(e,pid){
+ e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/billing',{method:'POST',body:JSON.stringify({patient_id:pid,items:[{description:b.description,quantity:1,unit_price:Number(b.amount||0)}],paid:Number(b.paid||0),payment_method:b.payment_method||null,notes:b.notes||null})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+}
+async function patientWorkspaceAppointments(pid){
+ const s=state.activePatientRecord;const rows=s?.appointments||[];
+ const html=rows.length?rows.slice(0,10).map(a=>'<div class="compact-record"><div><strong>'+fmtDate(a.appointment_date)+' · '+fmtTime(a.appointment_time)+'</strong><span>'+esc(a.doctor_name||'Doctor')+' · '+esc(a.reason||'General visit')+'</span></div><div>'+status(a.status)+'<button class="mini" onclick="workspaceCheckIn('+a.id+','+pid+')">Check in</button></div></div>').join(''):'<div class="empty">No appointments.</div>';
+ workspaceActionPanel({title:'Appointments & check-in',body:'<div>'+html+'</div>'},pid);
+}
+async function workspaceCheckIn(aid,pid){
+ try{const r=await api('/appointments',{method:'PUT',body:JSON.stringify({id:aid,action:'checkin',stage:'waiting'})});alert('OPD token issued: '+(r.queue?.token||'assigned'));await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+}
+async function refreshPatientWorkspace(pid){
+ const r=await api('/patient-workspace?patient_id='+encodeURIComponent(pid));state.activePatientRecord=r;renderPatientWorkspace();
 }
 function renderPatientWorkspace(){
  const s=state.activePatientRecord;if(!s)return;
