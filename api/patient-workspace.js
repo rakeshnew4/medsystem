@@ -21,7 +21,7 @@ export default async function(req,res){
   const canClinical=perms["action.clinical.view"]===true;
   const canBilling=perms["action.billing.manage"]===true;
   const canPharmacy=perms["action.pharmacy.manage"]===true;
-  const [clinical,appointments,billing,followups,ipd,workflow,pharmacy,insurance]=await Promise.all([
+  const [clinical,appointments,billing,followups,ipd,workflow,pharmacy,insurance,discharge]=await Promise.all([
     canClinical
       ? Promise.all([
           db.query("SELECT v.*,ce.encounter_type FROM vitals v LEFT JOIN care_encounters ce ON ce.id=v.encounter_id WHERE v.hospital_id=$1 AND v.patient_id=$2 ORDER BY v.recorded_at DESC LIMIT 20",[ctx.hospitalId,pid]),
@@ -37,7 +37,8 @@ export default async function(req,res){
     db.query("SELECT a.*,d.name AS doctor_name,b.ward,b.bed_number FROM admissions a LEFT JOIN doctors d ON d.id=COALESCE(a.discharge_doctor_id,a.admitting_doctor_id) LEFT JOIN beds b ON b.id=a.bed_id WHERE a.hospital_id=$1 AND a.patient_id=$2 ORDER BY a.admitted_at DESC LIMIT 20",[ctx.hospitalId,pid]),
     db.query("SELECT e.*,COALESCE(s.display_name,u.email) AS actor_name FROM workflow_events e LEFT JOIN staff_profiles s ON s.id=e.actor_staff_id LEFT JOIN users u ON u.id=e.actor_user_id WHERE e.hospital_id=$1 AND e.patient_id=$2 ORDER BY e.created_at DESC LIMIT 40",[ctx.hospitalId,pid]),
     db.query("SELECT m.id AS medication_id,m.patient_id,m.medicine_name,m.dose,m.frequency,m.duration,m.instructions,m.encounter_id,m.prescribed_at,COALESCE(x.quantity,0) AS dispensed_quantity,COALESCE(x.status,'pending') AS dispense_status,x.dispensed_at FROM medications m LEFT JOIN LATERAL (SELECT pd.quantity,pd.status,pd.dispensed_at FROM pharmacy_dispenses pd WHERE pd.hospital_id=m.hospital_id AND pd.medication_id=m.id ORDER BY pd.dispensed_at DESC LIMIT 1) x ON true WHERE m.hospital_id=$1 AND m.patient_id=$2 ORDER BY m.prescribed_at DESC LIMIT 50",[ctx.hospitalId,pid]),
-    db.query("SELECT * FROM insurance_claims WHERE hospital_id=$1 AND patient_id=$2 ORDER BY created_at DESC LIMIT 30",[ctx.hospitalId,pid])
+    db.query("SELECT * FROM insurance_claims WHERE hospital_id=$1 AND patient_id=$2 ORDER BY created_at DESC LIMIT 30",[ctx.hospitalId,pid]),
+    db.query("SELECT * FROM discharge_checklists d WHERE d.hospital_id=$1 AND d.admission_id=(SELECT id FROM admissions WHERE hospital_id=$1 AND patient_id=$2 AND discharged_at IS NULL ORDER BY admitted_at DESC LIMIT 1)",[ctx.hospitalId,pid])
   ]);
 
   const permissions={clinical:canClinical,billing:canBilling,pharmacy:canPharmacy};
@@ -51,6 +52,7 @@ export default async function(req,res){
     workflow:{events:workflow.rows},
     pharmacy:canPharmacy?pharmacy.rows:[],
     insurance:canBilling?insurance.rows:[],
+    discharge:canClinical?discharge.rows[0]||null:null,
     permissions
   });
 }

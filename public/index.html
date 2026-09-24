@@ -439,7 +439,11 @@ function patientNextActions(p,s){
  const actions=[];
  const add=(key,title,desc,fn,primary=true)=>actions.push('<div class="next-action '+(primary?'primary':'')+'"><div><strong>'+esc(title)+'</strong><span>'+esc(desc)+'</span></div><button class="btn '+(primary?'primary':'')+'" onclick="'+fn+'">'+esc(primary?'Do now':'Open')+'</button></div>');
  if(activeAdm){
+   const dc=s.discharge||null;
+   const ready=!!(dc&&dc.clinical_clearance&&dc.reports_ready&&dc.medication_reconciled&&dc.billing_cleared&&['paid','approved'].includes(String(dc.payment_status||'')));
    if(outstanding>0&&billing)add('bill','Collect outstanding payment','₹'+outstanding.toFixed(2)+' remains due.','showSection(\\'billing\\')');
+   else if(ready&&clinical)add('discharge','Complete discharge','All recorded discharge checks are cleared. Finalize and release the bed.','workspaceCompleteDischarge('+p.id+','+activeAdm.id+')');
+   else if(dc&&clinical)add('discharge','Complete discharge checklist','Some discharge requirements are still pending.','workspaceDischargeChecklist('+p.id+','+activeAdm.id+')');
    else add('ipd','Open IPD / bed','Review admission, ward, bed or discharge status.','showSection(\\'beds\\')');
  } else if(q==='waiting'){
    if(clinical)add('vitals','Record vitals','Patient is waiting for clinical assessment.','workspaceVitals('+p.id+')');
@@ -549,7 +553,7 @@ function renderPatientWorkspace(){
  patientNextActions(p,s)+
  '<div class="patient-summary-strip"><div><span>Current care</span><strong>'+esc(activeAdm?'IPD':'OPD')+'</strong></div><div><span>Current step</span><strong>'+esc(currentStep)+'</strong></div><div><span>Visits</span><strong>'+((c?.visits||[]).length)+'</strong></div><div><span>Open follow-ups</span><strong>'+fu.filter(x=>x.status!=='completed').length+'</strong></div><div><span>Outstanding</span><strong>₹'+outstanding.toFixed(2)+'</strong></div></div>'+
  '<div class="patient-workspace-grid"><div class="patient-workspace-column">'+
- '<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Today / current care</h3><div class="record-section-note">What staff need to know before taking the next action.</div></div></div>'+patientCurrentCare(p,activeAdm,latestVitals,lastVisit)+'</div>'+
+ '<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Today / current care</h3><div class="record-section-note">What staff need to know before taking the next action.</div></div></div>'+patientCurrentCare(p,activeAdm,latestVitals,lastVisit,s)+'</div>'+
  '<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Appointments</h3><div class="record-section-note">Recent and upcoming visits.</div></div><button class="mini" onclick="showSection(\'appointments\')">Open appointments</button></div>'+patientAppointments(ap)+'</div>'+
  (s.permissions.clinical?'<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Clinical summary</h3><div class="record-section-note">Documentation already recorded for this patient.</div></div><button class="mini" onclick="openClinical('+p.id+')">Full clinical record</button></div>'+patientClinicalSummary(c)+'</div>':'<div class="workspace-card"><div class="empty">Clinical details are restricted for your role.</div></div>')+
  '</div><div class="patient-workspace-column">'+
@@ -563,14 +567,36 @@ function renderPatientWorkspace(){
  body.style.display='block';document.getElementById('patientWorkspaceEmpty').style.display='none';
  renderPatientDirectory();
 }
-function patientCurrentCare(p,a,v,visit){
+function patientCurrentCare(p,a,v,visit,s){
  let h='<div class="care-banner"><div><strong>'+esc(p.care_type==='ipd'?'Inpatient care':'Outpatient care')+'</strong><span>'+esc(p.queue_stage?prettyStatus(p.queue_stage):'No active queue')+'</span></div>';
  if(a)h+='<div><strong>'+esc(a.ward||'Ward')+' · '+esc(a.bed_number||'Bed not assigned')+'</strong><span>'+esc(a.admission_number||('Admission #'+a.id))+' · Doctor '+esc(a.doctor_name||'—')+'</span></div>';
  h+='</div>';
+ if(a){
+   const dc=s?.discharge||null;
+   h+='<div class="workspace-care-actions"><button class="mini" onclick="workspaceIPDAction(\'edit\','+p.id+','+a.id+')">Edit admission</button><button class="mini" onclick="workspaceIPDAction(\'transfer\','+p.id+','+a.id+')">Transfer bed</button><button class="mini" onclick="workspaceDischargeChecklist('+p.id+','+a.id+')">'+(dc?'Discharge checklist':'Start discharge')+'</button></div>';
+   if(dc)h+='<div class="discharge-progress"><strong>Discharge readiness</strong><span>Clinical '+(dc.clinical_clearance?'✓':'—')+' · Reports '+(dc.reports_ready?'✓':'—')+' · Meds '+(dc.medication_reconciled?'✓':'—')+' · Billing '+(dc.billing_cleared?'✓':'—')+' · Payment '+esc(dc.payment_status||'pending')+'</span></div>';
+ }else if(!p.today_token){
+   h+='<div class="workspace-care-actions"><button class="btn primary" onclick="openOpdRegistration('+p.id+')">Register OPD</button></div>';
+ }
  if(v)h+='<div class="mini-metric-row"><div><strong>'+esc((v.blood_pressure_systolic||'—')+'/'+(v.blood_pressure_diastolic||'—'))+'</strong><span>BP</span></div><div><strong>'+esc(v.pulse||'—')+'</strong><span>Pulse</span></div><div><strong>'+esc(v.spo2||'—')+'</strong><span>SpO₂</span></div><div><strong>'+esc(v.weight_kg||'—')+'</strong><span>kg</span></div></div>';
  if(visit)h+='<div class="record-highlight"><strong>Latest consultation</strong><span>'+esc(visit.doctor_name||'Doctor')+' · '+fmtDate(visit.started_at)+'</span><p>'+esc(visit.clinical_notes||'No consultation summary recorded.')+'</p></div>';
  if(p.notes)h+='<div class="record-section-note" style="margin-top:10px">Patient notes: '+esc(p.notes)+'</div>';
  return h;
+}
+function workspaceDischargeChecklist(pid,admissionId){
+ const d=state.activePatientRecord?.discharge||{};
+ const b='<form class="form-grid" onsubmit="workspaceSaveDischarge(event,'+pid+','+admissionId+')"><div class="field"><label><input type="checkbox" name="clinical_clearance" '+(d.clinical_clearance?'checked':'')+'> Clinical clearance</label></div><div class="field"><label><input type="checkbox" name="reports_ready" '+(d.reports_ready?'checked':'')+'> Reports ready</label></div><div class="field"><label><input type="checkbox" name="medication_reconciled" '+(d.medication_reconciled?'checked':'')+'> Medication reconciled</label></div><div class="field"><label><input type="checkbox" name="billing_cleared" '+(d.billing_cleared?'checked':'')+'> Billing cleared</label></div><div class="field"><label>Insurance status</label><select name="insurance_status"><option value="not_applicable">Not applicable</option><option value="pending">Pending</option><option value="approved">Approved</option></select></div><div class="field"><label>Payment status</label><select name="payment_status"><option value="pending">Pending</option><option value="paid">Paid</option><option value="approved">Approved</option></select></div><div class="field full"><label>Discharge medicines / instructions</label><textarea name="discharge_medicines">'+esc(d.discharge_medicines||'')+'</textarea></div><div class="field full"><label>Summary</label><textarea name="summary">'+esc(d.summary||'')+'</textarea></div><div class="field full"><button class="btn primary">Save discharge checklist</button></div></form>';
+ workspaceActionPanel({title:'Discharge readiness',body:b},pid);
+}
+async function workspaceSaveDischarge(e,pid,admissionId){
+ e.preventDefault();
+ try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/discharge',{method:state.activePatientRecord?.discharge?'PUT':'POST',body:JSON.stringify({admission_id:admissionId,clinical_clearance:b.clinical_clearance==='on',reports_ready:b.reports_ready==='on',medication_reconciled:b.medication_reconciled==='on',billing_cleared:b.billing_cleared==='on',insurance_status:b.insurance_status,payment_status:b.payment_status,discharge_medicines:b.discharge_medicines,summary:b.summary})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+}
+async function workspaceCompleteDischarge(pid,admissionId){
+ const d=state.activePatientRecord?.discharge;
+ if(!d||!d.clinical_clearance||!d.reports_ready||!d.medication_reconciled||!d.billing_cleared||!['paid','approved'].includes(String(d.payment_status||''))){return workspaceDischargeChecklist(pid,admissionId)}
+ if(!confirm('Discharge this patient and release the bed?'))return;
+ try{await api('/beds',{method:'PUT',body:JSON.stringify({action:'discharge',id:admissionId,discharge_summary:d.summary||null})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
 }
 function patientAppointments(a){return a.length?a.slice(0,8).map(x=>'<div class="compact-record"><div><strong>'+fmtDate(x.appointment_date)+' · '+fmtTime(x.appointment_time)+'</strong><span>'+esc(x.doctor_name||'Doctor')+' · '+esc(x.consultation_type||'in_person')+'</span></div><div>'+status(x.status)+(x.queue_stage?'<small>'+esc(prettyStatus(x.queue_stage))+'</small>':'')+'</div></div>').join(''):'<div class="empty">No appointments found.</div>'}
 function patientClinicalSummary(c){
@@ -601,7 +627,8 @@ async function workspaceCompleteFollowup(id,pid){
  try{await api('/followups',{method:'PUT',body:JSON.stringify({id,status:'completed'})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
 }
 function workspaceIPDAction(action,pid,admissionId){
- if(action==='discharge'){const summary=prompt('Discharge summary');if(summary===null)return;return workspaceIPDRequest({action,id:admissionId,discharge_summary:summary},pid)}
+ if(action==='edit')return editIPDAdmission(admissionId);
+ if(action==='discharge'){return workspaceDischargeChecklist(pid,admissionId)}
  if(action==='transfer'){const bed=prompt('New bed ID');if(bed===null)return;return workspaceIPDRequest({action,id:admissionId,new_bed_id:Number(bed),reason:'Patient workspace transfer'},pid)}
  if(action==='admit'){const bed=prompt('Bed ID for admission');if(bed===null)return;return workspaceIPDRequest({action:'admit',patient_id:pid,bed_id:Number(bed),admission_type:'general'},pid)}
 }

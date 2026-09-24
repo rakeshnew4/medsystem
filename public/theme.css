@@ -263,6 +263,7 @@ button:disabled,.btn:disabled{opacity:.55;cursor:not-allowed}
 .workflow-event span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
 .workflow-event small{display:block;font-size:10px;color:var(--muted);margin-top:4px}
 @media(max-width:760px){.workflow-event{grid-template-columns:10px 1fr}.workflow-dot{width:8px;height:8px}}
+.workspace-care-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.discharge-progress{margin-top:9px;padding:9px 11px;border-radius:9px;background:var(--surface-2);border:1px dashed var(--line);display:grid;gap:3px}.discharge-progress strong{font-size:11px}.discharge-progress span{font-size:10px;color:var(--muted)}
 /* Context-aware patient workflow actions */
 .next-actions{margin:14px 0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
 .next-actions-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px}
