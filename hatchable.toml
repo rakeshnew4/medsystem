@@ -54,3 +54,9 @@ expose = true
 [[secret]]
 name = "SUPABASE_ENABLED"
 expose = true
+
+# Optional Supabase Management API access token for database/project administration.
+# Keep this server-side only; do not expose it to browser code.
+[[secret]]
+name = "SUPABASE_MANAGEMENT_KEY"
+expose = true
