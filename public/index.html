@@ -65,7 +65,7 @@
       </div>
     </div>
   </nav>
-  <div class="sidebar-footer"><div class="sidebar-account"><div class="sidebar-account-label">Signed in</div><div id="sidebarUserEmail" class="sidebar-account-email"></div></div><button class="sidebar-signout" type="button" onclick="signOut()">↪ Sign out</button><div class="sidebar-footer-note">Staff workspace · Clinical records are documentation tools; clinical decisions remain with qualified clinicians.</div></div>
+  <div class="sidebar-footer"><div class="sidebar-account"><div class="sidebar-account-label">Signed in</div><div id="sidebarUserEmail" class="sidebar-account-email"></div><div id="sidebarRoleStatus" class="sidebar-role-status"></div></div><div id="adminRoleTester" class="admin-role-tester" style="display:none"><button class="sidebar-role-test-btn" type="button" onclick="toggleRoleTester()">🧪 Test another role</button><div id="roleTesterPanel" class="role-tester-panel" style="display:none"><label for="previewRoleSelect">View as role</label><select id="previewRoleSelect"><option value="doctor">Doctor</option><option value="nurse">Nurse</option><option value="receptionist">Receptionist</option><option value="lab">Lab</option><option value="pharmacy">Pharmacy</option><option value="billing">Billing</option><option value="admin">Admin</option></select><div class="role-tester-actions"><button class="btn primary" type="button" onclick="startRolePreview()">Start test</button><button class="btn" type="button" onclick="exitRolePreview()">Exit test</button></div></div></div><button class="sidebar-signout" type="button" onclick="signOut()">↪ Sign out</button><div class="sidebar-footer-note">Staff workspace · Clinical records are documentation tools; clinical decisions remain with qualified clinicians.</div></div>
 </aside>
 
 <main class="main">
@@ -293,7 +293,7 @@ async function checkSession(){
   if(!s.staff){
     document.body.innerHTML='<div style="min-height:100vh;display:grid;place-items:center;padding:24px;font-family:system-ui;background:#f6f8f7"><div class="card panel" style="max-width:560px;text-align:center"><h1>Email not registered</h1><p style="color:#6b7d77">This email can authenticate with the platform, but it has not been registered by the hospital administrator. Ask the administrator to add your exact email address first.</p><button class="btn" onclick="hatchable.auth.signOut().then(()=>location.replace(\'/login\'))">Sign out</button></div></div>';return false
   }
-  document.getElementById('userBadge').textContent=(s.user?.email||'')+(s.staff?.role?' · '+s.staff.role:'');const sidebarEmail=document.getElementById('sidebarUserEmail');if(sidebarEmail)sidebarEmail.textContent=s.user?.email||'';
+  document.getElementById('userBadge').textContent=(s.user?.email||'')+(s.staff?.role?' · '+s.staff.role:'');const sidebarEmail=document.getElementById('sidebarUserEmail');if(sidebarEmail)sidebarEmail.textContent=s.user?.email||'';renderRoleTester(s);
   applyPermissions();
   if(s.staff && (!s.staff.active || s.staff.role==='pending')){document.body.innerHTML='<div style="min-height:100vh;display:grid;place-items:center;padding:24px;font-family:system-ui;background:#f6f8f7"><div class="card panel" style="max-width:520px;text-align:center"><h1>Account awaiting activation</h1><p style="color:#6b7d77">Your email is registered, but an administrator has not activated your staff account yet.</p><button class="btn primary" onclick="hatchable.auth.signOut().then(()=>location.replace(\'/login\'))">Sign out</button></div></div>';return false}
   return true;
@@ -1007,6 +1007,33 @@ async function addSchedule(){const day=prompt('Day of week: 0 Sun, 1 Mon ... 6 S
 async function addDoctorRule(){const day=prompt('OPD day: 0 Sun ... 6 Sat','1');const start=prompt('OPD start','09:00');const end=prompt('OPD end','13:00');const duration=prompt('Slot duration minutes','15');if(day===null||!start||!end)return;await api('/staff-availability',{method:'POST',body:JSON.stringify({action:'doctor-rule',day_of_week:Number(day),start_time:start,end_time:end,slot_duration_minutes:Number(duration||15),appointment_type:'opd'})});await loadAvailability()}
 async function addDoctorException(){const date=prompt('Date YYYY-MM-DD');const type=prompt('Exception type: leave, unavailable, extra','leave');if(!date||!type)return;const start=prompt('Start time (blank = whole day)');const end=prompt('End time (blank = whole day)');const reason=prompt('Reason');await api('/staff-availability',{method:'POST',body:JSON.stringify({action:'doctor-exception',exception_date:date,exception_type:type,start_time:start||null,end_time:end||null,reason:reason||null})});await loadAvailability()}
 async function deleteAvailability(kind,id){if(!confirm('Remove this schedule?'))return;await api('/staff-availability?action='+encodeURIComponent(kind)+'&id='+id,{method:'DELETE'});await loadAvailability()}
+function renderRoleTester(s){
+  const box=document.getElementById('adminRoleTester'),status=document.getElementById('sidebarRoleStatus'),sel=document.getElementById('previewRoleSelect');
+  const isAdminUser=!!s?.can_role_preview;
+  if(box)box.style.display=isAdminUser?'block':'none';
+  const role=s?.staff?.role||'admin', preview=role!=='admin' && isAdminUser;
+  if(status)status.innerHTML=preview?'<span class="preview-pill">Testing as '+esc(role)+'</span>':'<span class="sidebar-role-label">'+esc(role)+'</span>';
+  if(sel)sel.value=role==='admin'?'admin':role;
+}
+function toggleRoleTester(){
+  const p=document.getElementById('roleTesterPanel');if(!p)return;
+  p.style.display=p.style.display==='none'?'block':'none';
+}
+async function startRolePreview(){
+  const role=document.getElementById('previewRoleSelect')?.value||'admin';
+  try{
+    await api('/admin-role-preview',{method:'POST',body:JSON.stringify({role})});
+    closeMobileNav();
+    location.reload();
+  }catch(e){alert(e.message||'Could not start role test')}
+}
+async function exitRolePreview(){
+  try{
+    await api('/admin-role-preview',{method:'DELETE',body:'{}'});
+    closeMobileNav();
+    location.reload();
+  }catch(e){alert(e.message||'Could not exit role test')}
+}
 async function signOut(){await hatchable.auth.signOut();location.replace('/login')}
 
 // Canonical patient-detail entry point. Older clinical-detail helpers remain for their edit forms,
