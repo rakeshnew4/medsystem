@@ -76,7 +76,7 @@
 <div id="roleWorkspaceBar" class="role-workspace-bar" style="display:none"></div><div id="resumeContextBar" class="resume-context-bar" style="display:none"></div><div id="workflowToastHost" class="workflow-toast-host" aria-live="polite"></div>
 
 <section id="dashboard" class="section active">
-  <div class="card panel dashboard-range-bar"><div class="panel-head"><div><strong>Dashboard period</strong><div style="font-size:12px;color:var(--muted);margin-top:3px">Appointments below use this date range. Active IPD always shows currently admitted patients.</div></div><div class="dashboard-range-controls"><select id="dashboardRange" onchange="changeDashboardRange(this.value)"><option value="today">Today</option><option value="next7">Next 7 days</option><option value="next30">Next 30 days</option><option value="custom">Custom range</option></select><input id="dashboardFrom" type="date" style="display:none" onchange="applyCustomDashboardRange()"><span id="dashboardRangeSep" style="display:none">to</span><input id="dashboardTo" type="date" style="display:none" onchange="applyCustomDashboardRange()"><button class="btn" type="button" onclick="loadAll()">Apply</button></div></div></div>
+  <div class="card panel dashboard-range-bar"><div class="panel-head"><div><strong>Dashboard period</strong><div style="font-size:12px;color:var(--muted);margin-top:3px">Appointments below use this date range. Active IPD always shows currently admitted patients.</div></div><div class="dashboard-range-controls"><select id="dashboardRange" onchange="changeDashboardRange(this.value)"><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="last7">Last 7 days</option><option value="next7">Next 7 days</option><option value="last30">Last 30 days</option><option value="next30">Next 30 days</option><option value="custom">Custom range</option></select><input id="dashboardFrom" type="date" style="display:none" onchange="applyCustomDashboardRange()"><span id="dashboardRangeSep" style="display:none">to</span><input id="dashboardTo" type="date" style="display:none" onchange="applyCustomDashboardRange()"><button class="btn" type="button" onclick="loadAll()">Apply</button></div></div></div>
   <div id="stats" class="grid stats"></div>
   <div class="grid two-col" style="margin-top:16px">
     <div class="card panel"><div class="panel-head"><h2 class="panel-title">Appointments</h2><button class="btn" onclick="showSection('appointments')">View all</button></div><div id="todayAppointments" class="table-wrap"></div></div>
@@ -284,7 +284,10 @@ function dashboardDateRange(){
   const now=new Date(), today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
   const iso=d=>d.toISOString().slice(0,10);
   const preset=state.dashboardRange?.preset||'today';
+  if(preset==='yesterday'){const start=new Date(today);start.setDate(start.getDate()-1);return {from:iso(start),to:iso(start)}}
+  if(preset==='last7'){const start=new Date(today);start.setDate(start.getDate()-6);return {from:iso(start),to:iso(today)}}
   if(preset==='next7'){const end=new Date(today);end.setDate(end.getDate()+6);return {from:iso(today),to:iso(end)}}
+  if(preset==='last30'){const start=new Date(today);start.setDate(start.getDate()-29);return {from:iso(start),to:iso(today)}}
   if(preset==='next30'){const end=new Date(today);end.setDate(end.getDate()+29);return {from:iso(today),to:iso(end)}}
   if(preset==='custom'&&state.dashboardRange.from&&state.dashboardRange.to)return {from:state.dashboardRange.from,to:state.dashboardRange.to};
   return {from:iso(today),to:iso(today)};
