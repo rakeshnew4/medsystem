@@ -26,7 +26,7 @@
 /* Keep the patient workspace register action compact and aligned with the panel typography. */
 .patient-directory > .panel-head > .btn.primary{width:auto;min-width:0;min-height:44px;height:44px;padding:9px 18px;white-space:nowrap;line-height:1.1;font-size:14px;border-radius:10px;flex:0 0 auto}
 @media(max-width:700px){.ai-assistant-ball{right:18px;bottom:18px;width:58px;height:58px}.ai-chat-modal{right:12px;bottom:88px;width:calc(100vw - 24px);height:calc(100vh - 120px);border-radius:16px}}
-.care-team-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.care-team-group{border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--surface-soft,#f8faf9)}.care-team-group.current-role{border-color:var(--primary);box-shadow:0 0 0 1px rgba(25,135,113,.12)}.care-team-group-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.care-team-group-head span{font-size:11px;color:var(--muted)}.care-team-action{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--border)}.care-team-action>div{min-width:0}.care-team-action strong{display:block;font-size:13px}.care-team-action span{display:block;font-size:11px;color:var(--muted);margin-top:2px}.care-team-hint{white-space:nowrap;font-size:10px!important;color:var(--muted)!important}.care-team-action.current-role strong{font-weight:700}@media(max-width:700px){.care-team-groups{grid-template-columns:1fr}.care-team-action{align-items:flex-start}.care-team-action .mini{flex:0 0 auto}}</style>
+.care-team-flow{display:flex;flex-direction:column;gap:10px}.care-team-group{border:1px solid var(--border);border-radius:12px;padding:14px 16px;background:var(--surface-soft,#f8faf9);position:relative}.care-team-group.current-role{border-color:var(--primary);box-shadow:0 0 0 1px rgba(25,135,113,.12)}.care-team-group.current-role:before{content:'';position:absolute;left:-1px;top:0;bottom:0;width:4px;background:var(--primary);border-radius:12px 0 0 12px}.care-team-group-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}.care-team-group-head>div{display:flex;align-items:center;gap:9px}.care-team-group-head>span{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.05em}.care-team-step{display:inline-flex!important;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--border);font-size:10px!important;color:var(--muted)!important}.care-team-group.current-role .care-team-step{background:var(--primary);color:#fff!important}.care-team-group-head strong{font-size:16px}.care-team-action{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 0;border-top:1px solid var(--border)}.care-team-action>div{min-width:0}.care-team-action strong{display:block;font-size:13px}.care-team-action span{display:block;font-size:11px;color:var(--muted);margin-top:3px}.care-team-action.action-ready{background:rgba(25,135,113,.04);margin:0 -8px;padding:11px 8px;border-radius:8px}.care-team-action .mini{flex:0 0 auto;min-width:72px}.care-team-hint{white-space:nowrap;font-size:10px!important;color:var(--muted)!important}.care-team-action.current-role strong{font-weight:700}@media(max-width:700px){.care-team-action{align-items:flex-start}.care-team-action .mini{flex:0 0 auto}}</style>
 </head>
 <body>
 <div class="mobile-backdrop" id="mobileBackdrop" onclick="closeMobileNav()"></div>
@@ -626,43 +626,49 @@ function renderPatientDirectory(){
 }
 function patientAge(dob){return doctorRoomAge(dob)}
 function patientCareTeamActions(p,s){
- const role=s.role||'staff',q=String(p.queue_stage||'').toLowerCase(),id=p.id;
+ const role=s.role||state.session?.staff?.role||'staff',q=String(p.queue_stage||'').toLowerCase(),id=p.id;
+ const clinical=!!s.permissions?.clinical,billing=!!s.permissions?.billing,pharmacy=!!s.permissions?.pharmacy;
  const groups=[
-  {role:'receptionist',label:'Reception',items:[
-   ['Register / check-in','Start or check the OPD visit.',!p.today_token,'workspaceOpenOpd('+id+')'],
-   ['Appointments','View and manage this patient\'s appointments.',true,'patientWorkspaceAppointments('+id+')']
+  {role:'receptionist',label:'Reception',step:'01',items:[
+   ['Register / check-in','Start or check the OPD visit.',!p.today_token,'workspaceOpenOpd('+id+')',true],
+   ['Appointments','View and manage this patient\'s appointments.',true,'patientWorkspaceAppointments('+id+')',true]
   ]},
-  {role:'nurse',label:'Nurse',items:[
-   ['Record vitals','Record BP, pulse, temperature, SpO₂ and other measurements.',q==='waiting'||q==='vitals','workspaceVitals('+id+')'],
-   ['Queue patient','Move the patient into the OPD workflow.',!p.today_token,false]
+  {role:'nurse',label:'Nurse',step:'02',items:[
+   ['Record vitals','Record BP, pulse, temperature, SpO₂ and other measurements.',q==='waiting'||q==='vitals','workspaceVitals('+id+')',clinical],
+   ['Send to doctor','After vitals, place the patient in the doctor waiting queue.',q==='vitals','movePatient('+id+',\'doctor\');refreshPatientWorkspace('+id+')',clinical]
   ]},
-  {role:'doctor',label:'Doctor',items:[
-   ['Open consultation','Review the patient and continue the doctor workflow.',q==='doctor'||q==='in_room','workspaceOpenDoctor('+id+')'],
-   ['AI Listen Summary','Capture the consultation and prepare a documentation draft.',q==='in_room'&&!!s.permissions?.clinical,false],
-   ['Prescription','Add or review medicines.',!!s.permissions?.clinical,'workspacePrescription('+id+')'],
-   ['Investigation','Order or review investigations.',!!s.permissions?.clinical,'workspaceLab('+id+')'],
-   ['Follow-up','Schedule the next visit.',true,'workspaceFollowupForm('+id+')']
+  {role:'doctor',label:'Doctor',step:'03',items:[
+   ['Bring into doctor room','Start the consultation and mark the patient as in the doctor room.',q==='doctor','doctorStartFromQueue('+id+','+(p.active_queue_id||0)+')',clinical],
+   ['Open consultation','Open the full consultation workspace for this patient.',q==='doctor'||q==='in_room','workspaceOpenDoctor('+id+')',clinical],
+   ['AI Listen Summary','Capture the consultation and prepare a documentation draft.','in_room'===q,'scrollToPatientSection(\'ai-clinical-card\')',clinical],
+   ['Prescription','Add or review medicines.',clinical,'workspacePrescription('+id+')',clinical],
+   ['Investigation','Order or review investigations.',clinical,'workspaceLab('+id+')',clinical],
+   ['Follow-up','Schedule the next visit.',true,'workspaceFollowupForm('+id+')',clinical]
   ]},
-  {role:'lab',label:'Lab',items:[
-   ['Open lab work','Review investigations and update sample/result workflow.',q==='lab'||!!(s.clinical?.lab_orders?.length),'showSection(\'lab\')']
+  {role:'lab',label:'Lab',step:'04',items:[
+   ['Open lab work','Review investigations and update sample/result workflow.',q==='lab'||!!(s.clinical?.lab_orders?.length),'showSection(\'lab\')',clinical]
   ]},
-  {role:'pharmacy',label:'Pharmacy',items:[
-   ['Open dispensing','Review prescriptions and dispense medicines.',q==='pharmacy'||!!(s.pharmacy?.length),'showSection(\'pharmacy\')']
+  {role:'pharmacy',label:'Pharmacy',step:'05',items:[
+   ['Open dispensing','Review prescriptions and dispense medicines.',q==='pharmacy'||!!(s.pharmacy?.length),'showSection(\'pharmacy\')',pharmacy]
   ]},
-  {role:'billing',label:'Billing',items:[
-   ['Open billing','Review invoices and payments.',!!s.permissions?.billing,'showSection(\'billing\')']
+  {role:'billing',label:'Billing',step:'06',items:[
+   ['Open billing','Review invoices and payments.',true,'showSection(\'billing\')',billing]
   ]}
  ];
  const html=groups.map(g=>{
   const active=g.role===role;
   const items=g.items.map(it=>{
-   const enabled=active&&it[2]!==false;
-   return '<div class="care-team-action '+(active?'current-role':'')+'"><div><strong>'+esc(it[0])+'</strong><span>'+esc(it[1])+'</span></div>'+(enabled?'<button class="mini '+(it[2]?'primary':'')+'" onclick="'+it[3]+'">'+(it[0].startsWith('Open')?'Open':'Do now')+'</button>':'<span class="care-team-hint">'+(active?'Not needed now':'Handled by '+g.label)+'</span>')+'</div>';
+   const ready=it[2]===true;
+   const permitted=it[4]===true;
+   const enabled=permitted&&it[3]&& (ready || ['Prescription','Investigation','Follow-up','Appointments','Open billing'].includes(it[0]));
+   const label=ready?'Do now':(permitted?'Open':'');
+   return '<div class="care-team-action '+(active?'current-role':'')+(ready?' action-ready':'')+'"><div><strong>'+esc(it[0])+'</strong><span>'+esc(it[1])+'</span></div>'+(enabled?'<button type="button" class="mini '+(ready?'primary':'')+'" onclick="'+it[3]+'">'+label+'</button>':'<span class="care-team-hint">'+(active?(permitted?'Available when needed':'No permission'):'Handled by '+g.label)+'</span>')+'</div>';
   }).join('');
-  return '<div class="care-team-group '+(active?'current-role':'')+'"><div class="care-team-group-head"><strong>'+esc(g.label)+'</strong><span>'+ (active?'Your role':'Care team')+'</span></div>'+items+'</div>';
+  return '<section class="care-team-group '+(active?'current-role':'')+'"><div class="care-team-group-head"><div><span class="care-team-step">'+g.step+'</span><strong>'+esc(g.label)+'</strong></div><span>'+ (active?'YOUR ROLE':'CARE TEAM')+'</span></div>'+items+'</section>';
  }).join('');
- return '<div class="workspace-card care-team-actions-card"><div class="panel-head"><div><h3 class="panel-title">Care team actions</h3><div class="record-section-note">The same patient file is shared across reception, nursing, doctor, lab, pharmacy and billing. Each role sees its own working actions.</div></div></div><div class="care-team-groups">'+html+'</div></div>';
+ return '<div class="workspace-card care-team-actions-card"><div class="panel-head"><div><h3 class="panel-title">Care workflow</h3><div class="record-section-note">One patient file, one flow. Each department has a clear section and action. Your role is highlighted and actionable buttons appear when you have permission.</div></div></div><div class="care-team-flow">'+html+'</div></div>';
 }
+function scrollToPatientSection(cls){const el=document.querySelector('.'+cls);if(el)el.scrollIntoView({behavior:'smooth',block:'center'})}
 function patientWorkspaceActionButtons(p){
  const s=state.activePatientRecord||{}, id=p.id;
  const q=p.today_token?'<button class="btn" onclick="movePatient('+id+',\'waiting\');refreshPatientWorkspace('+id+')">Queue</button>':'<button class="btn" onclick="openOpdRegistration('+id+')">Register OPD</button>';
