@@ -230,7 +230,8 @@ function renderRoleWorkspace(){
     pharmacy:{title:'Pharmacy Desk',sub:'Prescriptions, dispensing and patient context',actions:[['pharmacy','Dispensing'],['patients','Patients'],['billing','Billing'],['queue','OPD Queue']]},
     billing:{title:'Billing Desk',sub:'Invoices, collections and patient accounts',actions:[['billing','Billing'],['patients','Patients'],['appointments','Appointments'],['queue','Queue']]}
   };
-  const cfg=configs[role]||configs.admin;
+  const cfg=configs[role];
+  if(!cfg){el.style.display='none';return;}
   const roleSectionTitles={nurse:{beds:'Nursing Station · Ward'},receptionist:{queue:'OPD Desk · Queue'},lab:{lab:'Lab Workbench'},pharmacy:{pharmacy:'Pharmacy Desk'},billing:{billing:'Billing Desk'},doctor:{'doctor-room':'Doctor Room'}};
   Object.entries(roleSectionTitles[role]||{}).forEach(([id,title])=>{const h=document.querySelector('#'+id+' .panel-title');if(h)h.textContent=title});
   const buttons=cfg.actions.filter(x=>canSection(x[0])).map(x=>'<button class="workspace-nav-btn '+(document.querySelector('.section.active')?.id===x[0]?'active':'')+'" onclick="showSection(\''+x[0]+'\');closeMobileNav()">'+esc(x[1])+'</button>').join('');
