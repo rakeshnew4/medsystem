@@ -18,7 +18,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:
 h1,h2,h3,h4{font-family:'Manrope',sans-serif}
 button,input,select,textarea{font:inherit}
 .app-shell{min-height:100vh;display:grid;grid-template-columns:250px 1fr}
-.role-workspace-bar{margin:14px 24px 0;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;gap:14px}
+.resume-context-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;margin:0 0 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);box-shadow:0 2px 8px rgba(16,24,40,.04)}.resume-context-bar>div{display:flex;gap:8px;align-items:center;flex:1}.resume-context-bar span{color:var(--muted);font-size:13px}.resume-context-bar .mini{white-space:nowrap}.role-workspace-bar{margin:14px 24px 0;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;gap:14px}
 .workspace-identity{display:flex;align-items:center;gap:10px;min-width:220px}
 .workspace-icon{width:34px;height:34px;border-radius:10px;background:var(--accent-2);color:var(--accent);display:grid;place-items:center;font-weight:800}
 .workspace-identity strong{display:block;font-family:'Manrope',sans-serif;font-size:14px}
