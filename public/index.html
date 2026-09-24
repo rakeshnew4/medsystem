@@ -291,6 +291,8 @@ window.addEventListener('hashchange',restoreSection);
 function toggleNavGroup(btn){const group=btn.closest('.nav-group');group.classList.toggle('open')}
 function openMobileNav(){document.body.classList.add('mobile-nav-open')}
 function closeMobileNav(){document.body.classList.remove('mobile-nav-open')}
+// Mobile navigation behaves as an overlay: any selection or tap outside the drawer returns to the full-screen workspace.
+document.addEventListener('click',function(e){if(!document.body.classList.contains('mobile-nav-open'))return;const sidebar=document.getElementById('appSidebar');const menu=e.target.closest('.mobile-menu-btn');if(menu)return;if(e.target.closest('.mobile-nav-close')||e.target.closest('.sidebar .nav button')||e.target.closest('.sidebar-footer button')||(!sidebar?.contains(e.target))){closeMobileNav()}});
 function togglePinnedScreen(){
   const id=document.querySelector('.section.active')?.id||roleDefaultSection();
   if(!canSection(id))return;

@@ -312,7 +312,9 @@ button:disabled,.btn:disabled{opacity:.55;cursor:not-allowed}
 .topbar-heading{display:flex;align-items:flex-start;gap:10px;min-width:0}
 .pin-btn{white-space:nowrap;position:relative;transition:all .18s ease}.pin-btn:hover{transform:translateY(-1px)}.pin-btn.primary{box-shadow:0 4px 14px rgba(27,127,103,.18)}.pin-btn.primary::after{content:'';position:absolute;bottom:4px;width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.7}
 @media(max-width:900px){
-  .app-shell{grid-template-columns:1fr}
+  .app-shell{display:block!important;grid-template-columns:1fr;width:100%;min-width:0}
+  .main{width:100%;min-width:0;box-sizing:border-box}
+  body{overflow-x:hidden}
   .sidebar{position:fixed;z-index:1000;left:0;top:0;bottom:0;width:min(84vw,320px);height:100dvh;overflow-y:auto;transform:translateX(-105%);transition:transform .2s ease;box-shadow:18px 0 40px rgba(0,0,0,.2)}
   body.mobile-nav-open .sidebar{transform:translateX(0)!important;visibility:visible!important;opacity:1!important}
   .mobile-backdrop{position:fixed;inset:0;background:rgba(10,30,25,.42);z-index:999}
