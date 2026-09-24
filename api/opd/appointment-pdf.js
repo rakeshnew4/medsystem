@@ -1,0 +1,4 @@
+import { browser } from "hatchable";
+export const access="public";
+export const methods=["GET"];
+export default async function(req,res){const token=String(req.query?.token||"").trim();if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(token))return res.status(404).json({error:"Appointment not found"});let host=String(req.headers?.host||"hospital-ai.hatchable.site").replace("https://","").replace("http://","");const scheme=String(req.headers?.["x-forwarded-proto"]||"https");const pdf=await browser.pdf(scheme+"://"+host+"/appointment/?token="+encodeURIComponent(token));const buf=Buffer.from(pdf);res.setHeader("Content-Type","application/pdf");res.setHeader("Content-Disposition",'attachment; filename="careflow-appointment.pdf"');return res.send(buf);}

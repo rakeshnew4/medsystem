@@ -11,7 +11,7 @@ export default async function(req,res){
   if(req.method==="GET"){
     const q=await db.query(`
       SELECT a.id,a.public_token,a.appointment_date,a.appointment_time,a.status,a.reason,a.consultation_type,a.video_status,
-             p.name AS patient_name,p.phone,
+             p.name AS patient_name,p.phone,p.email,
              d.name AS doctor_name,d.specialty,d.consultation_fee,
              h.name AS hospital_name,h.phone AS hospital_phone,h.address,h.public_slug,
              vs.provider AS video_provider,vs.status AS video_session_status,vs.room_name
