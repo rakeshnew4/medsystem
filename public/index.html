@@ -302,7 +302,7 @@ function updatePinButton(){
   const b=document.getElementById('pinScreenBtn');if(!b)return;
   let pinned=null;try{pinned=localStorage.getItem(staffStorageKey('pinnedSection'))}catch(e){}
   const active=document.querySelector('.section.active')?.id||roleDefaultSection();
-  const on=pinned===active;b.classList.toggle('primary',on);b.innerHTML=(on?'★':'☆')+' <span>'+ (on?'Pinned':'Pin') +'</span>';
+  const on=pinned===active;b.classList.toggle('primary',on);b.innerHTML=on?'★':'☆';b.setAttribute('aria-label',on?'Unpin screen':'Pin screen');
   b.title=on?'This screen is pinned and will open next time':'Pin this screen so it opens next time';
 }
 document.querySelectorAll('.nav-sub button[data-section],.nav-home').forEach(b=>b.onclick=()=>{showSection(b.dataset.section);closeMobileNav()});

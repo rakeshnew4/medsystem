@@ -310,7 +310,7 @@ button:disabled,.btn:disabled{opacity:.55;cursor:not-allowed}
 .mobile-menu-btn{display:none;align-items:center;justify-content:center;padding:9px 11px;font-size:18px;line-height:1}.mobile-nav-close{display:none}
 .mobile-backdrop{display:none}
 .topbar-heading{display:flex;align-items:flex-start;gap:10px;min-width:0}
-.pin-btn{white-space:nowrap}
+.pin-btn{white-space:nowrap;position:relative;transition:all .18s ease}.pin-btn:hover{transform:translateY(-1px)}.pin-btn.primary{box-shadow:0 4px 14px rgba(27,127,103,.18)}.pin-btn.primary::after{content:'';position:absolute;bottom:4px;width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.7}
 @media(max-width:900px){
   .app-shell{grid-template-columns:1fr}
   .sidebar{position:fixed;z-index:1000;left:0;top:0;bottom:0;width:min(84vw,320px);height:100dvh;overflow-y:auto;transform:translateX(-105%);transition:transform .2s ease;box-shadow:18px 0 40px rgba(0,0,0,.2)}
