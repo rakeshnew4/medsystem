@@ -76,15 +76,16 @@
 <div id="roleWorkspaceBar" class="role-workspace-bar" style="display:none"></div><div id="resumeContextBar" class="resume-context-bar" style="display:none"></div><div id="workflowToastHost" class="workflow-toast-host" aria-live="polite"></div>
 
 <section id="dashboard" class="section active">
+  <div class="card panel dashboard-range-bar"><div class="panel-head"><div><strong>Dashboard period</strong><div style="font-size:12px;color:var(--muted);margin-top:3px">Appointments below use this date range. Active IPD always shows currently admitted patients.</div></div><div class="dashboard-range-controls"><select id="dashboardRange" onchange="changeDashboardRange(this.value)"><option value="today">Today</option><option value="next7">Next 7 days</option><option value="next30">Next 30 days</option><option value="custom">Custom range</option></select><input id="dashboardFrom" type="date" style="display:none" onchange="applyCustomDashboardRange()"><span id="dashboardRangeSep" style="display:none">to</span><input id="dashboardTo" type="date" style="display:none" onchange="applyCustomDashboardRange()"><button class="btn" type="button" onclick="loadAll()">Apply</button></div></div></div>
   <div id="stats" class="grid stats"></div>
   <div class="grid two-col" style="margin-top:16px">
-    <div class="card panel"><div class="panel-head"><h2 class="panel-title">Today's appointments</h2><button class="btn" onclick="showSection('appointments')">View all</button></div><div id="todayAppointments" class="table-wrap"></div></div>
+    <div class="card panel"><div class="panel-head"><h2 class="panel-title">Appointments</h2><button class="btn" onclick="showSection('appointments')">View all</button></div><div id="todayAppointments" class="table-wrap"></div></div>
     <div class="ai-box"><div class="panel-head"><div><h2 class="panel-title">AI front desk assistant</h2><p style="font-size:12px;opacity:.7;margin:5px 0">Administrative questions only.</p></div></div><div class="ai-response" id="aiResponse">Ask about doctors, appointments, workload or hospital FAQs.</div><div class="ai-input"><input id="aiQuestion" placeholder="Ask the hospital assistant…" onkeydown="if(event.key==='Enter')askAI()"><button class="btn primary" onclick="askAI()">Ask</button></div></div>
   </div>
   <div class="card panel" style="margin-top:16px"><div class="panel-head"><div><h2 class="panel-title">AI operations brief</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Uses aggregate operational metrics only. No clinical decision support.</div></div><button class="btn primary" onclick="loadAIOpsBrief()">Generate brief</button></div><div id="aiOpsBrief" style="margin-top:12px"><div class="empty">Generate a concise manager brief from today's flow, follow-ups, billing and staffing metrics.</div></div></div>
   <div class="grid two-col" style="margin-top:16px">
     <div class="card panel"><div class="panel-head"><h2 class="panel-title">Live patient flow</h2><button class="btn" onclick="showSection('queue')">Open board</button></div><div id="flowSummary"></div></div>
-    <div class="card panel"><div class="panel-head"><h2 class="panel-title">Beds</h2><button class="btn" onclick="showSection('beds')">Manage beds</button></div><div id="bedSummary"></div></div>
+    <div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Active IPD</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Currently admitted patients. This stays visible regardless of appointment date range.</div></div><button class="btn" onclick="showSection('beds')">Manage beds</button></div><div id="bedSummary"></div></div>
   </div>
 </section>
 
@@ -200,7 +201,7 @@
 <script src="/analytics.js"></script>
 <script>
 const API='/api';
-let state={dashboard:null,patients:[],doctors:[],appointments:[],followups:[],queue:[],beds:[],billing:[],lab:[],pharmacy:[],opsTasks:[],staff:[],permissionCatalog:[],rolePermissions:[],queueView:'kanban',session:null,doctorRoom:null,doctorRoomTab:'waiting',doctorRoomPatient:null,hospitalConfig:null,displayAdmin:{devices:[],campaigns:[],summary:{}},communication:null,activeConversation:null,callPeer:null,callId:null,callTimer:null};
+let state={dashboardRange:{preset:'today',from:'',to:''},dashboard:null,patients:[],doctors:[],appointments:[],followups:[],queue:[],beds:[],billing:[],lab:[],pharmacy:[],opsTasks:[],staff:[],permissionCatalog:[],rolePermissions:[],queueView:'kanban',session:null,doctorRoom:null,doctorRoomTab:'waiting',doctorRoomPatient:null,hospitalConfig:null,displayAdmin:{devices:[],campaigns:[],summary:{}},communication:null,activeConversation:null,callPeer:null,callId:null,callTimer:null};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtTime=t=>t?String(t).slice(0,5):'';
 const fmtDate=d=>d?new Date(String(d).slice(0,10)+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
@@ -279,6 +280,36 @@ function updatePinButton(){
 }
 document.querySelectorAll('.nav-sub button[data-section],.nav-home').forEach(b=>b.onclick=()=>{showSection(b.dataset.section);closeMobileNav()});
 function openModal(id){document.getElementById(id).classList.add('open')} function closeModal(id){document.getElementById(id).classList.remove('open')}
+function dashboardDateRange(){
+  const now=new Date(), today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const iso=d=>d.toISOString().slice(0,10);
+  const preset=state.dashboardRange?.preset||'today';
+  if(preset==='next7'){const end=new Date(today);end.setDate(end.getDate()+6);return {from:iso(today),to:iso(end)}}
+  if(preset==='next30'){const end=new Date(today);end.setDate(end.getDate()+29);return {from:iso(today),to:iso(end)}}
+  if(preset==='custom'&&state.dashboardRange.from&&state.dashboardRange.to)return {from:state.dashboardRange.from,to:state.dashboardRange.to};
+  return {from:iso(today),to:iso(today)};
+}
+function syncDashboardRangeControls(){
+  const r=state.dashboardRange||{preset:'today'};
+  const sel=document.getElementById('dashboardRange'),from=document.getElementById('dashboardFrom'),to=document.getElementById('dashboardTo'),sep=document.getElementById('dashboardRangeSep');
+  if(sel)sel.value=r.preset||'today';
+  const custom=r.preset==='custom';
+  if(from){from.style.display=custom?'':'none';from.value=r.from||dashboardDateRange().from}
+  if(to){to.style.display=custom?'':'none';to.value=r.to||dashboardDateRange().to}
+  if(sep)sep.style.display=custom?'':'none';
+}
+function changeDashboardRange(preset){
+  const r=dashboardDateRange();
+  state.dashboardRange={preset,from:preset==='custom'?r.from:'',to:preset==='custom'?r.to:''};
+  syncDashboardRangeControls();
+  if(preset!=='custom')loadAll();
+}
+function applyCustomDashboardRange(){
+  const from=document.getElementById('dashboardFrom')?.value,to=document.getElementById('dashboardTo')?.value;
+  if(!from||!to)return;
+  state.dashboardRange={preset:'custom',from,to};
+  loadAll();
+}
 function prettyStatus(s){
  const map={waiting:'Waiting',vitals:'Vitals pending',doctor:'With doctor',lab:'Lab pending',followup:'Follow-up',pharmacy:'Pharmacy',completed:'Completed',no_show:'No-show',cancelled:'Cancelled',pending:'Pending',checked_in:'Checked in',active:'Active',inactive:'Inactive',open:'Open',in_progress:'In progress',paid:'Paid',partial:'Part paid',unpaid:'Unpaid',ipd:'IPD',opd:'OPD',normal:'Normal',high:'High',urgent:'Urgent',registered:'Registered'};
  return map[String(s||'').toLowerCase()]||String(s||'').replaceAll('_',' ');
@@ -328,8 +359,9 @@ async function loadAll(){
     if(!setup){if(can('page.setup'))showSection('setup');document.getElementById('stats').innerHTML='<div class="card panel empty" style="grid-column:1/-1">Hospital setup is required. Ask the administrator to complete it.</div>';return}
     const p=state.session.permissions||{};
     const get=(perm,path,fallback)=>p[perm]?api(path):Promise.resolve(fallback);
+    const dr=dashboardDateRange();
     [state.dashboard,state.patients,state.doctors,state.appointments,state.followups,state.queue,state.doctorRoom,state.beds,state.billing,state.lab,state.pharmacy,state.displayAdmin]=await Promise.all([
-      get('page.dashboard','/dashboard',{hospital:setup,stats:{},appointments:[],followups:[],enquiries:[]}),
+      get('page.dashboard','/dashboard?from='+encodeURIComponent(dr.from)+'&to='+encodeURIComponent(dr.to),{hospital:setup,stats:{},appointments:[],activeIpd:[],followups:[],enquiries:[],range:dr}),
       get('page.patients','/patients',[]),
       get('page.doctors','/doctors',[]),
       get('page.appointments','/appointments',[]),
@@ -349,7 +381,7 @@ async function loadAll(){
       const pm=await api('/permissions');state.permissionCatalog=pm.permissions;state.rolePermissions=pm.roles;
       renderPermissionMatrix();
     } else {state.staff=[]}
-    renderAll();populateSelects();applyPermissions();renderRoleWorkspace();if(can('page.admin_insights'))loadAnalytics();if(can('page.dashboard')&&can('action.ai.use'))loadAIOpsBrief();if(can('action.communication.use')){loadCommunication();loadAvailability()}if(state.session.staff?.role==='doctor'||state.session.staff?.role==='admin')renderDoctorRoom();
+    syncDashboardRangeControls();renderAll();populateSelects();applyPermissions();renderRoleWorkspace();if(can('page.admin_insights'))loadAnalytics();if(can('page.dashboard')&&can('action.ai.use'))loadAIOpsBrief();if(can('action.communication.use')){loadCommunication();loadAvailability()}if(state.session.staff?.role==='doctor'||state.session.staff?.role==='admin')renderDoctorRoom();
     restoreSection();
     const deepPatient=new URLSearchParams(location.search).get('patient_id');
     if(deepPatient&&Number(deepPatient)>0)openClinical(Number(deepPatient));
@@ -384,11 +416,11 @@ function renderPharmacy(){
 }
 function renderAll(){
  const d=state.dashboard;if(!d||!d.hospital)return;
- document.getElementById('stats').innerHTML=[['Appointments today',d.stats.appointments_today,'Scheduled today'],['Patients',d.stats.patients,'Registered'],['In queue',state.queue.length,'Active patient flow'],['Beds occupied',state.beds.filter(x=>x.status==='occupied').length,'Of '+state.beds.length+' beds'],['Follow-ups due',d.stats.followups_due,'Need attention']].map(x=>'<div class="card stat"><div class="stat-label">'+x[0]+'</div><div class="stat-value">'+x[1]+'</div><div class="stat-note">'+x[2]+'</div></div>').join('');
- const ap=d.appointments;document.getElementById('todayAppointments').innerHTML=ap.length?'<table><thead><tr><th>Time</th><th>Patient</th><th>Doctor</th><th>Appointment</th></tr></thead><tbody>'+ap.map(x=>'<tr><td>'+fmtTime(x.appointment_time)+'</td><td>'+esc(x.patient_name)+'</td><td>'+esc(x.doctor_name)+'</td><td>'+status(x.status)+'</td></tr>').join('')+'</tbody></table>':'<div class="empty">No appointments today.</div>';
+ document.getElementById('stats').innerHTML=[['Appointments',d.stats.appointments_today,(d.range?.from===d.range?.to?'Selected day':fmtDate(d.range?.from)+' – '+fmtDate(d.range?.to))],['Patients',d.stats.patients,'Registered'],['In queue',state.queue.length,'Active patient flow'],['Beds occupied',state.beds.filter(x=>x.status==='occupied').length,'Of '+state.beds.length+' beds'],['Follow-ups due',d.stats.followups_due,'Need attention']].map(x=>'<div class="card stat"><div class="stat-label">'+x[0]+'</div><div class="stat-value">'+x[1]+'</div><div class="stat-note">'+x[2]+'</div></div>').join('');
+ const ap=d.appointments;document.getElementById('todayAppointments').innerHTML=ap.length?'<table><thead><tr><th>Date</th><th>Time</th><th>Patient</th><th>Doctor</th><th>Appointment</th></tr></thead><tbody>'+ap.map(x=>'<tr><td>'+fmtDate(x.appointment_date)+'</td><td>'+fmtTime(x.appointment_time)+'</td><td><button class="record-link" onclick="openClinical('+x.patient_id+')"><strong>'+esc(x.patient_name)+'</strong></button></td><td>'+esc(x.doctor_name)+'</td><td>'+status(x.status)+'</td></tr>').join('')+'</tbody></table>':'<div class="empty">No appointments in the selected range.</div>';
  const counts={waiting:0,vitals:0,doctor:0,lab:0,followup:0,pharmacy:0};state.queue.forEach(q=>counts[q.stage]=(counts[q.stage]||0)+1);
  document.getElementById('flowSummary').innerHTML='<div class="record-section-note" style="margin-bottom:8px">These are the patient\'s current workflow steps. They are informational here; use Queue board to move a patient to the next step.</div><div class="flow-grid">'+Object.entries(counts).map(([k,v])=>'<div class="flow-chip" title="Current step: '+esc(prettyStatus(k))+'" onclick="showSection(\'queue\')"><strong>'+v+'</strong><span>'+esc(prettyStatus(k))+'</span></div>').join('')+'</div>';
- const occupied=state.beds.filter(x=>x.status==='occupied').length;document.getElementById('bedSummary').innerHTML='<div class="bed-stat"><div><strong>'+occupied+'</strong> occupied</div><div><strong>'+Math.max(state.beds.length-occupied,0)+'</strong> available</div></div>';
+ const occupied=state.beds.filter(x=>x.status==='occupied').length;const ipd=d.activeIpd||[];document.getElementById('bedSummary').innerHTML=ipd.length?'<div class="active-ipd-list">'+ipd.map(x=>'<button class="record-row" style="width:100%;text-align:left;border:0;background:transparent;cursor:pointer" onclick="openClinical('+x.patient_id+')"><div><strong>'+esc(x.patient_name)+'</strong><small>'+(x.ward||'Ward')+' · '+(x.bed_number||'Bed')+(x.doctor_name?' · Dr. '+esc(x.doctor_name):'')+'</small></div><span class="status active">Admitted</span></button>').join('')+'</div>':'<div class="empty">No active IPD admissions.</div>';
  // document.getElementById('appointmentsTable').innerHTML=table(state.appointments,['Date','Time','Token','Patient','Doctor','Appointment','Patient flow'],x=>'<td>'+fmtDate(x.appointment_date)+'</td><td>'+fmtTime(x.appointment_time)+'</td><td><strong>'+esc(x.token||'—')+'</strong>'+(x.queue_stage?'<div style="font-size:11px;color:var(--muted)">Current step: '+prettyStatus(x.queue_stage)+'</div>':'')+'</td><td><button class="record-link" onclick="openClinical('+x.patient_id+')"><strong>'+esc(x.patient_name)+'</strong></button><div style="font-size:11px;color:var(--muted)">'+esc(x.uhid||'')+' · '+esc(x.phone||'')+'</div></td><td>'+esc(x.doctor_name)+'</td><td>'+status(x.status)+(x.consultation_type==='online'?'<div style="font-size:11px;color:var(--muted)">Online · '+esc(x.video_status||'scheduled')+'</div>':'')+'</td><td><div style="display:flex;gap:4px;flex-wrap:wrap">'+(x.queue_id?'<span class="status checked_in">'+esc(x.token||'Checked in')+'</span>':'<button class="mini" onclick="checkInAppointment('+x.id+')">Check-in & issue token</button>')+(x.status==='pending'?'<button class="mini" onclick="updateAppointmentStatus('+x.id+',\'confirmed\')">Confirm</button>':'')+(x.consultation_type==='online'?'<button class="mini" onclick="openStaffVideo('+x.id+')">Join video</button>':'')+'<button class="mini" onclick="window.open(\'/appointment/?token='+encodeURIComponent(x.public_token||\'\')+'\',\'_blank\')">Print / PDF</button>'+(x.public_token?'<button class="mini" onclick="shareAppointmentWhatsApp('+x.id+')">WhatsApp</button>':'')+'<button class="mini" onclick="updateAppointmentStatus('+x.id+',\'no_show\')">No show</button><button class="mini" onclick="draftAppointmentMessage('+x.id+')">AI reminder</button></div></td>'); 
  renderPatientDirectory();// patients table replaced by workspace,['UHID','Patient','Today\'s visit','Care type','Phone','Patient status','Actions'],x=>'<td><strong>'+esc(x.uhid||'—')+'</strong></td><td><button class="record-link" onclick="openClinical('+x.id+')"><strong>'+esc(x.name)+'</strong></button></td><td>'+(x.today_token?'<strong>'+esc(x.today_token)+'</strong><div style="font-size:11px;color:var(--muted)">Current step: '+prettyStatus(x.queue_stage||'waiting')+'</div><button class="mini" onclick="showSection(\'queue\')">Open queue</button>':'<span style="color:var(--muted)">No OPD visit today</span>')+'</td><td>'+status(x.care_type==='ipd'?'IPD':'OPD')+(x.care_type==='ipd'&&x.bed_number?'<div style="font-size:11px;color:var(--muted)">'+esc(x.ward)+' · '+esc(x.bed_number)+'</div>':'')+'</td><td>'+esc(x.phone||'—')+'</td><td><select onchange="updatePatientStatus('+x.id+',this.value)"><option value="active" '+(x.status!=='inactive'?'selected':'')+'>Active</option><option value="inactive" '+(x.status==='inactive'?'selected':'')+'>Inactive</option></select></td><td><div style="display:flex;gap:4px;flex-wrap:wrap"><button class="mini" onclick="openClinical('+x.id+')">Record</button>'+(!x.today_token&&x.care_type!=='ipd'?'<button class="mini" onclick="openOpdRegistration('+x.id+')">Register OPD</button>':'')+'<button class="mini" onclick="editPatient('+x.id+')">Edit</button></div></td>');
  document.getElementById('doctorsTable').innerHTML=table(state.doctors,['Name','Specialty','Phone','Fee'],x=>'<td>'+esc(x.name)+'</td><td>'+esc(x.specialty)+'</td><td>'+esc(x.phone||'—')+'</td><td>'+(x.consultation_fee?'₹'+x.consultation_fee:'—')+'</td>');
