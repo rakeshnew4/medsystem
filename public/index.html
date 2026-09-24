@@ -4,6 +4,27 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CareFlow — Hospital Operations</title>
 <link rel="stylesheet" href="/theme.css">
+<style>
+.ai-assistant-ball{position:fixed;right:28px;bottom:28px;width:62px;height:62px;border:0;border-radius:50%;background:linear-gradient(145deg,#12866f,#075c4d);color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 12px 30px rgba(7,92,77,.30);cursor:pointer;z-index:1500;animation:aiBallDrop .95s cubic-bezier(.2,.8,.2,1) both}
+.ai-assistant-ball:hover{transform:scale(1.05)}
+.ai-assistant-ball .ai-ball-dot{position:absolute;right:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#ffd45a;border:2px solid #fff}
+@keyframes aiBallDrop{from{transform:translateY(-110vh) rotate(-140deg);opacity:0}65%{transform:translateY(20px) rotate(8deg);opacity:1}to{transform:translateY(0) rotate(0);opacity:1}}
+.ai-chat-modal{position:fixed;right:24px;bottom:102px;width:min(430px,calc(100vw - 32px));height:min(650px,calc(100vh - 140px));background:#fff;border:1px solid #d7e4df;border-radius:20px;box-shadow:0 24px 70px rgba(8,42,35,.20);z-index:1499;display:none;overflow:hidden}
+.ai-chat-modal.open{display:flex;flex-direction:column}
+.ai-chat-head{padding:16px 18px;background:#f3faf7;border-bottom:1px solid #dceae5;display:flex;align-items:center;justify-content:space-between}
+.ai-chat-title{font-size:17px;font-weight:800;color:#123b33}
+.ai-chat-sub{font-size:12px;color:#60756f;margin-top:3px}
+.ai-chat-messages{flex:1;overflow:auto;padding:16px;background:#fbfdfc}
+.ai-chat-message{display:flex;margin:8px 0}
+.ai-chat-message.user{justify-content:flex-end}
+.ai-chat-bubble{max-width:82%;padding:10px 13px;border-radius:14px;background:#edf4f1;color:#17352f;font-size:14px;line-height:1.5;white-space:pre-wrap}
+.ai-chat-message.user .ai-chat-bubble{background:#117e68;color:#fff}
+.ai-chat-time{font-size:10px;opacity:.55;margin-top:4px}
+.ai-chat-input{display:flex;gap:8px;padding:12px;border-top:1px solid #dceae5;background:#fff}
+.ai-chat-input textarea{flex:1;resize:none;min-height:44px;max-height:110px;border:1px solid #cfded9;border-radius:12px;padding:11px 12px;font:inherit;font-size:14px}
+.ai-chat-empty{text-align:center;color:#71827d;padding:40px 20px;font-size:14px}
+@media(max-width:700px){.ai-assistant-ball{right:18px;bottom:18px;width:58px;height:58px}.ai-chat-modal{right:12px;bottom:88px;width:calc(100vw - 24px);height:calc(100vh - 120px);border-radius:16px}}
+</style>
 </head>
 <body>
 <div class="mobile-backdrop" id="mobileBackdrop" onclick="closeMobileNav()"></div>
@@ -78,9 +99,8 @@
 <section id="dashboard" class="section active">
   <div class="dashboard-toolbar"><div class="dashboard-toolbar-label"><strong>Dashboard period</strong><span>Appointments follow this range · Active IPD stays current</span></div><div class="dashboard-range-controls"><select id="dashboardRange" aria-label="Dashboard period" onchange="changeDashboardRange(this.value)"><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="last7">Last 7 days</option><option value="next7">Next 7 days</option><option value="last30">Last 30 days</option><option value="next30">Next 30 days</option><option value="custom">Custom range</option></select><input id="dashboardFrom" type="date" aria-label="From date" style="display:none" onchange="applyCustomDashboardRange()"><span id="dashboardRangeSep" style="display:none">to</span><input id="dashboardTo" type="date" aria-label="To date" style="display:none" onchange="applyCustomDashboardRange()"><button class="btn" type="button" onclick="loadAll()">Apply</button></div></div>
   <div id="stats" class="grid stats"></div>
-  <div class="grid two-col" style="margin-top:16px">
+  <div class="grid two-col" style="margin-top:16px;grid-template-columns:1fr">
     <div class="card panel"><div class="panel-head"><h2 class="panel-title">Appointments</h2><button class="btn" onclick="showSection('appointments')">View all</button></div><div id="todayAppointments" class="table-wrap"></div></div>
-    <div class="ai-box"><div class="panel-head"><div><h2 class="panel-title">AI front desk assistant</h2><p style="font-size:12px;opacity:.7;margin:5px 0">Administrative questions only.</p></div></div><div class="ai-response" id="aiResponse">Ask about doctors, appointments, workload or hospital FAQs.</div><div class="ai-input"><input id="aiQuestion" placeholder="Ask the hospital assistant…" onkeydown="if(event.key==='Enter')askAI()"><button class="btn primary" onclick="askAI()">Ask</button></div></div>
   </div>
   <div class="card panel" style="margin-top:16px"><div class="panel-head"><div><h2 class="panel-title">AI operations brief</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Uses aggregate operational metrics only. No clinical decision support.</div></div><button class="btn primary" onclick="loadAIOpsBrief()">Generate brief</button></div><div id="aiOpsBrief" style="margin-top:12px"><div class="empty">Generate a concise manager brief from today's flow, follow-ups, billing and staffing metrics.</div></div></div>
   <div class="grid two-col" style="margin-top:16px">
@@ -178,6 +198,13 @@
 <div class="card panel" style="margin-top:16px"><div class="panel-head"><h2 class="panel-title">Working hours</h2></div><div id="hospitalHours"></div></div>
 </section>
 </main>
+</div>
+
+<button id="aiAssistantBall" class="ai-assistant-ball" type="button" onclick="openAIChat()" aria-label="Open AI front desk assistant" title="AI front desk assistant">✦<span class="ai-ball-dot"></span></button>
+<div id="aiChatModal" class="ai-chat-modal" role="dialog" aria-label="AI front desk assistant">
+  <div class="ai-chat-head"><div><div class="ai-chat-title">CareFlow Assistant</div><div class="ai-chat-sub">Administrative help · Your chat is saved to your staff account</div></div><button class="btn" type="button" onclick="closeAIChat()">×</button></div>
+  <div id="aiChatMessages" class="ai-chat-messages"><div class="ai-chat-empty">Ask about doctors, appointments, workload, hospital FAQs or other administrative tasks.</div></div>
+  <form class="ai-chat-input" onsubmit="sendAIChat(event)"><textarea id="aiChatInput" rows="1" placeholder="Ask the hospital assistant…" autocomplete="off"></textarea><button id="aiChatSend" class="btn primary" type="submit">Send</button></form>
 </div>
 
 <div id="appointmentModal" class="modal"><div class="modal-card"><div class="panel-head"><div><h2 class="panel-title">Book appointment</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Enter the patient name directly. New patients are created automatically.</div></div><button class="btn" onclick="closeModal('appointmentModal')">Close</button></div><form id="appointmentForm" class="form-grid"><div class="field full"><label>Patient name</label><input id="apptPatientName" required placeholder="Enter patient name"></div><div class="field"><label>Phone <span style="color:var(--muted)">(optional)</span></label><input id="apptPatientPhone" type="tel" placeholder="+91 98765 43210"></div><div class="field"><label>Doctor</label><input id="apptDoctor" type="hidden"><input id="apptDoctorSearch" class="search-select-input" required placeholder="Search doctor…" autocomplete="off" list="apptDoctorOptions"><datalist id="apptDoctorOptions"></datalist></div><div class="field"><label>Date</label><input id="apptDate" type="date" required></div><div class="field"><label>Time</label><input id="apptTime" type="time" required></div><div class="field"><label>Consultation</label><select id="apptConsultationType"><option value="in_person">In-person</option><option value="online">Online video</option></select></div><div class="field full"><label>Reason / enquiry</label><input id="apptReason" placeholder="Consultation, follow-up, review…"></div><div><button class="btn primary">Book appointment</button></div></form></div></div>
@@ -337,6 +364,7 @@ function can(p){return !!(state.session?.permissions?.[p])}
 function applyPermissions(){
   const pageMap={dashboard:'page.dashboard',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',pharmacy:'action.pharmacy.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup'};
   document.querySelectorAll('.nav button').forEach(b=>{const p=pageMap[b.dataset.section];b.style.display=can(p)?'':'none'});
+  const aiBall=document.getElementById('aiAssistantBall');if(aiBall)aiBall.style.display=can('action.ai.use')?'flex':'none';
   document.querySelectorAll('button').forEach(b=>{
     if(b.closest('.modal'))return;
     const oc=b.getAttribute('onclick')||'';
@@ -1027,9 +1055,53 @@ document.getElementById('vitalsForm').onsubmit=async e=>{e.preventDefault();try{
 document.getElementById('bedForm').onsubmit=async e=>{e.preventDefault();try{const id=bedId.value;await api('/beds',{method:'PUT',body:JSON.stringify(id?{action:'edit-bed',id:Number(id),ward:bedWard.value,bed_number:bedNumber.value,bed_type:bedType.value,notes:bedNotes.value}:{ward:bedWard.value,bed_number:bedNumber.value,bed_type:bedType.value,status:bedStatus.value,notes:bedNotes.value})});closeModal('bedModal');e.target.reset();bedId.value='';bedModalTitle.textContent='Add bed';bedSubmit.textContent='Add bed';await loadAll()}catch(x){alert(x.message)}};
 window.addEventListener('DOMContentLoaded',()=>{document.getElementById('admitForm').onsubmit=async e=>{e.preventDefault();try{await api('/beds',{method:'PUT',body:JSON.stringify({action:'admit',patient_id:admitPatient.value,bed_id:admitBedId.value,doctor_id:admitDoctor.value||null,admission_type:admitType.value,expected_discharge_date:admitDischarge.value||null,reason:admitReason.value||null,notes:admitNotes.value})});closeModal('admitModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}}});
 async function seedDemoData(){if(!confirm('Add a complete, clearly labeled demo dataset to this hospital? It will add patients, appointments, billing, queue, follow-ups, beds, vitals, labs, medicines and reports.'))return;try{const r=await api('/demo-full-seed',{method:'POST'});const q=await api('/demo-flow-seed',{method:'POST'});alert(r.message||('Demo data ready: '+r.patients+' patients, '+r.appointments+' appointments, '+q.queue+' active queue entries, '+r.followups+' follow-ups.'));await loadAll()}catch(e){alert(e.message)}}
-async function askAI(){const q=document.getElementById('aiQuestion').value.trim();if(!q)return;document.getElementById('aiResponse').textContent='Thinking…';try{const r=await api('/ai-assistant',{method:'POST',body:JSON.stringify({question:q})});document.getElementById('aiResponse').textContent=r.answer}catch(e){document.getElementById('aiResponse').textContent=e.message}}
+let aiChatLoaded=false;
+async function loadAIChat(){
+  if(!can('action.ai.use'))return;
+  const box=document.getElementById('aiChatMessages');if(!box)return;
+  box.innerHTML='<div class="ai-chat-empty">Loading conversation…</div>';
+  try{
+    const r=await api('/ai-assistant');
+    const msgs=r.messages||[];
+    box.innerHTML=msgs.length?msgs.map(aiChatMessageHtml).join(''):'<div class="ai-chat-empty">No messages yet. Ask about doctors, appointments, workload or hospital FAQs.</div>';
+    box.scrollTop=box.scrollHeight;aiChatLoaded=true;
+  }catch(e){box.innerHTML='<div class="ai-chat-empty">Could not load the assistant conversation.</div>'}
+}
+function aiChatMessageHtml(m){
+  return '<div class="ai-chat-message '+(m.role==='user'?'user':'assistant')+'"><div class="ai-chat-bubble">'+esc(m.body)+'<div class="ai-chat-time">'+new Date(m.created_at).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</div></div></div>';
+}
+async function openAIChat(){
+  if(!can('action.ai.use'))return;
+  const modal=document.getElementById('aiChatModal');if(!modal)return;
+  modal.classList.add('open');
+  if(!aiChatLoaded)await loadAIChat();
+  setTimeout(()=>document.getElementById('aiChatInput')?.focus(),80);
+}
+function closeAIChat(){document.getElementById('aiChatModal')?.classList.remove('open')}
+async function sendAIChat(e){
+  e.preventDefault();
+  const input=document.getElementById('aiChatInput'),send=document.getElementById('aiChatSend'),q=input.value.trim();
+  if(!q||!can('action.ai.use'))return;
+  const box=document.getElementById('aiChatMessages');
+  if(!aiChatLoaded)await loadAIChat();
+  const userMsg={role:'user',body:q,created_at:new Date().toISOString()};
+  box.insertAdjacentHTML('beforeend',aiChatMessageHtml(userMsg));
+  box.insertAdjacentHTML('beforeend','<div id="aiTyping" class="ai-chat-message assistant"><div class="ai-chat-bubble">Thinking…</div></div>');
+  box.scrollTop=box.scrollHeight;input.value='';send.disabled=true;
+  try{
+    const r=await api('/ai-assistant',{method:'POST',body:JSON.stringify({question:q})});
+    document.getElementById('aiTyping')?.remove();
+    box.insertAdjacentHTML('beforeend',aiChatMessageHtml({role:'assistant',body:r.answer||'No response generated.',created_at:new Date().toISOString()}));
+    box.scrollTop=box.scrollHeight;
+  }catch(err){
+    document.getElementById('aiTyping')?.remove();
+    box.insertAdjacentHTML('beforeend','<div class="ai-chat-message assistant"><div class="ai-chat-bubble">Sorry, I could not answer that. '+esc(err.message||'Please try again.')+'</div></div>');
+    box.scrollTop=box.scrollHeight;
+  }finally{send.disabled=false;input.focus()}
+}
+async function askAI(){openAIChat()}
 async function loadAIOpsBrief(){const el=document.getElementById('aiOpsBrief');if(!el||!can('action.ai.use'))return;el.innerHTML='<div class="empty">Generating operational brief…</div>';try{const r=await api('/ai-ops-brief',{method:'POST',body:'{}'});el.innerHTML='<div style="white-space:pre-wrap;line-height:1.6">'+esc(r.brief||'No brief generated.')+'</div>'}catch(e){el.innerHTML='<div class="empty">AI brief unavailable: '+esc(e.message||'Unknown error')+'</div>'}}
-async function draftAppointmentMessage(id){const a=state.appointments.find(x=>Number(x.id)===Number(id));if(!a)return;document.getElementById('aiResponse').textContent='Drafting reminder…';try{const r=await api('/ai-message-draft',{method:'POST',body:JSON.stringify({kind:'appointment_reminder',patient_name:a.patient_name,hospital_name:state.dashboard?.hospital?.name||'Hospital',doctor_name:a.doctor_name,date:a.appointment_date,time:a.appointment_time})});document.getElementById('aiResponse').textContent=r.message||'No draft generated.';showSection('dashboard')}catch(e){document.getElementById('aiResponse').textContent=e.message}}
+async function draftAppointmentMessage(id){const a=state.appointments.find(x=>Number(x.id)===Number(id));if(!a)return;openAIChat();try{const r=await api('/ai-message-draft',{method:'POST',body:JSON.stringify({kind:'appointment_reminder',patient_name:a.patient_name,hospital_name:state.dashboard?.hospital?.name||'Hospital',doctor_name:a.doctor_name,date:a.appointment_date,time:a.appointment_time})});const box=document.getElementById('aiChatMessages');box.insertAdjacentHTML('beforeend',aiChatMessageHtml({role:'assistant',body:r.message||'No draft generated.',created_at:new Date().toISOString()}));box.scrollTop=box.scrollHeight}catch(e){}}
 async function loadCommunication(){if(!can('action.communication.use'))return;try{state.communication=await api('/staff-communication');renderCommunication();pollCalls()}catch(e){console.error(e)}}
 let notificationPollTimer=null,notificationSeenReady=false,notificationSeen=new Set();
 async function pollNotifications(){
