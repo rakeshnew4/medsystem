@@ -71,9 +71,9 @@
 <main class="main">
 <header class="topbar">
   <div class="topbar-heading"><button class="mobile-menu-btn btn" aria-label="Open menu" onclick="openMobileNav()">☰</button><div><div class="kicker" id="dateLabel">Today</div><h1 class="title" id="pageTitle">Hospital overview</h1><div id="userBadge" style="font-size:12px;color:var(--muted);margin-top:6px"></div></div></div>
-  <div class="top-actions"><button class="btn icon-action pin-btn" id="pinScreenBtn" onclick="togglePinnedScreen()" title="Keep this screen open" aria-label="Pin screen">☆</button><button class="btn icon-action" onclick="loadAll()" title="Refresh" aria-label="Refresh">↻</button><button class="btn primary appointment-action" onclick="openModal('appointmentModal')"><span class="desktop-action-label">+ Appointment</span><span class="mobile-action-label">+ Add</span></button></div>
+  <div class="top-actions"><button class="btn icon-action pin-btn" id="pinScreenBtn" onclick="togglePinnedScreen()" title="Keep this screen open" aria-label="Pin screen">☆</button><button class="btn icon-action notification-bell" id="notificationBell" onclick="openNotifications()" title="Notifications" aria-label="Notifications">🔔<span id="notificationBadge" class="notification-badge" style="display:none">0</span></button><button class="btn icon-action" onclick="loadAll()" title="Refresh" aria-label="Refresh">↻</button><button class="btn primary appointment-action" onclick="openModal('appointmentModal')"><span class="desktop-action-label">+ Appointment</span><span class="mobile-action-label">+ Add</span></button></div>
 </header>
-<div id="roleWorkspaceBar" class="role-workspace-bar" style="display:none"></div><div id="resumeContextBar" class="resume-context-bar" style="display:none"></div>
+<div id="roleWorkspaceBar" class="role-workspace-bar" style="display:none"></div><div id="resumeContextBar" class="resume-context-bar" style="display:none"></div><div id="workflowToastHost" class="workflow-toast-host" aria-live="polite"></div>
 
 <section id="dashboard" class="section active">
   <div id="stats" class="grid stats"></div>
@@ -834,13 +834,18 @@ async function updatePatientStatus(id,status){try{const p=state.patients.find(x=
 function editPatient(id){const p=state.patients.find(x=>Number(x.id)===Number(id));if(!p)return;patientId.value=p.id;patientName.value=p.name||'';patientPhone.value=p.phone||'';patientEmail.value=p.email||'';patientDob.value=p.date_of_birth?String(p.date_of_birth).slice(0,10):'';patientStatus.value=p.status||'active';patientNotes.value=p.notes||'';openModal('patientModal')}
 function renderQueue(){
  const stages=[['waiting','Waiting'],['vitals','Vitals'],['doctor','Doctor room'],['lab','Lab'],['followup','Follow-up'],['pharmacy','Pharmacy']];
+ const role=state.session?.staff?.role||'admin';
+ const actionStage={nurse:'vitals',doctor:'doctor',lab:'lab',pharmacy:'pharmacy',receptionist:'waiting'}[role]||null;
+ const actionCount=actionStage?state.queue.filter(x=>x.stage===actionStage).length:0;
+ const banner=actionStage?'<div class="work-queue-banner"><div><strong>Your work queue</strong><span>'+actionCount+' patient'+(actionCount===1?'':'s')+' need your action in <b>'+actionStage.replace('_',' ')+'</b>.</span></div><button class="btn primary" onclick="filterQueueToMyWork()">Show my work</button></div>':'';
  if(state.queueView==='list'){document.getElementById('queueBoard').innerHTML=table(state.queue,['Token','Patient','Doctor','Current step','Priority','Checked in','Next action'],x=>'<td>'+esc(x.token||'—')+'</td><td><strong>'+esc(x.patient_name)+'</strong><div style="font-size:11px;color:var(--muted)">'+esc(x.phone||'')+'</div></td><td>'+esc(x.doctor_name||'—')+'</td><td>'+status(x.stage)+'</td><td>'+status(x.priority)+'</td><td>'+new Date(x.checked_in_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+'</td><td>'+queueActions(x)+'</td>');return}
- document.getElementById('queueBoard').innerHTML='<div class="kanban">'+stages.map(([stage,label])=>'<div class="kanban-col" data-stage="'+stage+'" ondragover="event.preventDefault()" ondrop="dropQueue(event,\''+stage+'\')"><div class="kanban-head"><strong>'+label+'</strong><span>'+state.queue.filter(x=>x.stage===stage).length+'</span></div><div class="kanban-list">'+state.queue.filter(x=>x.stage===stage).map(queueCard).join('')+'</div></div>').join('')+'</div>';
+ document.getElementById('queueBoard').innerHTML=banner+'<div class="kanban">'+stages.map(([stage,label])=>'<div class="kanban-col '+(stage===actionStage?'needs-action':'')+'" data-stage="'+stage+'" ondragover="event.preventDefault()" ondrop="dropQueue(event,\''+stage+'\')"><div class="kanban-head"><strong>'+label+(stage===actionStage?' · YOUR ACTION':'')+'</strong><span>'+state.queue.filter(x=>x.stage===stage).length+'</span></div><div class="kanban-list">'+state.queue.filter(x=>x.stage===stage).map(queueCard).join('')+'</div></div>').join('')+'</div>';
 }
 function queueCard(x){return '<div class="queue-card '+esc(x.priority)+'" draggable="true" onclick="openClinical('+x.patient_id+')" ondragstart="event.dataTransfer.setData(\'text/plain\',\''+x.id+'\')"><div style="display:flex;justify-content:space-between;gap:8px"><strong>'+esc(x.patient_name)+'</strong><span class="token">'+esc(x.token||'—')+'</span></div><div class="queue-small">'+esc(x.doctor_name||'No doctor assigned')+'</div><div class="queue-small">'+esc(x.reason||'General visit')+'</div><div class="queue-actions">'+queueActions(x)+'</div></div>'}
 function queueActions(x){const next={waiting:'vitals',vitals:'doctor',doctor:'lab',lab:'followup',followup:'pharmacy',pharmacy:'completed'}[x.stage];const move=next?'<button class="mini" onclick="event.stopPropagation();moveQueue('+x.id+',\''+next+'\')">'+(next==='completed'?'Complete':'→ '+next)+'</button>':'';const vitals=x.stage==='waiting'?'<button class="mini" onclick="event.stopPropagation();openVitals('+x.id+','+x.patient_id+')">Vitals</button>':'';return move+vitals}
 function dropQueue(e,stage){const id=e.dataTransfer.getData('text/plain');if(id)moveQueue(id,stage)}
 function setQueueView(v){state.queueView=v;document.getElementById('kanbanBtn').classList.toggle('primary',v==='kanban');document.getElementById('listBtn').classList.toggle('primary',v==='list');renderQueue()}
+function filterQueueToMyWork(){const role=state.session?.staff?.role||'admin';const stage={nurse:'vitals',doctor:'doctor',lab:'lab',pharmacy:'pharmacy',receptionist:'waiting'}[role];if(!stage)return;document.querySelectorAll('.kanban-col').forEach(el=>el.style.display=el.dataset.stage===stage?'block':'none')}
 async function moveQueue(id,stage){try{await api('/queue',{method:'PUT',body:JSON.stringify({id:Number(id),stage})});await loadAll()}catch(e){alert(e.message)}}
 function openVitals(qid,pid){openPatientWorkspace(pid,'vitals')}
 
@@ -990,6 +995,52 @@ async function askAI(){const q=document.getElementById('aiQuestion').value.trim(
 async function loadAIOpsBrief(){const el=document.getElementById('aiOpsBrief');if(!el||!can('action.ai.use'))return;el.innerHTML='<div class="empty">Generating operational brief…</div>';try{const r=await api('/ai-ops-brief',{method:'POST',body:'{}'});el.innerHTML='<div style="white-space:pre-wrap;line-height:1.6">'+esc(r.brief||'No brief generated.')+'</div>'}catch(e){el.innerHTML='<div class="empty">AI brief unavailable: '+esc(e.message||'Unknown error')+'</div>'}}
 async function draftAppointmentMessage(id){const a=state.appointments.find(x=>Number(x.id)===Number(id));if(!a)return;document.getElementById('aiResponse').textContent='Drafting reminder…';try{const r=await api('/ai-message-draft',{method:'POST',body:JSON.stringify({kind:'appointment_reminder',patient_name:a.patient_name,hospital_name:state.dashboard?.hospital?.name||'Hospital',doctor_name:a.doctor_name,date:a.appointment_date,time:a.appointment_time})});document.getElementById('aiResponse').textContent=r.message||'No draft generated.';showSection('dashboard')}catch(e){document.getElementById('aiResponse').textContent=e.message}}
 async function loadCommunication(){if(!can('action.communication.use'))return;try{state.communication=await api('/staff-communication');renderCommunication();pollCalls()}catch(e){console.error(e)}}
+let notificationPollTimer=null,notificationSeenReady=false,notificationSeen=new Set();
+async function pollNotifications(){
+  try{
+    const r=await api('/staff-notifications');
+    const notes=r.notifications||[];
+    const unread=Number(r.unread||0);
+    const badge=document.getElementById('notificationBadge');
+    if(badge){badge.textContent=unread>99?'99+':String(unread);badge.style.display=unread?'inline-flex':'none'}
+    const fresh=notes.filter(n=>!n.read_at && !notificationSeen.has(String(n.id)));
+    if(notificationSeenReady&&fresh.length)fresh.slice(0,3).reverse().forEach(showWorkflowToast);
+    notes.forEach(n=>notificationSeen.add(String(n.id)));
+    notificationSeenReady=true;
+    state.notifications=notes;
+  }catch(e){}
+  clearTimeout(notificationPollTimer);
+  notificationPollTimer=setTimeout(pollNotifications,5000);
+}
+function showWorkflowToast(n){
+  const host=document.getElementById('workflowToastHost');if(!host)return;
+  const el=document.createElement('button');el.className='workflow-toast';el.type='button';
+  el.innerHTML='<span class="workflow-toast-icon">!</span><span><strong>'+esc(n.title)+'</strong><small>'+esc(n.body||'')+'</small></span>';
+  el.onclick=()=>{closeWorkflowToast(el);handleNotification(n)};
+  host.appendChild(el);
+  setTimeout(()=>closeWorkflowToast(el),9000);
+}
+function closeWorkflowToast(el){if(el&&el.parentNode)el.remove()}
+function handleNotification(n){
+  api('/staff-notifications',{method:'PUT',body:JSON.stringify({id:n.id})}).catch(()=>{});
+  if(n.entity_type==='patient'&&n.entity_id){openClinical(Number(n.entity_id));return}
+  if(n.entity_type==='queue'&&n.entity_id){showSection('queue');return}
+  if(n.entity_type==='lab_order'){showSection('lab');return}
+  if(n.entity_type==='medication'){showSection('pharmacy');return}
+  if(n.entity_type==='invoice'){showSection('billing');return}
+  showSection('communication');
+}
+async function openNotifications(){
+  let r;try{r=await api('/staff-notifications')}catch(e){return alert(e.message||'Notifications unavailable')}
+  state.notifications=r.notifications||[];
+  const unread=Number(r.unread||0);
+  const body=state.notifications.map(n=>'<div class="notification-row '+(n.read_at?'':'unread')+'"><div><strong>'+esc(n.title)+'</strong><p>'+esc(n.body||'')+'</p><small>'+new Date(n.created_at).toLocaleString('en-IN')+'</small></div><button class="mini" onclick="event.stopPropagation();handleNotification('+JSON.stringify(n).replace(/"/g,'&quot;')+')">'+(n.read_at?'Open':'Act')+'</button></div>').join('')||'<div class="empty">No notifications.</div>';
+  document.getElementById('notificationModalBody').innerHTML='<div class="notification-summary">'+unread+' unread task'+(unread===1?'':'s')+'</div>'+body;
+  openModal('notificationModal');
+  await api('/staff-notifications',{method:'PUT',body:JSON.stringify({})}).catch(()=>{});
+  if(document.getElementById('notificationBadge'))document.getElementById('notificationBadge').style.display='none';
+  state.notifications.forEach(n=>notificationSeen.add(String(n.id)));
+}
 function renderCommunication(){const c=state.communication;if(!c)return;document.getElementById('commPeople').innerHTML=c.staff.filter(s=>Number(s.id)!==Number(c.me.id)).map(s=>'<div class="record-row"><div><strong>'+esc(s.display_name||s.email)+'</strong><small>'+esc(s.role)+' · '+esc(s.email)+'</small></div><div><button class="mini" onclick="openDirectChat('+s.id+')">Chat</button><button class="mini" onclick="startStaffCall('+s.id+')">Call</button></div></div>').join('')||'<div class="empty">No other active staff.</div>';document.getElementById('commGroups').innerHTML='<button class="btn primary" onclick="createStaffGroup()">+ Create group</button>'+c.groups.map(g=>'<div class="record-row"><div><strong>'+esc(g.name)+'</strong><small>'+g.member_count+' members</small></div><button class="mini" onclick="openGroupChat('+g.id+')">Open chat</button></div>').join('');document.getElementById('commConversations').innerHTML=c.conversations.map(x=>'<button class="record-row" style="width:100%;text-align:left;border:0;background:transparent;cursor:pointer" onclick="openConversation('+x.id+')"><div><strong>'+esc(x.name||x.conversation_type)+'</strong><small>'+esc(x.last_message||'No messages yet')+'</small></div></button>').join('')||'<div class="empty">Start a direct chat or group chat.</div>';document.getElementById('staffNotifications').innerHTML=c.notifications.map(n=>'<div class="record-row"><div><strong>'+esc(n.title)+'</strong><span>'+esc(n.body||'')+'</span><small>'+new Date(n.created_at).toLocaleString()+'</small></div>'+(n.read_at?'':'<button class="mini" onclick="readStaffNotification('+n.id+')">Read</button>')+'</div>').join('')||'<div class="empty">No notifications.</div>'}
 async function openDirectChat(id){const r=await api('/staff-communication',{method:'POST',body:JSON.stringify({action:'conversation',conversation_type:'direct',staff_id:id})});await loadCommunication();openConversation(r.id)}
 async function openGroupChat(id){const r=await api('/staff-communication',{method:'POST',body:JSON.stringify({action:'conversation',conversation_type:'group',group_id:id})});await loadCommunication();openConversation(r.id)}
@@ -1039,9 +1090,10 @@ async function signOut(){await hatchable.auth.signOut();location.replace('/login
 // Canonical patient-detail entry point. Older clinical-detail helpers remain for their edit forms,
 // but every staff-facing patient link resolves to the same Patient Workspace.
 async function openClinical(pid,action){return openPatientWorkspace(pid,action||'workspace')}
-window.addEventListener('DOMContentLoaded',()=>loadAll());
+window.addEventListener('DOMContentLoaded',()=>{loadAll();setTimeout(pollNotifications,1200)});
 </script>
 
+<div id="notificationModal" class="modal"><div class="modal-card notification-modal-card"><div class="panel-head"><div><h2 class="panel-title">Workflow notifications</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Tasks routed to your role from the patient journey.</div></div><button class="btn" onclick="closeModal('notificationModal')">Close</button></div><div id="notificationModalBody"></div></div></div>
 <div id="billingModal" class="modal"><div class="modal-card"><div class="panel-head"><h2 class="panel-title">New invoice</h2><button class="btn" onclick="closeModal('billingModal')">Close</button></div><form id="billingForm" class="form-grid"><div class="field"><label>Patient</label><input id="billPatient" type="hidden"><input id="billPatientSearch" class="search-select-input" required placeholder="Search patient…" autocomplete="off" list="billPatientOptions"><datalist id="billPatientOptions"></datalist></div><div class="field"><label>Payment method</label><select id="billMethod"><option value="cash">Cash</option><option value="upi">UPI</option><option value="card">Card</option><option value="online">Online</option></select></div><div class="field"><label>Service / item</label><input id="billDescription" required placeholder="Consultation"></div><div class="field"><label>Amount</label><input id="billAmount" type="number" min="0" step="0.01" required></div><div class="field"><label>Discount</label><input id="billDiscount" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Tax</label><input id="billTax" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Paid now</label><input id="billPaid" type="number" min="0" step="0.01" value="0"></div><div class="field full"><label>Notes</label><input id="billNotes"></div><div><button class="btn primary">Create invoice</button></div></form></div></div>
 
 <div id="staffModal" class="modal"><div class="modal-card"><div class="panel-head"><h2 class="panel-title">Register staff email</h2><button class="btn" onclick="closeModal('staffModal')">Close</button></div><form id="staffForm" class="form-grid"><div class="field full"><label>Exact email address</label><input id="staffEmail" type="email" required placeholder="nurse@hospital.com"><div style="font-size:11px;color:var(--muted);margin-top:5px">Only this registered email can enter the hospital app. Authentication still requires ownership of the email.</div></div><div class="field"><label>Role</label><select id="staffRole"><option value="receptionist">Receptionist</option><option value="nurse">Nurse</option><option value="doctor">Doctor</option><option value="lab">Lab</option><option value="pharmacy">Pharmacy</option><option value="admin">Admin</option><option value="pending">Pending</option></select></div><div class="field"><label>Doctor link (optional)</label><select id="staffDoctor"></select></div><div class="field"><label>Activate now?</label><select id="staffActive"><option value="false">No — activate later</option><option value="true">Yes</option></select></div><div><button class="btn primary">Register email</button></div></form></div></div>

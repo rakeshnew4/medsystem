@@ -1,6 +1,7 @@
 import { db } from "hatchable";
 import { requirePermission } from "../lib/authz.js";
 import { logWorkflowEvent } from "../lib/workflow.js";
+import { notifyRoles } from "../lib/staff-notifications.js";
 export const access="user";
 export const methods=["GET","POST","PUT"];
 export default async function(req,res){
@@ -17,6 +18,7 @@ export default async function(req,res){
   const inv=await db.query("INSERT INTO invoices(hospital_id,patient_id,appointment_id,visit_id,invoice_number,subtotal,discount,tax,total,paid,payment_method,status,notes,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *",[ctx.hospitalId,b.patient_id,b.appointment_id||null,b.visit_id||null,invoiceNumber,subtotal,discount,tax,total,paid,b.payment_method||null,status,b.notes||null,ctx.user.email]);
   for(const item of b.items) await db.query("INSERT INTO invoice_items(invoice_id,description,quantity,unit_price,amount) VALUES($1,$2,$3,$4,$5)",[inv.rows[0].id,item.description,Number(item.quantity||1),Number(item.unit_price||0),Number(item.quantity||1)*Number(item.unit_price||0)]);
   await logWorkflowEvent(ctx,{patientId:b.patient_id,eventType:"invoice_created",stage:"billing",entityType:"invoice",entityId:inv.rows[0].id,metadata:{total,paid,status}});
+  if(ctx.staff.role!=="billing")await notifyRoles({hospitalId:ctx.hospitalId,roles:["billing"],title:"New bill ready",body:"A new invoice is waiting for billing/payment action.",kind:"workflow",entityType:"invoice",entityId:inv.rows[0].id,patientId:b.patient_id,excludeStaffId:ctx.staff.id});
   return res.json(inv.rows[0]);
  }
  if(req.method==="PUT"){

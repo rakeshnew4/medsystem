@@ -1,6 +1,7 @@
 import { db } from "hatchable";
 import { requirePermission } from "../lib/authz.js";
 import { logWorkflowEvent, findOpenEncounter } from "../lib/workflow.js";
+import { notifyRoles } from "../lib/staff-notifications.js";
 export const access="user";
 export const methods=["GET","POST","PUT"];
 
@@ -20,6 +21,7 @@ export default async function(req,res){
     let encounterId=b.encounter_id||null;if(!encounterId){const e=await findOpenEncounter(ctx,b.patient_id,{});encounterId=e?.id||null}
     const r=await db.query("INSERT INTO lab_orders(hospital_id,patient_id,doctor_id,visit_id,queue_entry_id,encounter_id,test_name,status,notes,invoice_id) VALUES($1,$2,$3,$4,$5,$6,$7,'ordered',$8,$9) RETURNING *",[ctx.hospitalId,b.patient_id,b.doctor_id||ctx.staff.doctor_id||null,b.visit_id||null,b.queue_entry_id||null,encounterId,b.test_name,b.notes||null,b.invoice_id||null]);
     await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId,eventType:"lab_ordered",stage:"lab",entityType:"lab_order",entityId:r.rows[0].id});
+    await notifyRoles({hospitalId:ctx.hospitalId,roles:["lab"],title:"New lab order",body:"A new investigation is waiting for processing.",kind:"workflow",entityType:"lab_order",entityId:r.rows[0].id,patientId:b.patient_id,excludeStaffId:ctx.staff.id});
     return res.json(r.rows[0]);
   }
   if(!b.id)return res.status(400).json({error:"Lab order id is required"});
@@ -45,5 +47,6 @@ export default async function(req,res){
     await db.query("INSERT INTO notifications(hospital_id,patient_id,appointment_id,kind,scheduled_for,status,channel) VALUES($1,$2,NULL,'lab_result_ready',now(),'pending','staff') ON CONFLICT DO NOTHING",[ctx.hospitalId,o.patient_id]).catch(()=>{});
   }
   await logWorkflowEvent(ctx,{patientId:o.patient_id,encounterId:enc,eventType:"lab_"+status,stage:status==="verified"?"doctor_review":"lab",entityType:"lab_order",entityId:o.id,metadata:{status,result_summary:status==="verified"?b.result_summary||null:undefined}});
+  if(status==="verified")await notifyRoles({hospitalId:ctx.hospitalId,roles:["doctor"],doctorId:o.doctor_id,title:"Lab result ready",body:"A lab result has been verified and needs doctor review.",kind:"workflow",entityType:"lab_order",entityId:o.id,patientId:o.patient_id,excludeStaffId:ctx.staff.id});
   return res.json(r.rows[0]);
 }

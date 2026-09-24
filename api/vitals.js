@@ -1,5 +1,6 @@
 import { db } from "hatchable"; import { requirePermission } from "../lib/authz.js";
 import { logWorkflowEvent } from "../lib/workflow.js";
+import { notifyRoles } from "../lib/staff-notifications.js";
 export const access="user"; export const methods=["GET","POST","PUT"];
 export default async function(req,res){
  const ctx=await requirePermission(req,res,req.method==="GET"?"action.clinical.view":"action.vitals.record"); if(!ctx)return;
@@ -20,7 +21,10 @@ export default async function(req,res){
   }
   const r=await db.query("INSERT INTO vitals(hospital_id,patient_id,queue_entry_id,encounter_id,recorded_by,blood_pressure_systolic,blood_pressure_diastolic,pulse,temperature,weight_kg,height_cm,spo2,respiratory_rate,notes) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *",[ctx.hospitalId,b.patient_id,b.queue_entry_id||null,encounterId,ctx.user.email,b.blood_pressure_systolic||null,b.blood_pressure_diastolic||null,b.pulse||null,b.temperature||null,b.weight_kg||null,b.height_cm||null,b.spo2||null,b.respiratory_rate||null,b.notes||null]);
   if(encounterId)await db.query("UPDATE care_encounters SET current_stage='doctor',updated_at=now() WHERE id=$1",[encounterId]);
-  await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId,eventType:"vitals_recorded",stage:"vitals",entityType:"vitals",entityId:r.rows[0].id}); return res.json(r.rows[0]);
+  await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId,eventType:"vitals_recorded",stage:"vitals",entityType:"vitals",entityId:r.rows[0].id});
+  const q=b.queue_entry_id?await db.query("SELECT doctor_id,token FROM queue_entries WHERE id=$1 AND hospital_id=$2",[b.queue_entry_id,ctx.hospitalId]):{rows:[]};
+  await notifyRoles({hospitalId:ctx.hospitalId,roles:["doctor"],doctorId:q.rows[0]?.doctor_id||ctx.staff.doctor_id,title:"Vitals recorded",body:"Vitals are recorded and the patient is ready for consultation."+(q.rows[0]?.token?" Token "+q.rows[0].token+".":""),kind:"workflow",entityType:"patient",entityId:b.patient_id,patientId:b.patient_id,excludeStaffId:ctx.staff.id});
+  return res.json(r.rows[0]);
  }
  const r=await db.query("SELECT v.*,p.name AS patient_name,ce.encounter_type FROM vitals v JOIN patients p ON p.id=v.patient_id LEFT JOIN care_encounters ce ON ce.id=v.encounter_id WHERE v.hospital_id=$1 ORDER BY v.recorded_at DESC LIMIT 200",[ctx.hospitalId]); res.json(r.rows);
 }
