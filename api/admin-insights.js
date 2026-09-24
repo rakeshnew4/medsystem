@@ -7,7 +7,7 @@ export const methods = ["GET"];
 export default async function(req,res){
   const ctx=await requirePermission(req,res,"page.admin_insights");
   if(!ctx)return;
-  if(ctx.role!=="admin") return res.status(403).json({error:"Admin access required"});
+  if(ctx.staff?.role!=="admin") return res.status(403).json({error:"Admin access required"});
 
   const hid=ctx.hospitalId;
   const today=new Date().toISOString().slice(0,10);
