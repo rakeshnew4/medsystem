@@ -1,4 +1,5 @@
-import { db, ai } from "hatchable";
+import { db } from "hatchable";
+import { litellmChat } from "../lib/llm.js";
 export const access = "public";
 export const methods = ["GET","POST"];
 
@@ -35,8 +36,8 @@ export default async function(req,res){
     db.query("SELECT question,answer FROM hospital_faqs WHERE hospital_id=$1 AND active=true",[hid])
   ]);
   const prompt=`You are a WhatsApp administrative receptionist for ${h.rows[0].name}. Answer only administrative questions using the supplied doctors and FAQs. Help users understand how to book; do not make a booking from free text. Do not diagnose, prescribe, interpret medical reports, or give treatment advice. For clinical questions, direct them to a qualified clinician or emergency service. Doctors: ${JSON.stringify(doctors.rows)} FAQs: ${JSON.stringify(faqs.rows)} User: ${text}`;
-  const result=await ai.generateText({model:"gpt",purpose:"whatsapp-hospital-reception",prompt,maxTokens:300});
+  const answer=await litellmChat({system:"You are a WhatsApp administrative receptionist. Answer only administrative questions using the supplied doctors and FAQs. Do not diagnose, prescribe, interpret medical reports, or give treatment advice. For clinical questions, direct the person to a qualified clinician or emergency service. Keep answers concise.",user:prompt,maxTokens:300});
   await db.query("INSERT INTO conversations(hospital_id,patient_id,channel,status) VALUES($1,$2,'whatsapp','open')",[hid,p.id]);
-  await reply(from,result.text||"Please contact hospital reception.");
+  await reply(from,answer||"Please contact hospital reception.");
   res.json({ok:true});
 }

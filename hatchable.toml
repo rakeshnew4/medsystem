@@ -28,3 +28,14 @@ expose = true
 [[secret]]
 name = "MSG91_AUTH_KEY"
 expose = true
+[[secret]]
+name = "LITELLM_URL"
+expose = true
+
+[[secret]]
+name = "LITELLM_API_KEY"
+expose = true
+
+[[secret]]
+name = "LITELLM_MODEL"
+expose = true

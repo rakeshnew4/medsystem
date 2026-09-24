@@ -1,5 +1,5 @@
 import { db } from "hatchable";
-import { groqChat } from "../lib/groq.js";
+import { litellmChat } from "../lib/llm.js";
 export const access = "public";
 export const methods = ["POST"];
 
@@ -15,7 +15,7 @@ export default async function(req,res){
   ]);
   const prompt=`You are the public administrative assistant for a hospital. Only answer administrative questions using the supplied information. You may help with appointments, doctor information, hospital information and FAQs. Do NOT diagnose, prescribe, recommend treatment, interpret medical reports, or give clinical decisions. For medical symptoms or emergencies, tell the person to contact a qualified clinician or emergency service. Hospital: ${JSON.stringify(h.rows[0])}. Doctors: ${JSON.stringify(doctors.rows)}. FAQs: ${JSON.stringify(faqs.rows)}. Visitor question: ${q}`;
   try{
-    const answer=await groqChat({system:"You are CareFlow's public hospital administrative assistant. Only answer administrative questions from supplied hospital information. Never diagnose, prescribe, interpret medical reports, or recommend treatment. For symptoms or emergencies, direct the person to a qualified clinician or emergency service. Keep answers concise.",user:prompt,maxTokens:400});
+    const answer=await litellmChat({system:"You are CareFlow's public hospital administrative assistant. Only answer administrative questions from supplied hospital information. Never diagnose, prescribe, interpret medical reports, or recommend treatment. For symptoms or emergencies, direct the person to a qualified clinician or emergency service. Keep answers concise.",user:prompt,maxTokens:400});
     res.json({answer:answer||"Please contact the hospital reception for assistance."});
   }catch(e){res.status(502).json({error:e.message||"AI assistant unavailable"});}
 }
