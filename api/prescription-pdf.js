@@ -1,10 +1,12 @@
 import { browser } from "hatchable";
 import { db } from "../lib/db.js";
+import { requirePermission } from "../lib/authz.js";
 export const access="user";
 export const methods=["GET"];
 export default async function(req,res){
+ const ctx=await requirePermission(req,res,"action.clinical.view"); if(!ctx)return;
  const pid=Number(req.query?.patient_id||0); if(!pid)return res.status(400).json({error:"Patient id is required"});
- const p=await db.query("SELECT p.*,h.name AS hospital_name,h.phone AS hospital_phone,h.address AS hospital_address FROM patients p JOIN hospitals h ON h.id=p.hospital_id WHERE p.id=$1 LIMIT 1",[pid]);
+ const p=await db.query("SELECT p.*,h.name AS hospital_name,h.phone AS hospital_phone,h.address AS hospital_address FROM patients p JOIN hospitals h ON h.id=p.hospital_id WHERE p.id=$1 AND p.hospital_id=$2 LIMIT 1",[pid,ctx.hospitalId]);
  if(!p.rows[0])return res.status(404).json({error:"Patient not found"}); const a=p.rows[0];
  const m=await db.query("SELECT m.*,d.name AS doctor_name FROM medications m LEFT JOIN doctors d ON d.id=m.doctor_id WHERE m.patient_id=$1 AND m.hospital_id=$2 ORDER BY m.prescribed_at DESC LIMIT 20",[pid,a.hospital_id]);
  const v=await db.query("SELECT clinical_notes,started_at FROM doctor_visits WHERE patient_id=$1 AND hospital_id=$2 ORDER BY started_at DESC LIMIT 1",[pid,a.hospital_id]);
