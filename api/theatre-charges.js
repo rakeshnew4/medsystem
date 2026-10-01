@@ -26,8 +26,9 @@ export default async function(req,res){
   const allowedTypes=["procedure","theatre_service","professional_fee","medicine","consumable"];
   const chargeType=String(b.charge_type||"procedure");
   if(!allowedTypes.includes(chargeType))return res.status(400).json({error:"Unsupported Theatre charge type"});
-  const p=await db.query("SELECT id,patient_id,status FROM theatre_procedures WHERE id=$1 AND hospital_id=$2",[procedureId,ctx.hospitalId]);
+  const p=await db.query("SELECT id,patient_id,status,validated_at FROM theatre_procedures WHERE id=$1 AND hospital_id=$2",[procedureId,ctx.hospitalId]);
   if(!p.rows[0])return res.status(404).json({error:"Theatre procedure not found"});
+  if(p.rows[0].validated_at)return res.status(409).json({error:"Validated procedures cannot receive new Theatre charges"});
   const amount=qty*unit;
   const sourceType=b.source_type?String(b.source_type).trim():null;
   const sourceId=b.source_id?Number(b.source_id):null;
@@ -72,6 +73,8 @@ export default async function(req,res){
  const c=await db.query("SELECT * FROM theatre_charges WHERE id=$1 AND hospital_id=$2",[id,ctx.hospitalId]);
  if(!c.rows[0])return res.status(404).json({error:"Theatre charge not found"});
  if(c.rows[0].invoice_id||c.rows[0].invoice_item_id)return res.status(409).json({error:"Theatre charge is already linked to an invoice"});
+ const procState=await db.query("SELECT validated_at FROM theatre_procedures WHERE id=$1 AND hospital_id=$2",[c.rows[0].procedure_id,ctx.hospitalId]);
+ if(procState.rows[0]?.validated_at)return res.status(409).json({error:"Validated procedures cannot receive billing changes"});
  const inv=await db.query("SELECT id,patient_id FROM invoices WHERE id=$1 AND hospital_id=$2",[invoiceId,ctx.hospitalId]);
  if(!inv.rows[0])return res.status(404).json({error:"Invoice not found"});
  if(Number(inv.rows[0].patient_id)!==Number(c.rows[0].patient_id))return res.status(409).json({error:"Invoice does not belong to the charge patient"});

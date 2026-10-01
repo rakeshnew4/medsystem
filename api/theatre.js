@@ -56,9 +56,10 @@ export default async function(req,res){
    const teamRole=String(b.team_role||"").trim();
    const allowedTeamRoles=["surgeon","assistant_surgeon","anesthetist","nurse","technician","other"];
    if(!procedureId||!staffId||!allowedTeamRoles.includes(teamRole))return res.status(400).json({error:"Procedure, staff and a valid surgical team role are required"});
-   const proc=await db.query("SELECT id,patient_id,status FROM theatre_procedures WHERE id=$1 AND hospital_id=$2",[procedureId,ctx.hospitalId]);
+   const proc=await db.query("SELECT id,patient_id,status,validated_at FROM theatre_procedures WHERE id=$1 AND hospital_id=$2",[procedureId,ctx.hospitalId]);
    if(!proc.rows[0])return res.status(404).json({error:"Procedure not found"});
    if(proc.rows[0].status==="cancelled")return res.status(409).json({error:"Cancelled procedures cannot receive surgical team members"});
+   if(proc.rows[0].validated_at)return res.status(409).json({error:"Validated procedures cannot be changed"});
    const staff=await db.query("SELECT id,display_name,email,role FROM staff_profiles WHERE id=$1 AND hospital_id=$2 AND active=true",[staffId,ctx.hospitalId]);
    if(!staff.rows[0])return res.status(404).json({error:"Active staff member not found"});
    const r=await db.query("INSERT INTO theatre_procedure_team(hospital_id,procedure_id,staff_id,team_role,notes,created_by) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(hospital_id,procedure_id,staff_id,team_role) DO NOTHING RETURNING *",[ctx.hospitalId,procedureId,staffId,teamRole,String(b.notes||"").trim()||null,ctx.user.email]);
