@@ -354,6 +354,10 @@ Status: Deployed in v408; authenticated browser verification remains pending.
 Selecting a patient from the billing worklist opens the existing Patient Workspace context without changing invoice/payment state.
 Status: Deployed in v408; authenticated browser verification remains pending.
 
+## TC-BILL-026 — Financial audit/history UI
+Invoice detail exposes a read-only Audit history action backed by /api/billing-audit. The endpoint is hospital-scoped and permission-protected and returns payment ledger entries, billing workflow events, and matching invoice audit events without mutation.
+Status: Deployed in v415; anonymous access returns 401; authenticated browser verification remains pending.
+
 ## TC-BILL-026 — Billing unauthenticated boundary
 GET /api/billing as anonymous must return HTTP 401, and a signed-in app-user session that is not registered as hospital staff must not reach billing data or mutations.
 Status: Verified in v408 for anonymous GET (401) and the available signed-in app-user harness (401 from requireStaff). This does not satisfy hospital-staff E2E.
