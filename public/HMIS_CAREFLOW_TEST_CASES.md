@@ -77,6 +77,59 @@ Status: Full authenticated E2E gate.
 ## Pharmacy completion gate
 Pharmacy is marked Complete only after atomic stock consumption, authenticated pharmacist happy-path E2E, role boundaries, insufficient/expired-stock cases, encounter linkage, workflow events and retry/idempotency behavior pass.
 
+# Theatre / procedures
+
+## TC-THEATRE-001 — Public access blocked
+GET /api/theatre anonymously must return HTTP 401.
+Status: Pending deployment verification.
+
+## TC-THEATRE-002 — Procedure requires patient and name
+POST without patient_id or procedure_name must return HTTP 400.
+Status: Implemented.
+
+## TC-THEATRE-003 — Admission belongs to patient
+A procedure cannot link an admission belonging to another patient.
+Status: Implemented.
+
+## TC-THEATRE-004 — Discharged admission blocked
+A new procedure cannot be scheduled against a discharged admission.
+Status: Implemented.
+
+## TC-THEATRE-005 — Schedule validation
+Invalid dates or end <= start are rejected.
+Status: Implemented.
+
+## TC-THEATRE-006 — Theatre room overlap
+Overlapping scheduled/in-progress procedures in the same hospital theatre room are rejected.
+Status: Implemented; concurrent authenticated verification pending.
+
+## TC-THEATRE-007 — Lifecycle
+Only scheduled → in_progress → completed and scheduled → cancelled are accepted.
+Status: Implemented.
+
+## TC-THEATRE-008 — Completion requires outcome
+A procedure cannot become completed without an outcome.
+Status: Implemented.
+
+## TC-THEATRE-009 — Encounter continuity
+Admission-linked procedure uses the open canonical IPD encounter when available.
+Status: Implemented; authenticated E2E pending.
+
+## TC-THEATRE-010 — Workflow audit
+Scheduling and lifecycle transitions create workflow events.
+Status: Implemented; authenticated verification pending.
+
+## TC-THEATRE-011 — Role boundary
+Admin/doctor/nurse may manage theatre; other roles cannot mutate procedures.
+Status: Permission implemented; authenticated role test pending.
+
+## TC-THEATRE-012 — Full journey
+Admission → procedure scheduling → theatre start → completion → billing linkage → ward return.
+Status: Full authenticated E2E gate.
+
+## Theatre completion gate
+Do not mark Theatre Complete until authenticated happy-path E2E, role boundaries, invalid transitions, overlap protection, encounter continuity, workflow events and billing continuity pass.
+
 # Billing / charges / payments
 
 ## TC-BILL-001 — Public billing access is blocked
@@ -123,6 +176,30 @@ Status: Authenticated role E2E pending.
 ## TC-BILL-010 — Billing E2E fixture
 Dedicated E2E Test Patient and unpaid invoice exist and are labeled E2E TEST DATA.
 Status: Fixture created.
+
+## TC-BILL-011 — Payment ledger
+Every non-zero invoice payment creates one immutable invoice_payments row with amount, method, reference, receiver and timestamp.
+Status: Implemented in v258.
+
+## TC-BILL-012 — Incremental payment
+Payment PUT accepts a payment amount, adds it to the existing paid balance, and never overwrites prior payments.
+Status: Implemented in v258; authenticated execution pending.
+
+## TC-BILL-013 — Concurrent payment safety
+Two concurrent payment attempts cannot push the invoice paid balance above total; one may fail cleanly with HTTP 409.
+Status: Transactional row-locking implemented in v258; authenticated concurrency test pending.
+
+## TC-BILL-014 — Invoice payment history
+GET /api/billing?id=<invoice> returns the invoice plus ordered payment history.
+Status: Implemented in v258.
+
+## TC-BILL-015 — Insurance validation
+Insurance claim amounts must be finite/non-negative and claim status must use the supported lifecycle.
+Status: Implemented in v258.
+
+## TC-BILL-016 — Invoice PDF continuity
+Invoice PDF uses the same invoice, patient, line items, total, paid and due balance.
+Status: Endpoint exists; authenticated browser/PDF verification pending.
 
 ## Billing completion gate
 Billing is marked Complete only after authenticated invoice/payment E2E, role boundaries, invalid financial inputs, invoice continuity and workflow audit events pass.

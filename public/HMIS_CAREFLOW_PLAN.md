@@ -574,7 +574,29 @@ Completion gate:
 
 # 11 — Theatre / procedures
 
-Not started.
+**In progress — HMIS-aligned theatre/procedure foundation implemented.**
+
+HMIS exposes Surgeries/Clinical Procedures from the inpatient/admission context and separates the procedure from related professional, theatre-service and medicine charges. CareFlow starts with the clinical/operational procedure lifecycle and keeps billing as a linked downstream concern.
+
+Implemented:
+- Added `theatre_rooms` hospital-scoped master data.
+- Added `theatre_procedures` linked to patient, admission/BHT context, canonical encounter, doctor and theatre room.
+- Added protected `/api/theatre`.
+- Lifecycle: scheduled → in_progress → completed, or scheduled → cancelled.
+- Completion requires a documented outcome.
+- Discharged admissions cannot receive new procedures.
+- Overlapping theatre-room schedules are rejected.
+- Workflow events are recorded for scheduling and lifecycle transitions.
+- Added `action.theatre.manage` for admin, doctor and nurse roles.
+
+Remaining:
+- Theatre UI/workbench and admission-profile entry point.
+- Procedure master data and theatre-room administration.
+- Link procedure/service/professional/pharmacy charges into Billing without double-counting.
+- Theatre-to-ward handoff/return state where required.
+- Authenticated doctor/nurse E2E and role-boundary testing.
+
+Theatre remains **In progress** until the authenticated workflow is tested end-to-end.
 
 # 12 — Inventory / assets
 
