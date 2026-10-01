@@ -387,3 +387,7 @@ Status: Implemented in v410; authenticated browser verification remains pending.
 
 ## Billing completion gate
 Billing is marked Complete only after authenticated invoice/payment E2E, role boundaries, invalid financial inputs, invoice continuity and workflow audit events pass.
+
+## TC-THEATRE-001 — Theatre procedure worklist
+The Theatre module exposes a read-oriented worklist with HMIS-aligned search across patient, UHID, admission/BHT, procedure, doctor and room, plus procedure-state and date filters. Patient identity remains linked to the existing Patient Workspace, and existing lifecycle/charge/ward-return actions remain mapped to their protected server transitions.
+Status: Deployed in v417. Dry-run passed with 0 errors. Anonymous GET /api/theatre returns 401. Authenticated hospital-staff browser verification remains pending because the available runner cannot establish a real staff session.
