@@ -650,6 +650,8 @@ Not started.
 
 Added owner-only `/api/billing-validation` to audit production financial invariants without mutating financial data. Checks cover invoice paid/status bounds, invoice-item arithmetic, invoice subtotal continuity, payment positivity/bounds, and payment/invoice hospital linkage. This is a safety layer only; it does not count as authenticated billing E2E.
 
+Current status: direct external PostgreSQL checks are healthy, while the deployed validator has a ledger-query runtime discrepancy; this is recorded in `public/HMIS_BILLING_GATE_STATUS.md` and remains a release blocker.
+
 ## Change log
 
 ### 2026-10-01

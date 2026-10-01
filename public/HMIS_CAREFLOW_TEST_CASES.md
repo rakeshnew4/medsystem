@@ -308,5 +308,10 @@ Status: Automated production audit rechecked on 2026-10-01: 0 structural financi
 Audit all pre-ledger invoices with positive invoices.paid and no invoice_payments row. Do not fabricate payment method, reference, receiver or timestamp data. Any reconciliation must preserve the authoritative invoice total/paid balance and be idempotent.
 Status: Open. Production audit currently reports 946 invoices totaling ₹491,500 requiring source-backed reconciliation.
 
+## TC-BILL-021 — Validator/runtime consistency
+The owner-only production validator must agree with direct read-only checks against the external PostgreSQL adapter.
+Expected: no validator runtime query failures; any discrepancy blocks release validation.
+Status: Open. Direct adapter checks are healthy, but the deployed validator currently reports failures in its ledger-related checks. See public/HMIS_BILLING_GATE_STATUS.md.
+
 ## Billing completion gate
 Billing is marked Complete only after authenticated invoice/payment E2E, role boundaries, invalid financial inputs, invoice continuity and workflow audit events pass.
