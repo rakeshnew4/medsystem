@@ -37,8 +37,10 @@ export default async function(req,res){
     if(!patient&&b.patient_phone){const r=await db.query("SELECT id,name,uhid,phone FROM patients WHERE hospital_id=$1 AND phone=$2 ORDER BY id LIMIT 1",[hid,String(b.patient_phone).trim()]);patient=r.rows[0]||null}
     if(!patient){const r=await db.query("SELECT id,name,uhid,phone FROM patients WHERE hospital_id=$1 AND lower(trim(name))=lower(trim($2)) ORDER BY id LIMIT 1",[hid,String(b.patient_name).trim()]);patient=r.rows[0]||null}
     if(!patient){
-      const r=await db.query("INSERT INTO patients(hospital_id,name,phone,email,notes) VALUES($1,$2,$3,$4,$5) RETURNING id,name,uhid,phone",[hid,String(b.patient_name).trim(),b.patient_phone||null,b.patient_email||null,"Created from appointment booking"]);
-      patient=r.rows[0];
+      const inserted=await db.query("INSERT INTO patients(hospital_id,name,phone,email,notes) VALUES($1,$2,$3,$4,$5) RETURNING id",[hid,String(b.patient_name).trim(),b.patient_phone||null,b.patient_email||null,"Created from appointment booking"]);
+      const patientId=inserted.rows[0].id;
+      const created=await db.query("UPDATE patients SET uhid=COALESCE(NULLIF(uhid,''),'UHID-'||lpad(id::text,6,'0')) WHERE id=$1 AND hospital_id=$2 RETURNING id,name,uhid,phone",[patientId,hid]);
+      patient=created.rows[0];
       await logWorkflowEvent(ctx,{patientId:patient.id,eventType:"patient_registered",stage:"registration",entityType:"patient",entityId:patient.id,metadata:{source:"appointment"}});
     }
     const consultationType=b.consultation_type==="online"?"online":"in_person";

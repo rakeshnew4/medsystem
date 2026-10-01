@@ -101,6 +101,8 @@
 </header>
 <div id="roleWorkspaceBar" class="role-workspace-bar" style="display:none"></div><div id="resumeContextBar" class="resume-context-bar" style="display:none"></div><div id="workflowToastHost" class="workflow-toast-host" aria-live="polite"></div>
 
+<section id="reception-desk" class="section"><div class="reception-desk-page"><div class="reception-desk-head"><div><div class="kicker">RECEPTION</div><h2 class="reception-desk-title">OPD Desk</h2><p>Register a walk-in and issue a token, or book an appointment.</p></div></div><div class="reception-tabs"><button type="button" class="reception-tab active" onclick="setReceptionMode('walkin')">Walk-in / OPD</button><button type="button" class="reception-tab" onclick="setReceptionMode('appointment')">Appointment</button></div><div id="receptionWalkin" class="reception-mode"><form id="receptionWalkinForm" class="reception-form"><div class="reception-form-grid"><div class="field full"><label>Patient</label><input id="receptionPatientSearch" required placeholder="Name, phone or UHID"></div><div class="field"><label>Phone</label><input id="receptionPatientPhone" type="tel" placeholder="+91 98765 43210"></div><div class="field"><label>Date of birth</label><input id="receptionPatientDob" type="date"></div><div class="field"><label>Doctor</label><select id="receptionDoctor" required></select></div><div class="field"><label>Priority</label><select id="receptionPriority"><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option></select></div><div class="field full"><label>Reason</label><input id="receptionReason" placeholder="General consultation"></div></div><button class="reception-submit" type="submit">Issue token &amp; send to waiting</button></form></div><div id="receptionAppointment" class="reception-mode" style="display:none"><form id="receptionAppointmentForm" class="reception-form"><div class="reception-form-grid"><div class="field full"><label>Patient</label><input id="receptionApptPatient" required placeholder="Name or phone"></div><div class="field"><label>Phone</label><input id="receptionApptPhone" type="tel" placeholder="+91 98765 43210"></div><div class="field"><label>Doctor</label><select id="receptionApptDoctor" required></select></div><div class="field"><label>Date</label><input id="receptionApptDate" type="date" required></div><div class="field"><label>Time</label><input id="receptionApptTime" type="time" required></div><div class="field"><label>Type</label><select id="receptionApptType"><option value="in_person">In-person</option><option value="online">Online</option></select></div><div class="field full"><label>Reason</label><input id="receptionApptReason" placeholder="Consultation, follow-up, review"></div></div><button class="reception-submit" type="submit">Book appointment</button></form></div><div id="receptionDeskResult" class="reception-result" aria-live="polite"></div></div></section>
+
 <section id="dashboard" class="section active">
   <div class="dashboard-toolbar"><div class="dashboard-toolbar-label"><strong>Dashboard period</strong><span>Appointments follow this range · Active IPD stays current</span></div><div class="dashboard-range-controls"><select id="dashboardRange" aria-label="Dashboard period" onchange="changeDashboardRange(this.value)"><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="last7">Last 7 days</option><option value="next7">Next 7 days</option><option value="last30">Last 30 days</option><option value="next30">Next 30 days</option><option value="custom">Custom range</option></select><input id="dashboardFrom" type="date" aria-label="From date" style="display:none" onchange="applyCustomDashboardRange()"><span id="dashboardRangeSep" style="display:none">to</span><input id="dashboardTo" type="date" aria-label="To date" style="display:none" onchange="applyCustomDashboardRange()"><button class="btn" type="button" onclick="loadAllWithLoader()">Apply</button></div></div>
   <div id="stats" class="grid stats"></div>
@@ -295,10 +297,10 @@ async function api(path,opts={}){
     return j;
   }finally{if(show)hideCareFlowLoader()}
 }
-const VALID_SECTIONS=['dashboard','queue','doctor-room','appointments','patients','doctors','beds','followups','billing','lab','pharmacy','display','analytics','staff','communication','setup'];
-const ROLE_DEFAULT_SECTIONS={admin:'dashboard',doctor:'doctor-room',nurse:'beds',receptionist:'queue',lab:'lab',pharmacy:'pharmacy',billing:'billing',pending:'dashboard'};
-const SECTION_TITLES={dashboard:'Hospital overview',queue:'Patient queue','doctor-room':'Doctor Room',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',lab:'Lab investigations',pharmacy:'Pharmacy',display:'Displays & ads',analytics:'Admin insights',staff:'Staff',communication:'Staff communication',setup:'Hospital setup'};
-const SECTION_PERMISSIONS={dashboard:'page.dashboard',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',pharmacy:'action.pharmacy.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup'};
+const VALID_SECTIONS=['dashboard','reception-desk','queue','doctor-room','appointments','patients','doctors','beds','followups','billing','lab','pharmacy','display','analytics','staff','communication','setup'];
+const ROLE_DEFAULT_SECTIONS={admin:'dashboard',doctor:'doctor-room',nurse:'beds',receptionist:'reception-desk',lab:'lab',pharmacy:'pharmacy',billing:'billing',pending:'dashboard'};
+const SECTION_TITLES={dashboard:'Hospital overview','reception-desk':'OPD Desk',queue:'Patient queue','doctor-room':'Doctor Room',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',lab:'Lab investigations',pharmacy:'Pharmacy',display:'Displays & ads',analytics:'Admin insights',staff:'Staff',communication:'Staff communication',setup:'Hospital setup'};
+const SECTION_PERMISSIONS={dashboard:'page.dashboard','reception-desk':'action.patient.create',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',pharmacy:'action.pharmacy.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup'};
 function staffStorageKey(kind){return 'careflow:'+kind+':'+encodeURIComponent(state.session?.user?.email||'default')}
 function saveWorkingContext(ctx){const value={...ctx,updatedAt:Date.now()};try{localStorage.setItem(staffStorageKey('workingContext'),JSON.stringify(value))}catch(e){}try{sessionStorage.setItem(staffStorageKey('workingContext'),JSON.stringify(value))}catch(e){}renderResumeBar()}
 function readWorkingContext(){try{const raw=sessionStorage.getItem(staffStorageKey('workingContext'))||localStorage.getItem(staffStorageKey('workingContext'));if(!raw)return null;const v=JSON.parse(raw);if(!v||!v.section)return null;if(v.updatedAt&&Date.now()-Number(v.updatedAt)>24*60*60*1000){clearWorkingContext();return null}return v}catch(e){return null}}
@@ -308,6 +310,46 @@ function renderResumeBar(){const el=document.getElementById('resumeContextBar');
 function resumeWorkingContext(){const c=readWorkingContext();if(!c)return;if(c.section==='doctor-room'&&c.patientId){showSection('doctor-room');loadDoctorRoom().then(()=>selectDoctorPatient(c.patientId,c.queueId||null,c.appointmentId||null,c.action||null)).catch(()=>{})}else if(c.section==='patients'&&c.patientId){(c.mode==='clinical'?openClinical(c.patientId,c.action||null):openPatientWorkspace(c.patientId)).catch(()=>{})}else if(c.section==='queue'&&c.patientId){showSection('queue');setTimeout(()=>openClinical(c.patientId,c.action||null),50)}else showSection(c.section)}
 function restoreWorkingContext(){const c=readWorkingContext();if(!c)return false;if(!VALID_SECTIONS.includes(c.section)||!canSection(c.section))return false;resumeWorkingContext();return true}
 function roleDefaultSection(){return ROLE_DEFAULT_SECTIONS[state.session?.staff?.role]||'dashboard'}
+function setReceptionMode(mode){
+  document.querySelectorAll('.reception-tab').forEach((x,i)=>x.classList.toggle('active',(mode==='walkin'&&i===0)||(mode==='appointment'&&i===1)));
+  const w=document.getElementById('receptionWalkin'),a=document.getElementById('receptionAppointment');
+  if(w)w.style.display=mode==='walkin'?'block':'none';
+  if(a)a.style.display=mode==='appointment'?'block':'none';
+  const r=document.getElementById('receptionDeskResult');if(r)r.innerHTML='';
+}
+function renderReceptionDesk(){
+  const doctors=state.doctors||[];
+  const options='<option value="">Select doctor</option>'+doctors.filter(d=>d.active!==false).map(d=>'<option value="'+Number(d.id)+'">'+esc(d.name)+(d.specialty?' · '+esc(d.specialty):'')+'</option>').join('');
+  const d1=document.getElementById('receptionDoctor'),d2=document.getElementById('receptionApptDoctor');
+  if(d1)d1.innerHTML=options;if(d2)d2.innerHTML=options;
+  const date=document.getElementById('receptionApptDate');if(date&&!date.value)date.value=new Date().toISOString().slice(0,10);
+}
+async function receptionFindOrCreatePatient(name,phone,dob){
+  const value=String(name||'').trim(), phoneValue=String(phone||'').trim();
+  const list=state.patients||[];
+  const exact=list.find(x=>String(x.uhid||'').toLowerCase()===value.toLowerCase()||String(x.phone||'').trim()===phoneValue&&phoneValue||String(x.name||'').trim().toLowerCase()===value.toLowerCase());
+  if(exact)return exact;
+  const p=await api('/patients',{method:'POST',body:JSON.stringify({name:value,phone:phoneValue||null,date_of_birth:dob||null,source:'reception'})});
+  state.patients.unshift(p);return p;
+}
+async function submitReceptionWalkin(e){
+  e.preventDefault();
+  const name=document.getElementById('receptionPatientSearch').value.trim(),phone=document.getElementById('receptionPatientPhone').value.trim(),dob=document.getElementById('receptionPatientDob').value;
+  const doctor=document.getElementById('receptionDoctor').value,priority=document.getElementById('receptionPriority').value,reason=document.getElementById('receptionReason').value.trim();
+  if(!name||!doctor)return;
+  const r=await receptionFindOrCreatePatient(name,phone,dob);
+  const q=await api('/queue',{method:'POST',body:JSON.stringify({patient_id:r.id,doctor_id:Number(doctor),stage:'waiting',priority,reason:reason||'General consultation'})});
+  const box=document.getElementById('receptionDeskResult');box.innerHTML='<strong>Token '+esc(q.token?.token||q.token||'—')+'</strong><span>'+esc(r.name||name)+' · '+esc(r.uhid||'')+' · Waiting for vitals</span>';
+  e.target.reset();document.getElementById('receptionDoctor').value='';await loadSectionData('reception-desk',true);
+}
+async function submitReceptionAppointment(e){
+  e.preventDefault();
+  const name=document.getElementById('receptionApptPatient').value.trim(),phone=document.getElementById('receptionApptPhone').value.trim(),doctor=document.getElementById('receptionApptDoctor').value,date=document.getElementById('receptionApptDate').value,time=document.getElementById('receptionApptTime').value,type=document.getElementById('receptionApptType').value,reason=document.getElementById('receptionApptReason').value.trim();
+  if(!name||!phone||!doctor||!date||!time)return;
+  const r=await api('/appointments',{method:'POST',body:JSON.stringify({patient_name:name,patient_phone:phone,doctor_id:Number(doctor),appointment_date:date,appointment_time:time,reason:reason||null,consultation_type:type,source:'reception'})});
+  const box=document.getElementById('receptionDeskResult');box.innerHTML='<strong>Appointment booked</strong><span>'+esc(r.patient?.name||name)+' · '+esc(date)+' · '+esc(time)+'</span>';
+  e.target.reset();document.getElementById('receptionApptDate').value=new Date().toISOString().slice(0,10);
+}
 function renderRoleWorkspace(){
   const el=document.getElementById('roleWorkspaceBar');if(!el)return;
   const role=state.session?.staff?.role||'admin';
@@ -321,6 +363,9 @@ function renderRoleWorkspace(){
     billing:{title:'Billing Desk',sub:'Invoices, collections and patient accounts',actions:[['billing','Billing'],['patients','Patients'],['appointments','Appointments'],['queue','Queue']]}
   };
   const cfg=configs[role];
+  document.body.classList.toggle('receptionist-mode',role==='receptionist');
+  const globalAppt=document.querySelector('.appointment-action');if(globalAppt)globalAppt.style.display=role==='receptionist'?'none':'';
+  if(role==='receptionist'){el.style.display='none';return;}
   if(!cfg||role==='admin'){el.style.display='none';return;}
   const roleSectionTitles={nurse:{beds:'Nursing Station · Ward'},receptionist:{queue:'OPD Desk · Queue'},lab:{lab:'Lab Workbench'},pharmacy:{pharmacy:'Pharmacy Desk'},billing:{billing:'Billing Desk'},doctor:{'doctor-room':'Doctor Room'}};
   Object.entries(roleSectionTitles[role]||{}).forEach(([id,title])=>{const h=document.querySelector('#'+id+' .panel-title');if(h)h.textContent=title});
@@ -343,6 +388,7 @@ async function showSection(id,updateUrl=true){
 }
 async function restoreSection(){
   let id=(location.hash||'').slice(1);
+  if(state.session?.staff?.role==='receptionist')id='reception-desk';
   if(!VALID_SECTIONS.includes(id)||!canSection(id)){
     try{id=localStorage.getItem(staffStorageKey('pinnedSection'))||localStorage.getItem(staffStorageKey('lastSection'))||roleDefaultSection()}catch(e){id=roleDefaultSection()}
   }
@@ -464,6 +510,7 @@ async function loadSectionData(id,force=false){
   const dr=dashboardDateRange();
   const loaders={
     dashboard:async()=>{if(!p['page.dashboard'])return;state.dashboard=await api('/dashboard?from='+encodeURIComponent(dr.from)+'&to='+encodeURIComponent(dr.to));renderAll()},
+    'reception-desk':async()=>{if(!p['action.patient.create'])return;state.doctors=await api('/doctors');state.patients=await api('/patients');renderReceptionDesk()},
     queue:async()=>{if(!p['page.queue'])return;state.queue=await api('/queue');renderQueue();renderAll()},
     'doctor-room':async()=>{if(!p['action.clinical.view'])return;await loadDoctorRoom()},
     appointments:async()=>{if(!p['page.appointments'])return;state.appointments=await api('/appointments');renderAll()},
@@ -509,9 +556,14 @@ async function loadAll(){
       return;
     }
     syncDashboardRangeControls();
-    await loadSectionData('dashboard',true);
     applyPermissions();
     renderRoleWorkspace();
+    if(state.session?.staff?.role==='receptionist'){
+      await loadSectionData('reception-desk',true);
+      await showSection('reception-desk',false);
+      return;
+    }
+    await loadSectionData('dashboard',true);
     await restoreSection();
     const deepPatient=new URLSearchParams(location.search).get('patient_id');
     if(deepPatient&&Number(deepPatient)>0)openClinical(Number(deepPatient));
@@ -1470,7 +1522,11 @@ function patientCareTeamActions(p,s){
 // Canonical patient-detail entry point. Older clinical-detail helpers remain for their edit forms,
 // but every staff-facing patient link resolves to the same Patient Workspace.
 async function openClinical(pid,action){return openPatientWorkspace(pid,action||'workspace')}
-window.addEventListener('DOMContentLoaded',()=>{loadAllWithLoader();setTimeout(pollNotifications,1200);setTimeout(()=>document.getElementById('aiAssistantBall')?.classList.add('ai-ball-enter'),180)});
+window.addEventListener('DOMContentLoaded',()=>{
+  loadAllWithLoader();setTimeout(pollNotifications,1200);setTimeout(()=>document.getElementById('aiAssistantBall')?.classList.add('ai-ball-enter'),180);
+  document.getElementById('receptionWalkinForm')?.addEventListener('submit',e=>submitReceptionWalkin(e).catch(x=>alert(x.message)));
+  document.getElementById('receptionAppointmentForm')?.addEventListener('submit',e=>submitReceptionAppointment(e).catch(x=>alert(x.message)));
+});
 </script>
 
 <div id="notificationModal" class="modal"><div class="modal-card notification-modal-card"><div class="panel-head"><div><h2 class="panel-title">Workflow notifications</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Tasks routed to your role from the patient journey.</div></div><button class="btn" onclick="closeModal('notificationModal')">Close</button></div><div id="notificationModalBody"></div></div></div>
