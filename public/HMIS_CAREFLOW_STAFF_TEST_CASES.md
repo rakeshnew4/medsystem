@@ -30,11 +30,11 @@ Reference: HMIS `Privileges.java` and `UserPrivilageController.java` on the deve
 - TC-STAFF-024: Staff lifecycle actions use the existing /team contract and never allow cross-hospital mutation. **v428 UI implemented; authenticated execution pending.**
 - TC-STAFF-025: Staff registration clearly distinguishes pending vs active accounts and handles duplicate-safe feedback. **v428 UI implemented; authenticated execution pending.**
 - TC-STAFF-026: Role catalogue reflects only supported CareFlow roles and does not invent HMIS privilege categories. **v428 UI implemented; authenticated execution pending.**
-- TC-STAFF-027: Role permission matrix groups/searches permissions and shows the role baseline.
-- TC-STAFF-028: Global and department-scoped user overrides are clearly distinguished.
-- TC-STAFF-029: Inherit clears the user override; Allow/Deny persist boolean overrides; effective state remains server-authoritative.
-- TC-STAFF-030: Effective permission view identifies role baseline, user override and department override sources.
-- TC-STAFF-031: Non-admin users cannot mutate role/user permission controls; protected API remains authoritative.
+- TC-STAFF-027: Role permission matrix groups/searches permissions and shows the role baseline. **v430 UI implemented; authenticated execution pending.**
+- TC-STAFF-028: Global and department-scoped user overrides are clearly distinguished. **v430 UI implemented; authenticated execution pending.**
+- TC-STAFF-029: Inherit clears the user override; Allow/Deny persist boolean overrides; effective state remains server-authoritative. **v430 UI implemented; authenticated execution pending.**
+- TC-STAFF-030: Effective permission view identifies role baseline, user override and department override sources. **v430 UI implemented; authenticated execution pending.**
+- TC-STAFF-031: Non-admin users cannot mutate role/user permission controls; protected API remains authoritative. **v430 UI guard implemented; authenticated role-boundary execution pending.**
 - TC-STAFF-032: Staff audit view shows actor/action/target/timestamp/before-after details and is administrator-only.
 - TC-STAFF-033: Staff availability UI presents presence, schedule, exceptions and doctor availability using the existing contract.
 - TC-STAFF-034: Hospital profile/configuration exposes existing identity/contact/timezone fields only.

@@ -185,12 +185,12 @@ HMIS references: `Privileges.java`, `UserPrivilageController.java`, `ConfigOptio
 - [x] U12-04 Staff registration flow — v428: display name, email, supported role, optional department/doctor link and pending/active distinction using the existing `/team` POST contract.
 - [x] U12-05 Department context — v428: hospital-scoped department cards show staff/active counts and role context and link back to directory filtering.
 - [x] U12-06 Role catalogue — v428: supported CareFlow roles with current staff and enabled-permission counts; no unsupported HMIS privilege categories introduced.
-- [ ] U12-07 Role permission matrix — group/search permission baseline by supported role.
-- [ ] U12-07 Role permission matrix — searchable/grouped permissions with role baseline state and safe admin-only mutation controls.
-- [ ] U12-08 User permission overrides — global user override and department-scoped override presented together with explicit scope.
-- [ ] U12-09 Inherit / Allow / Deny UX — make effective-vs-override state explicit; Inherit clears the user override rather than writing a fake third backend value.
-- [ ] U12-10 Effective permission view — show effective permission result alongside role baseline and user/dept override sources.
-- [ ] U12-11 Permission safety/authorization feedback — admin-only controls, server-authoritative errors, cross-hospital rejection and clear destructive-action confirmation.
+- [x] U12-07 Role permission matrix — v430 draft: searchable/grouped permission baseline by supported role with existing role_permissions mutation.
+- [x] U12-08 User permission overrides — v430 draft: global and department-scoped overrides use the existing user_permissions contract.
+- [x] U12-09 Inherit / Allow / Deny UX — v430 draft: Inherit removes the stored override; Allow/Deny persist boolean overrides.
+- [x] U12-10 Effective permission view — v430 draft: selected staff access source is shown as department override, global override or role baseline using verified precedence.
+- [x] U12-11 Permission safety/authorization feedback — v430 draft: administrator-only controls, server error feedback and explicit scope/precedence messaging.
+- [ ] U12-12 Staff audit/history — searchable read-only lifecycle/permission audit history.
 - [ ] U12-12 Staff audit/history — searchable read-only lifecycle/permission audit history with actor, action, target, timestamp and before/after details.
 - [ ] U12-13 Staff availability — work status, schedule, exceptions and doctor availability context using the existing availability contract.
 - [ ] U12-14 Hospital profile/configuration — hospital identity, contact, timezone and core setup grouped as administrator configuration.

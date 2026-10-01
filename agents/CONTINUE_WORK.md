@@ -93,11 +93,11 @@ Inventory backend safety was already verified before this UI pass: fixed-asset v
 4. [x] U12-04 Staff registration flow — v428: display name, supported role, optional department/doctor link, pending/active choice and server duplicate-safe feedback.
 5. [x] U12-05 Department context — v428: hospital-scoped department cards with staff/active counts and directory filtering.
 6. [x] U12-06 Role catalogue — v428: supported CareFlow roles with staff and enabled-permission counts.
-7. [ ] U12-07 Role permission matrix.
-8. [ ] U12-08 User permission overrides.
-9. [ ] U12-09 Inherit / Allow / Deny UX.
-10. [ ] U12-10 Effective permission view.
-11. [ ] U12-11 Permission safety/authorization feedback.
+7. [x] U12-07 Role permission matrix — v430 draft: searchable/grouped role baseline matrix using existing permission catalogue and role_permissions contract.
+8. [x] U12-08 User permission overrides — v430 draft: explicit global/department scope using existing user_permissions contract.
+9. [x] U12-09 Inherit / Allow / Deny UX — v430 draft: Inherit deletes the stored override; Allow/Deny persist boolean values.
+10. [x] U12-10 Effective permission view — v430 draft: selected staff effective state shows role baseline, global override and department override source using verified server precedence.
+11. [x] U12-11 Permission safety/authorization feedback — v430 draft: admin-only controls, server-authoritative errors and clear scope/precedence messaging.
 12. [ ] U12-12 Staff audit/history.
 13. [ ] U12-13 Staff availability.
 14. [ ] U12-14 Hospital profile/configuration.
@@ -110,7 +110,7 @@ Inventory backend safety was already verified before this UI pass: fixed-asset v
 21. [ ] U12-21 Documentation/test pass.
 22. [ ] U12-22 Automated access/contract verification.
 23. [ ] U12-23 Authenticated administrator/staff E2E — intentionally deferred until a genuine staff session is available.
-NEXT concrete implementation target: U12-07 Role permission matrix.
+NEXT concrete implementation target: U12-12 Staff audit/history.
 
 ### HMIS reference rule
 For every U12 increment, inspect the relevant HMIS staff/privilege/configuration/audit code before implementation. Current references include `Privileges.java`, `UserPrivilageController.java`, `ConfigOption.java`, `ConfigOptionController.java`, `AuditEventController.java`, and `all_audit_events.xhtml`. Do not invent privilege categories, configuration semantics or audit behavior without checking the repository.
