@@ -23,7 +23,7 @@ Status: Requires authenticated staff session.
 ## TC-IPD-005 — Admit patient to available bed
 Scenario: registered patient + available bed.
 Expected: admission, IPD encounter and bed assignment are created; bed becomes occupied; ipd_admitted event is recorded.
-Status: Requires authenticated staff session.
+Status: Requires authenticated staff session. Admission mutation is now transactional and locks the selected bed before committing dependent records.
 
 ## TC-IPD-006 — Cannot admit into occupied bed
 Expected: HTTP 409; existing occupant and admission remain unchanged.

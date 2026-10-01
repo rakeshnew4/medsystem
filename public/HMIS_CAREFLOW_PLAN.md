@@ -510,7 +510,7 @@ Completion gate:
 
 # 09 — IPD / admission / beds / transfers / discharge
 
-**In progress — existing IPD foundation is present; admission safety hardening started in v241.**
+**In progress — existing IPD foundation is present; admission concurrency hardening is now deployed in v245.**
 
 Implemented foundation already present in CareFlow:
 - Hospital-scoped bed inventory with available/occupied/maintenance/blocked states.
@@ -527,7 +527,8 @@ Implemented now:
 - Anonymous `/api/beds`, `/api/ipd` and `/api/discharge` access remains blocked by the user/staff authorization layer.
 
 Remaining IPD work:
-- Harden admission, transfer and discharge mutations as fully atomic state transitions under concurrent requests.
+- Hardened the admission mutation in v245: selected bed is row-locked and admission + IPD encounter + bed assignment + occupancy update commit together.
+- Remaining: harden transfer and discharge mutations as fully atomic state transitions under concurrent requests.
 - Run authenticated nurse/admin/receptionist/doctor role-boundary tests.
 - Verify occupied-bed race, transfer race, discharge checklist enforcement and encounter continuity with synthetic fixtures.
 - Verify full OPD → IPD → transfer → discharge journey in browser E2E.
