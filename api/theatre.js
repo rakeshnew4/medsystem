@@ -59,8 +59,14 @@ export default async function(req,res){
      const a=await db.query("SELECT id,patient_id,discharged_at FROM admissions WHERE id=$1 AND hospital_id=$2",[admissionId,ctx.hospitalId]);
      if(!a.rows[0]||Number(a.rows[0].patient_id)!==Number(b.patient_id))return res.status(409).json({error:"Admission does not belong to patient"});
      if(a.rows[0].discharged_at)return res.status(409).json({error:"Discharged admission cannot receive a new procedure"});
-     const e=await db.query("SELECT id FROM care_encounters WHERE admission_id=$1 AND hospital_id=$2 AND status='open' ORDER BY created_at DESC LIMIT 1",[admissionId,ctx.hospitalId]);
+     const e=await db.query("SELECT id,patient_id,admission_id FROM care_encounters WHERE admission_id=$1 AND hospital_id=$2 AND patient_id=$3 AND status='open' ORDER BY created_at DESC LIMIT 1",[admissionId,ctx.hospitalId,b.patient_id]);
      if(!encounterId&&e.rows[0])encounterId=e.rows[0].id;
+     if(!encounterId)return res.status(409).json({error:"An open IPD encounter is required for an admission-linked Theatre procedure"});
+   }
+   if(encounterId){
+     const e=await db.query("SELECT id,patient_id,admission_id,status FROM care_encounters WHERE id=$1 AND hospital_id=$2",[encounterId,ctx.hospitalId]);
+     if(!e.rows[0]||Number(e.rows[0].patient_id)!==Number(b.patient_id)||e.rows[0].status!=="open")return res.status(409).json({error:"Theatre encounter must be an open encounter for this patient and hospital"});
+     if(admissionId&&Number(e.rows[0].admission_id)!==admissionId)return res.status(409).json({error:"Theatre encounter does not belong to the selected admission"});
    }
    const roomId=Number(b.theatre_room_id||0);
    if(!roomId)return res.status(400).json({error:"Theatre room is required"});
