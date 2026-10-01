@@ -13,7 +13,9 @@ Reference: HMIS `Privileges.java` and `UserPrivilageController.java` on the deve
 - TC-STAFF-009: Anonymous staff/team/permission access remains HTTP 401.
 - TC-STAFF-010: Inactive staff cannot access staff workflows.
 - TC-STAFF-011: Production staff/permission validator reports zero violations across role values, activation state, doctor/department links, user overrides and permission keys.
-- TC-STAFF-012: Authenticated staff E2E must verify role boundary and department-specific permission behavior before Staff/Roles is complete.
+- TC-STAFF-012: Department configuration inherits hospital-level defaults until an explicit department override is saved; clearing the override restores inheritance.
+- TC-STAFF-013: Department configuration rejects a department from another hospital and anonymous access remains HTTP 401.
+- TC-STAFF-014: Authenticated staff E2E must verify role boundary and department-specific permission behavior before Staff/Roles is complete.
 - TC-STAFF-013: Admin UI loads hospital staff and department scopes and renders Inherit / Allow / Deny state from the server response.
 - TC-STAFF-014: Admin UI save and clear operations persist the selected global or department-scoped override and refresh the displayed state.
 - TC-STAFF-015: Owner-only hospital configuration validator reports 7/7 checks with 0 violations; anonymous execution is HTTP 401.
@@ -21,4 +23,4 @@ Reference: HMIS `Privileges.java` and `UserPrivilageController.java` on the deve
 - TC-STAFF-017: Department-scoped configuration schema must be verified in the external PostgreSQL adapter before any staff-facing configuration read/write route is enabled.
 - TC-STAFF-018: Authenticated staff E2E must verify department-first configuration resolution, fallback behavior, hospital isolation, invalid scope rejection and audit continuity before Staff/Roles/Configuration is complete.
 
-Current implementation gate: external PostgreSQL staff/permission schema verified and department-scoped permission columns/indexes applied. Hospital-configuration validator is live and has passed 7/7 production checks with 0 violations. The department-scoped configuration schema is not yet verified in the external adapter, so no staff-facing ConfigOption read/write route is enabled. Authenticated staff execution remains pending because the available runner has no hospital staff session.
+Current implementation gate: external PostgreSQL staff/permission schema and `hospital_department_settings` schema are verified. Hospital-configuration validator passes 7/7 with 0 violations. Department configuration is implemented with hospital-level inheritance and explicit department overrides; anonymous access remains 401. Authenticated staff execution remains pending because the available runner has no hospital staff session.
