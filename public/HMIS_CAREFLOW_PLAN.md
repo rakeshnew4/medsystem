@@ -638,7 +638,7 @@ Implemented: `migrations/0056_fixed_assets.sql`, `/api/fixed-assets`, `/api/fixe
 
 # 13 — Staff / roles / permissions / hospital configuration
 
-**In progress — department-scoped privilege foundation implemented.**
+**In progress — department-scoped privilege foundation and admin UI implemented; authenticated E2E remains open.**
 
 HMIS review of `Privileges.java` and `UserPrivilageController.java` confirms module-level privileges plus user/role privilege assignment scoped to the logged institution/department. CareFlow already had role-level permissions and user overrides; the gap was department scope.
 
@@ -652,7 +652,12 @@ Implemented in this increment:
 - External PostgreSQL department-permission schema was verified and applied idempotently through a temporary owner-only initializer; the initializer and schema-check routes were removed afterward.
 - Added protected department-scoped user override administration: administrators can select a staff member and department, then set each permission to Inherit / Allow / Deny. Inherit deletes the scoped override so precedence falls back cleanly.
 - Hardened `/api/permissions` user writes/deletes with hospital-scoped staff/department validation and strict boolean values.
-- Added `public/HMIS_CAREFLOW_STAFF_TEST_CASES.md` with explicit department/role-boundary and UI override cases.
+- Added owner-only `/api/staff-permission-validation` covering staff role/activation validity, doctor/department hospital isolation, user override integrity, and permission-key integrity. Existing legacy `billing` and `store` role definitions were verified as intentional and included in the validator; no permission rows were changed.
+- Added Store to staff role administration and its default workspace routing.
+- Added `public/HMIS_CAREFLOW_STAFF_TEST_CASES.md` with explicit department/role-boundary, UI override and validator cases.
+- Deployed CareFlow v344: completed the admin Department / user overrides panel with staff and department selectors, explicit Inherit / Allow / Deny states, and server-backed save/clear behavior. The UI uses the existing hospital-scoped `/api/permissions` contract and refreshes the exact override state after each change.
+- v344 dry-run passed with no blocking errors. Post-deploy access checks confirmed `/api/permissions`, `/api/team`, and `/api/departments` remain denied to anonymous and unsigned app-user execution; the available runner still cannot establish the hospital staff session required by `requireStaff()`.
+- Added owner-only `/api/staff-permission-validation` to audit production staff/permission integrity: hospital ownership, department isolation, orphan permissions, null permission states, unknown permission keys, and active-pending staff conflicts.
 
 Remaining Staff/Roles gates:
 - Authenticated staff E2E for role boundaries and department-specific permission precedence.
@@ -675,6 +680,7 @@ Current status: direct external PostgreSQL checks are healthy, while the deploye
 ## Change log
 
 ### 2026-10-01
+- Deployed CareFlow v344: completed and published the HMIS-aligned department/user permission administration UI with explicit Inherit / Allow / Deny controls, department scope, and server-backed refresh after changes. Dry-run had no blocking errors; protected staff endpoints continue to reject anonymous/unsigned app-user execution. Authenticated hospital-staff E2E remains the gate.
 - Deployed CareFlow v320: added HMIS-style separate Theatre Surgery Validation Revert for billing/admin, requiring a reason and preserving revert actor/time/reason plus a workflow event. External PostgreSQL validation-revert columns and permission rows were applied and verified; temporary schema initializer was removed. Theatre validator remains 22/22 with zero violations; authenticated staff execution remains the completion gate.
 - Deployed CareFlow v301: Theatre ward return now requires an admission-linked procedure and linked IPD encounter; the production validator remains 17/17 with zero violations after deployment. Anonymous Theatre routes remain HTTP 401. Authenticated Theatre E2E remains open.
 - Deployed CareFlow v297: Theatre lifecycle/ward-return now revalidate active admission and open IPD encounter continuity; room scheduling rechecks room availability inside the overlap-lock transaction; owner-only validator extended with admission/encounter continuity checks. Post-deploy validator passed 17/17 with zero violations; anonymous Theatre routes remain HTTP 401 and no Theatre 5xx errors were logged in the verification window.
