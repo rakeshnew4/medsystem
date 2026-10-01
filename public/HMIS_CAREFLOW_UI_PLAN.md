@@ -179,8 +179,8 @@ HMIS references: Store inventory/asset registry, fixed-asset reports, stock hist
 ### UI-12 — Staff / Roles / Permissions / Hospital Setup
 HMIS references: `Privileges.java`, `UserPrivilageController.java`, `ConfigOption.java`, `ConfigOptionController.java`, `AuditEventController.java`, and `all_audit_events.xhtml`. CareFlow already has protected staff, permission, department, availability, hospital-configuration and staff-audit contracts; U12 is the UI/operational redesign of those verified contracts.
 
-- [x] U12-01 Staff directory worklist — v427: searchable/filterable staff register with name/email/role/department/status filters, counts and clear empty state.
-- [x] U12-02 Staff identity/detail — v427: selected staff profile with email, display name, role, doctor link, department, active state and hospital context.
+- [ ] U12-01 Staff directory worklist — searchable/filterable staff register with name/email/role/department/status filters, counts and clear empty/loading/error states.
+- [ ] U12-02 Staff identity/detail — selected staff profile with email, display name, role, doctor link, department, active state and hospital scope.
 - [ ] U12-03 Staff lifecycle controls — activate/deactivate, role assignment, doctor association and department assignment using the existing `/team` contract.
 - [ ] U12-04 Staff registration flow — guided registration with validation, pending/active distinction and duplicate-safe feedback.
 - [ ] U12-05 Department context — hospital-scoped department selector/filter and visible operational ownership on staff records.

@@ -87,8 +87,8 @@ Inventory backend safety was already verified before this UI pass: fixed-asset v
 - Authenticated hospital-staff E2E remains open because the available execution environment has not established a real staff session.
 
 ### UI-12 LOOP QUEUE — execute in order; authenticated E2E is deliberately last/deferred
-1. [x] U12-01 Staff directory worklist — implemented in v427 with search, role/department/status filters, counts and empty state.
-2. [x] U12-02 Staff identity/detail — implemented in v427 with selected-record identity, role, department, doctor link, account/hospital context and permission handoff.
+1. [ ] U12-01 Staff directory worklist.
+2. [ ] U12-02 Staff identity/detail.
 3. [ ] U12-03 Staff lifecycle controls.
 4. [ ] U12-04 Staff registration flow.
 5. [ ] U12-05 Department context.
