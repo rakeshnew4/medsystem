@@ -570,7 +570,7 @@ Remaining Billing work:
 - Add insurance/credit handling where required by the HMIS workflow review.
 
 Completion gate:
-- Billing remains In progress until authenticated end-to-end payment flow, role boundaries, financial validation, invoice continuity and workflow audit events pass.
+- Billing remains In progress until authenticated end-to-end payment flow, role boundaries, financial validation, invoice continuity and workflow audit events pass. Production audit also found 946 legacy invoices with positive `paid` balances but no `invoice_payments` rows; current ledger logic is sound for new payments, but legacy reconciliation must be handled before declaring financial-ledger continuity complete.
 
 # 11 — Theatre / procedures
 

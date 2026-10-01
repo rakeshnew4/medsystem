@@ -231,7 +231,7 @@ Status: Fixture created.
 
 ## TC-BILL-011 — Payment ledger
 Every non-zero invoice payment creates one immutable invoice_payments row with amount, method, reference, receiver and timestamp.
-Status: Implemented in v258.
+Status: Implemented in v258. Production audit: 946 pre-ledger invoices have positive paid balances without ledger rows; this is legacy data, not orphan payment rows. Reconciliation remains an open completion-gate item.
 
 ## TC-BILL-012 — Incremental payment
 Payment PUT accepts a payment amount, adds it to the existing paid balance, and never overwrites prior payments.
@@ -252,6 +252,10 @@ Status: Implemented in v258.
 ## TC-BILL-016 — Invoice PDF continuity
 Invoice PDF uses the same invoice, patient, line items, total, paid and due balance.
 Status: Endpoint exists; authenticated browser/PDF verification pending.
+
+## TC-BILL-017 — Legacy payment-ledger reconciliation
+Pre-ledger invoices with a positive `invoices.paid` balance must be reconciled into `invoice_payments` without changing the authoritative invoice total/paid balance or creating duplicate payment rows.
+Status: Production audit found 946 legacy invoices requiring reconciliation; mutation/backfill is intentionally not claimed complete.
 
 ## Billing completion gate
 Billing is marked Complete only after authenticated invoice/payment E2E, role boundaries, invalid financial inputs, invoice continuity and workflow audit events pass.
