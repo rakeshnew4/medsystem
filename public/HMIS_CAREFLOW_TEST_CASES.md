@@ -76,3 +76,53 @@ Status: Full authenticated E2E gate.
 
 ## Pharmacy completion gate
 Pharmacy is marked Complete only after atomic stock consumption, authenticated pharmacist happy-path E2E, role boundaries, insufficient/expired-stock cases, encounter linkage, workflow events and retry/idempotency behavior pass.
+
+# Billing / charges / payments
+
+## TC-BILL-001 — Public billing access is blocked
+GET /api/billing anonymously.
+Expected: HTTP 401.
+Status: Automated — passed in v255.
+
+## TC-BILL-002 — Overpayment is rejected
+Create or update an invoice with paid greater than total.
+Expected: HTTP 400 and no financial mutation.
+Status: Server validation implemented; authenticated execution pending.
+
+## TC-BILL-003 — Negative payment is rejected
+Initial or subsequent payment below zero.
+Expected: HTTP 400.
+Status: Server validation implemented; authenticated execution pending.
+
+## TC-BILL-004 — Invalid bill item is rejected
+Missing description, non-positive quantity or negative price.
+Expected: HTTP 400.
+Status: Server validation implemented; authenticated execution pending.
+
+## TC-BILL-005 — Invalid discount/tax is rejected
+Discount below zero/above subtotal or negative tax.
+Expected: HTTP 400.
+Status: Server validation implemented; authenticated execution pending.
+
+## TC-BILL-006 — Invoice-number concurrency safety
+Concurrent invoice creation must not rely on MAX(id)+1 and must retain unique invoice numbers.
+Status: Implemented in v255.
+
+## TC-BILL-007 — Partial then final payment
+E2E fixture invoice transitions unpaid → partial → paid and outstanding balance reaches zero.
+Status: Authenticated E2E pending.
+
+## TC-BILL-008 — Patient billing continuity
+Invoice remains linked to the E2E patient and appears in patient workspace/journey.
+Status: Authenticated E2E pending.
+
+## TC-BILL-009 — Billing role boundary
+Billing/receptionist may mutate billing according to configured permissions; clinical-only roles cannot.
+Status: Authenticated role E2E pending.
+
+## TC-BILL-010 — Billing E2E fixture
+Dedicated E2E Test Patient and unpaid invoice exist and are labeled E2E TEST DATA.
+Status: Fixture created.
+
+## Billing completion gate
+Billing is marked Complete only after authenticated invoice/payment E2E, role boundaries, invalid financial inputs, invoice continuity and workflow audit events pass.

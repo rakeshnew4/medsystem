@@ -537,13 +537,40 @@ Remaining IPD work:
 - Run authenticated nurse/admin/receptionist/doctor role-boundary tests.
 - Verify occupied-bed race, transfer race, discharge checklist enforcement and encounter continuity with synthetic fixtures.
 - Verify full OPD → IPD → transfer → discharge journey in browser E2E.
+- **Completed this iteration:** hardened admission allocation so the target bed is locked and admission/encounter/assignment/occupancy writes are conditional on availability; unavailable-bed races now return deterministic HTTP 409 instead of a database cast error.
+- **Completed this iteration:** transfer already uses deterministic bed locking and conditional CTE writes; discharge already locks admission/checklist/current bed and enforces all discharge gates atomically.
+- **Still required:** authenticated nurse/admin/receptionist/doctor E2E and an actual concurrent request harness against the deployed external PostgreSQL adapter.
 
 Completion gate:
 - IPD remains **In progress** until authenticated E2E, concurrent-state safety, role boundaries, discharge checklist enforcement, encounter continuity and workflow audit events pass.
 
 # 10 — Billing / charges / payments
 
-Not started.
+**In progress — existing invoice/payment workflow hardened and seeded for E2E; full authenticated billing E2E is next.**
+
+Implemented now:
+- Existing invoice creation and payment recording API retained and hardened.
+- Bill item descriptions are required; quantities must be positive; unit prices cannot be negative.
+- Discount cannot be negative or exceed subtotal.
+- Tax cannot be negative.
+- Initial payment cannot be negative or exceed invoice total.
+- Payment updates cannot be negative or exceed invoice total.
+- Invoice numbers no longer depend on MAX(id)+1, avoiding concurrent creation collisions.
+- Existing billing permissions remain server-enforced.
+- Dedicated E2E patient and unpaid invoice fixture created and labeled E2E TEST DATA.
+- CareFlow already contains non-production role-preview test credentials in the staff-login test hint; no production staff passwords are exposed.
+- Added primary-admin-only /api/e2e-bootstrap so the automated browser harness can enter a selected test role without duplicating credentials.
+
+Remaining Billing work:
+- Authenticated billing E2E: create invoice → inspect invoice → record partial payment → record final payment → verify status/outstanding balance.
+- Role-boundary tests for billing/receptionist/doctor and unauthorized clinical roles.
+- Verify patient workspace billing continuity and invoice workflow events.
+- Verify concurrent invoice creation and payment retry behavior.
+- Review invoice PDF/payment QR flows against the billing record.
+- Add insurance/credit handling where required by the HMIS workflow review.
+
+Completion gate:
+- Billing remains In progress until authenticated end-to-end payment flow, role boundaries, financial validation, invoice continuity and workflow audit events pass.
 
 # 11 — Theatre / procedures
 
@@ -572,6 +599,8 @@ Not started.
 - Started IPD workflow hardening and deployed CareFlow v242: added the active-admission uniqueness constraint and the dedicated 15-case IPD test matrix; anonymous bed access remains correctly blocked with HTTP 401. Existing IPD mutation endpoints still require authenticated staff E2E and further atomic concurrency hardening before completion.
 - Created the HMIS → CareFlow implementation plan.
 - Completed initial HMIS architecture reconnaissance.
+- Hardened IPD admission allocation for concurrent bed requests and deployed CareFlow v256. The target bed is locked inside the transaction; admission, IPD encounter, bed assignment and occupancy changes are conditional on the bed remaining available; losing the race now returns HTTP 409 without partial state.
+- Confirmed the remaining IPD gate is authenticated staff E2E plus true concurrent-request verification against the external PostgreSQL adapter.
 - Started Patient Registration.
 - Verified HMIS Patient/Person separation.
 - Verified immutable patient registration-source concept.
