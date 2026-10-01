@@ -13,8 +13,10 @@ export default async function(req,res){
  if(req.method==="POST"){
   const b=req.body||{};
   if(!b.name||!String(b.name).trim())return res.status(400).json({error:"Patient name is required"});
-  const r=await db.query("INSERT INTO patients(hospital_id,name,phone,email,date_of_birth,notes,status) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id,name,uhid,phone,email,date_of_birth,notes,status,created_at",[hid,String(b.name).trim(),b.phone||null,b.email||null,b.date_of_birth||null,b.notes||null,b.status||"active"]);
-  await logWorkflowEvent(ctx,{patientId:r.rows[0].id,eventType:"patient_registered",stage:"registration",entityType:"patient",entityId:r.rows[0].id,metadata:{source:b.source||"staff"}});
+  const inserted=await db.query("INSERT INTO patients(hospital_id,name,phone,email,date_of_birth,notes,status) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id",[hid,String(b.name).trim(),b.phone||null,b.email||null,b.date_of_birth||null,b.notes||null,b.status||"active"]);
+  const patientId=inserted.rows[0].id;
+  const r=await db.query("UPDATE patients SET uhid=COALESCE(NULLIF(uhid,''),'UHID-'||lpad(id::text,6,'0')) WHERE id=$1 AND hospital_id=$2 RETURNING id,name,uhid,phone,email,date_of_birth,notes,status,created_at",[patientId,hid]);
+  await logWorkflowEvent(ctx,{patientId,eventType:"patient_registered",stage:"registration",entityType:"patient",entityId:patientId,metadata:{source:b.source||"staff"}});
   return res.json(r.rows[0]);
  }
 
