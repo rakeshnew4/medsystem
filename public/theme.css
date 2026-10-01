@@ -450,7 +450,7 @@ button:disabled,.btn:disabled{opacity:.55;cursor:not-allowed}
 .care-team-buttons{display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:center}
 .care-team-buttons .mini{flex:0 0 auto}
 .care-team-group-head{display:flex;align-items:center;justify-content:space-between;gap:16px}
-.care-team-role-title{display:flex;align-items:center;gap:8px;min-width:0}
+.care-team-role-title{display:flex;align-items:center;gap:8px;min-width:0;transform:translateX(-18px)}
 .care-team-role-title strong{white-space:nowrap}
 .care-team-state{flex:0 0 auto}
 .patient-workspace-action-area{display:block;min-height:0}
