@@ -69,30 +69,46 @@ export default async function(req,res){
  if(ctx.staff.role!=="billing"&&ctx.staff.role!=="admin")return res.status(403).json({error:"Only billing staff or administrators can link Theatre charges"});
  const b=req.body||{}, id=Number(b.id||0), invoiceId=Number(b.invoice_id||0);
  if(!id||!invoiceId)return res.status(400).json({error:"Charge and invoice are required"});
- const c=await db.query("SELECT * FROM theatre_charges WHERE id=$1 AND hospital_id=$2 FOR UPDATE",[id,ctx.hospitalId]);
+ const c=await db.query("SELECT * FROM theatre_charges WHERE id=$1 AND hospital_id=$2",[id,ctx.hospitalId]);
  if(!c.rows[0])return res.status(404).json({error:"Theatre charge not found"});
- if(c.rows[0].invoice_id)return res.status(409).json({error:"Theatre charge is already linked to an invoice"});
+ if(c.rows[0].invoice_id||c.rows[0].invoice_item_id)return res.status(409).json({error:"Theatre charge is already linked to an invoice"});
  const inv=await db.query("SELECT id,patient_id FROM invoices WHERE id=$1 AND hospital_id=$2",[invoiceId,ctx.hospitalId]);
  if(!inv.rows[0])return res.status(404).json({error:"Invoice not found"});
  if(Number(inv.rows[0].patient_id)!==Number(c.rows[0].patient_id))return res.status(409).json({error:"Invoice does not belong to the charge patient"});
- const tx=await db.transaction([
-  {sql:`WITH claimed AS (
-      UPDATE theatre_charges SET invoice_id=$1
-      WHERE id=$2 AND hospital_id=$3 AND invoice_id IS NULL AND invoice_item_id IS NULL
-      RETURNING *
+ const tx=await db.transaction([{
+  sql:`WITH locked_invoice AS (
+      SELECT id,patient_id FROM invoices WHERE id=$1 AND hospital_id=$3 FOR UPDATE
+    ), claimed AS (
+      UPDATE theatre_charges c SET invoice_id=$1
+      FROM locked_invoice i
+      WHERE c.id=$2 AND c.hospital_id=$3 AND c.invoice_id IS NULL AND c.invoice_item_id IS NULL AND c.patient_id=i.patient_id
+      RETURNING c.*
     ), item AS (
       INSERT INTO invoice_items(invoice_id,description,quantity,unit_price,amount)
       SELECT $1,description,quantity,unit_price,amount FROM claimed
-      RETURNING id
+      RETURNING id,invoice_id,amount
+    ), linked AS (
+      UPDATE theatre_charges c SET invoice_item_id=item.id
+      FROM item
+      WHERE c.id=$2 AND c.hospital_id=$3
+      RETURNING c.*
+    ), updated_invoice AS (
+      UPDATE invoices i
+      SET subtotal=i.subtotal+linked.amount,
+          total=GREATEST(0,i.subtotal+linked.amount-i.discount+i.tax),
+          status=CASE WHEN i.paid>=GREATEST(0,i.subtotal+linked.amount-i.discount+i.tax) THEN 'paid'
+                      WHEN i.paid>0 THEN 'partial' ELSE 'unpaid' END,
+          updated_at=now()
+      FROM linked
+      WHERE i.id=$1 AND i.hospital_id=$3
+      RETURNING i.id
     )
-    UPDATE theatre_charges c SET invoice_item_id=item.id
-    FROM item, claimed
-    WHERE c.id=claimed.id AND c.hospital_id=$3
-    RETURNING c.*`,params:[invoiceId,id,ctx.hospitalId]},
-  {sql:"UPDATE invoices SET subtotal=subtotal+(SELECT amount FROM theatre_charges WHERE id=$1 AND hospital_id=$2),total=GREATEST(0,subtotal+(SELECT amount FROM theatre_charges WHERE id=$1 AND hospital_id=$2)-discount+tax),status=CASE WHEN paid>=GREATEST(0,subtotal+(SELECT amount FROM theatre_charges WHERE id=$1 AND hospital_id=$2)-discount+tax) THEN 'paid' WHEN paid>0 THEN 'partial' ELSE 'unpaid' END,updated_at=now() WHERE id=$3 AND hospital_id=$2 RETURNING *",params:[id,ctx.hospitalId,invoiceId]}
- ]);
+    SELECT linked.*, updated_invoice.id AS invoice_recalculated
+    FROM linked CROSS JOIN updated_invoice`,
+  params:[invoiceId,id,ctx.hospitalId]
+ }]);
  const row=tx.results?.[0]?.rows?.[0];
- if(!row)return res.status(409).json({error:"Charge was already linked; refresh before retrying"});
+ if(!row)return res.status(409).json({error:"Charge was already linked or invoice/patient state changed; refresh before retrying"});
  await logWorkflowEvent(ctx,{patientId:row.patient_id,eventType:"theatre_charge_linked",stage:"billing",entityType:"invoice",entityId:invoiceId,metadata:{charge_id:id,procedure_id:row.procedure_id,amount:row.amount}});
  return res.json(row);
 }
