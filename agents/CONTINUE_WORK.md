@@ -46,7 +46,8 @@ Theatre / procedures is intentionally parked by user request. The active workflo
 1. Inventory / Assets: authenticated staff E2E for asset create/search/transfer, plus concurrent transfer and role-boundary execution tests. **Blocked only by the missing hospital staff session; do not claim completion.**
 1a. Inventory / Assets schema gate is satisfied; production invariant validator is now live and currently returns 0 violations.
 2. Inventory / Assets safety: continue non-session-safe coverage for inactive-asset protection, hospital isolation, concurrent transfer invariants and transfer-history integrity. Current invariant validator covers lifecycle, financial, custodian, orphan/cross-hospital and latest-transfer continuity; authenticated execution remains open.
-3. Inventory / Assets HMIS gap review: warranty/AMC expiry reporting is implemented in v328. Next concrete gap is a dedicated HMIS-style asset transfer report plus depreciation/register reporting, then reassess remaining inventory/store gaps.
+3. Inventory / Assets HMIS gap review: warranty/AMC expiry, transfer and depreciation/register reporting are implemented through v331. Next concrete gap is HMIS pharmacy/store stock-history and bin-card reporting over CareFlow `pharmacy_stock_transactions`; verify the external schema before implementation, then implement and test the read-only report.
+4. Then Staff/Roles → Integrations/REST/FHIR/LIS → Reporting/Analytics, always using the HMIS repository as the design/code reference.
 4. Then Staff/Roles → Integrations/REST/FHIR/LIS → Reporting/Analytics, always using the HMIS repository as the design/code reference.
 
 ### Current Theatre status

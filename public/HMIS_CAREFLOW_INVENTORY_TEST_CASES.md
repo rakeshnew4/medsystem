@@ -26,4 +26,8 @@ TC-ASSET-012 Warranty/AMC reports: date-filtered warranty and AMC expiry reports
 
 TC-ASSET-013 Transfer report: transfer history can be reviewed by asset/date/location without crossing hospital boundaries.
 
+TC-ASSET-014 Depreciation/register report: calculated depreciation honors method, rate, as-of date and useful-life limits without mutating fixed-asset master data.
+
+TC-ASSET-015 Adjacent inventory gap: HMIS pharmacy/store stock history and bin-card reporting must be assessed against CareFlow pharmacy_stock_transactions before the Inventory workflow is moved onward.
+
 Authenticated staff E2E remains the final workflow gate; the available test runner currently has no hospital staff session.
