@@ -664,9 +664,17 @@ Implemented in this increment:
 - Executed the production hospital-configuration validator against the external PostgreSQL adapter: **7/7 checks passed with 0 violations**; anonymous access correctly returns HTTP 401. HMIS `ConfigOption` review confirms the target model is scoped configuration with department-first resolution, then institution, then application/global defaults, with explicit value type and retirement/audit metadata. CareFlow's existing `hospital_settings` is hospital-wide, so the next implementation must use a separate department-scoped configuration store rather than encoding department IDs into setting keys.
 - The temporary owner-only `admin-department-config-schema` was executed against the external PostgreSQL adapter and verified (`hospital_department_settings` exists with 0 rows); it is being removed from the application after schema verification. Department configuration is now enabled through the protected user route with hospital-level inheritance and explicit department overrides. No authenticated staff E2E is claimed.
 
+Staff lifecycle/audit increment:
+- HMIS `AuditEventController` and `all_audit_events.xhtml` were reviewed. The verified pattern records actor/user, event time, event trigger, object/entity identity and before/after JSON, then exposes differences through an audit-history screen.
+- CareFlow now records hospital-scoped `staff_created` / `staff_updated` lifecycle entries from `/api/team` with before/after staff state.
+- CareFlow now records `role_permission_changed`, `staff_permission_changed`, and `staff_permission_cleared` entries from `/api/permissions`, including department scope and previous/new values where applicable.
+- Added protected administrator-only `/api/staff-audit` for hospital-scoped staff lifecycle history. Anonymous access returns 401.
+- External PostgreSQL audit schema was verified in the adapter's `medsystem.audit_logs` table before publishing the audit route; no temporary schema bootstrap remains deployed.
+
 Remaining Staff/Roles gates:
 - Authenticated staff E2E for role boundaries and department-specific permission precedence.
-- Review staff lifecycle/audit behavior and hospital configuration against HMIS before moving to Integrations.
+- Authenticated staff E2E for staff create/update/activation and permission-audit continuity.
+- Then move to Integrations/REST/FHIR/LIS when authenticated E2E remains the only open Staff gate.
 
 # 14 — Integrations / REST / FHIR / LIS
 
