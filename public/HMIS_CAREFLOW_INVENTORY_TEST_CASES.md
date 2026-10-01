@@ -44,4 +44,8 @@ TC-ASSET-021 Stock ledger continuity: each transaction quantity_before equals th
 
 TC-ASSET-022 Stock mutation snapshots: receipt and dispensing persist quantity_before/quantity_after with the ledger row, so the bin card can reconstruct movement without guessing from current stock.
 
+TC-ASSET-023 Closing-stock report: hospital-scoped batch balances can be generated as of a selected date, with medicine/batch filters and optional inactive-stock inclusion.
+
+TC-ASSET-024 Closing-stock balance source: where a ledger snapshot exists on/before the as-of date, the report uses quantity_after; otherwise it explicitly identifies the current-stock fallback.
+
 Production validation: `/api/pharmacy-stock-validation` returned 0 violations across all 8 ledger/balance checks after the external schema update. Authenticated staff E2E remains the final workflow gate; the available test runner currently has no hospital staff session.
