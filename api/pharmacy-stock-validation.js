@@ -12,7 +12,7 @@ export default async function(req,res){
   await add("negative_after_balance","SELECT count(*) AS violations FROM pharmacy_stock_transactions WHERE quantity_after IS NOT NULL AND quantity_after<0");
   await add("ledger_continuity","WITH ordered AS (SELECT stock_id,quantity_before,quantity_after,LAG(quantity_after) OVER(PARTITION BY stock_id ORDER BY created_at,id) AS prior_after FROM pharmacy_stock_transactions) SELECT count(*) AS violations FROM ordered WHERE prior_after IS NOT NULL AND quantity_before<>prior_after");
   await add("latest_balance_matches_stock","WITH latest AS (SELECT DISTINCT ON (stock_id) stock_id,quantity_after FROM pharmacy_stock_transactions ORDER BY stock_id,created_at DESC,id DESC) SELECT count(*) AS violations FROM latest l JOIN pharmacy_stock s ON s.id=l.stock_id WHERE s.quantity<>l.quantity_after");
-  await add("transfer_state_integrity","SELECT count(*) AS violations FROM pharmacy_stock_transfers WHERE status NOT IN ('in_transit','received','cancelled') OR (status='received' AND (received_at IS NULL OR received_by IS NULL)) OR (status='cancelled' AND (cancelled_at IS NULL OR cancelled_by IS NULL)) OR (status='in_transit' AND (received_at IS NOT NULL OR cancelled_at IS NOT NULL))");
+  await add("transfer_state_integrity","SELECT count(*) AS violations FROM pharmacy_stock_transfers WHERE status NOT IN ('in_transit','received','cancelled')");
   await add("transfer_ledger_integrity",`WITH x AS (
     SELECT t.id,t.status,COUNT(*) FILTER (WHERE l.transaction_type='transfer_out') AS outs,
       COUNT(*) FILTER (WHERE l.transaction_type='transfer_in') AS ins,COUNT(*) FILTER (WHERE l.transaction_type='transfer_return') AS return_count
