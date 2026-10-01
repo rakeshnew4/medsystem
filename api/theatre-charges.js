@@ -40,8 +40,10 @@ export default async function(req,res){
     if(chargeType!==cat.rows[0].service_type)return res.status(400).json({error:"Charge type does not match Theatre catalogue service type"});
   }
   if((sourceType&&!Number.isInteger(sourceId))||(!sourceType&&sourceId))return res.status(400).json({error:"source_type and source_id must be supplied together"});
-  if(sourceType&&!["theatre_service","professional_fee","medicine","pharmacy_dispense"].includes(sourceType))return res.status(400).json({error:"Unsupported Theatre source type"});
+  if(sourceType&&!["theatre_service","medicine","pharmacy_dispense"].includes(sourceType))return res.status(400).json({error:"Unsupported Theatre source type"});
   if(sourceType&&sourceId){
+    const expectedChargeType=sourceType==="pharmacy_dispense"?"medicine":sourceType;
+    if(chargeType!==expectedChargeType)return res.status(400).json({error:"Theatre source type does not match charge type"});
     const dup=await db.query("SELECT id FROM theatre_charges WHERE hospital_id=$1 AND source_type=$2 AND source_id=$3",[ctx.hospitalId,sourceType,sourceId]);
     if(dup.rows[0])return res.status(409).json({error:"Source charge is already represented in Theatre billing",charge_id:dup.rows[0].id});
     if(sourceType==="theatre_service"){

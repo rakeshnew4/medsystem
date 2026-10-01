@@ -157,7 +157,7 @@ Status: Implemented in v265; authenticated browser test pending.
 
 ## TC-THEATRE-020 — Theatre charge creation
 Billing/admin can create a hospital-scoped Theatre charge tied to a procedure; invalid amounts and unknown procedures are rejected. Source-linked charges must also reference an existing same-hospital source, and medicine/pharmacy-dispense sources must belong to the procedure patient.
-Status: Implemented in v286; anonymous route protection and production charge/procedure isolation are verified; authenticated execution pending.
+Status: Implemented in v293; anonymous route protection and production charge/procedure isolation are verified; source_type/charge_type mismatches are rejected; authenticated execution pending.
 
 ## TC-THEATRE-021 — Charge-to-invoice linkage
 A Theatre charge can be linked once to an invoice belonging to the same patient; linking is idempotency-protected and invoice subtotal/total/status are recalculated.
