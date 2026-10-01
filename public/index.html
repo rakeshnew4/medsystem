@@ -221,7 +221,18 @@
 <section id="analytics" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Admin insights</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Hospital-level operational dashboard. Find bottlenecks, affected patients and actions.</div></div><button class="btn" onclick="loadAnalytics()">Refresh</button></div><div id="analyticsContent" style="margin-top:16px"></div></div><div class="card panel" style="margin-top:16px"><div class="panel-head"><div><h2 class="panel-title">Operations action queue</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Turn a bottleneck into an assigned action and measure whether it is resolved.</div></div><button class="btn primary" onclick="createOpsTask()">+ Assign action</button></div><div id="opsTasks" class="table-wrap"></div></div></section>
 <section id="lab" class="section"><div class="card panel"><div class="panel-head"><div><div class="kicker">CLINICAL & DIAGNOSTICS · LAB</div><h2 class="panel-title">Laboratory worklist</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Order → payment → sample → processing → verification → doctor review. Patient context stays attached to each result.</div></div><button class="btn" onclick="loadLab()">Refresh</button></div><div id="labSummary" class="queue-summary" style="margin-top:12px"></div><div class="queue-toolbar" style="margin-top:12px"><div class="queue-search"><span>⌕</span><input id="labSearch" type="search" placeholder="Search patient, UHID, test or doctor…" oninput="renderLab()"></div><select id="labStatusFilter" onchange="renderLab()" aria-label="Filter lab status"><option value="all">All lab states</option><option value="ordered">Ordered</option><option value="sample_collected">Sample collected</option><option value="processing">Processing</option><option value="verified">Verified</option><option value="cancelled">Cancelled</option></select><button class="btn" onclick="document.getElementById('labSearch').value='';document.getElementById('labStatusFilter').value='all';renderLab()">Clear</button></div><div id="labTable" class="table-wrap" style="margin-top:12px"></div></div></section>
 <section id="theatre" class="section">
-  <div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Operation Theatre / Procedures</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Schedule, start and complete clinical procedures linked to inpatient admissions.</div></div><button class="btn" onclick="loadTheatre()">Refresh</button></div><div id="theatreSummary" class="grid stats" style="margin-top:12px"></div><div id="theatreTable" class="table-wrap" style="margin-top:12px"></div></div>
+  <div class="card panel">
+    <div class="panel-head"><div><div class="kicker">CLINICAL · THEATRE</div><h2 class="panel-title">Operation Theatre / Procedures</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">HMIS-style procedure worklist with patient, admission, surgeon, room and lifecycle context.</div></div><button class="btn" onclick="loadTheatre()">Refresh</button></div>
+    <div id="theatreSummary" class="grid stats" style="margin-top:12px"></div>
+    <div class="queue-toolbar" style="margin-top:12px">
+      <div class="queue-search"><span>⌕</span><input id="theatreSearch" type="search" placeholder="Search patient, UHID, admission, procedure, doctor or room…" oninput="renderTheatre()"></div>
+      <select id="theatreStatusFilter" onchange="renderTheatre()" aria-label="Filter theatre status"><option value="all">All procedure states</option><option value="scheduled">Scheduled</option><option value="in_progress">In progress</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select>
+      <select id="theatreDateFilter" onchange="renderTheatre()" aria-label="Filter theatre date"><option value="all">All dates</option><option value="today">Today</option><option value="upcoming">Upcoming</option><option value="past">Past</option></select>
+      <button class="btn" onclick="clearTheatreFilters()">Clear</button>
+    </div>
+    <div id="theatreWorklistMeta" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+    <div id="theatreTable" class="table-wrap" style="margin-top:12px"></div>
+  </div>
   <div id="theatreMasterData" class="card panel" style="margin-top:16px;display:none"><div class="panel-head"><div><h3 class="panel-title">Theatre master data</h3><div style="font-size:12px;color:var(--muted);margin-top:4px">Administrator-only room and procedure catalogue management.</div></div></div><div id="theatreRoomsAdmin" class="table-wrap"></div><div id="theatreCatalogAdmin" class="table-wrap" style="margin-top:16px"></div></div>
 </section>
 <section id="assets" class="section">
@@ -1877,19 +1888,42 @@ async function addTheatreCharge(procedureId){
  const q=Number(qty),u=Number(price);if(!Number.isFinite(q)||q<=0||!Number.isFinite(u)||u<0)return alert('Invalid quantity or unit price');
  try{const r=await api('/theatre-charges',{method:'POST',body:JSON.stringify({procedure_id:Number(procedureId),charge_type:chargeType,description,quantity:q,unit_price:u})});alert('Theatre charge created: ₹'+Number(r.amount||0).toFixed(2)+'. Link it to the patient invoice from billing.');}catch(e){alert(e.message)}
 }
+function theatreDateMatches(x,filter){
+  if(filter==='all')return true;
+  const d=x.scheduled_start?new Date(x.scheduled_start):null;if(!d||Number.isNaN(d.getTime()))return filter==='past';
+  const now=new Date();const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());const day=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  if(filter==='today')return day.getTime()===today.getTime();
+  if(filter==='upcoming')return d.getTime()>=now.getTime();
+  if(filter==='past')return d.getTime()<now.getTime();
+  return true;
+}
+function clearTheatreFilters(){
+  const s=document.getElementById('theatreSearch'),st=document.getElementById('theatreStatusFilter'),df=document.getElementById('theatreDateFilter');
+  if(s)s.value='';if(st)st.value='all';if(df)df.value='all';renderTheatre();
+}
 function renderTheatre(){
- const rows=state.theatre?.procedures||[], rooms=state.theatre?.rooms||[], catalog=state.theatre?.catalog||[];
- renderTheatreMasterData(rooms,catalog);
- const counts={scheduled:0,in_progress:0,completed:0,cancelled:0};rows.forEach(x=>counts[x.status]=(counts[x.status]||0)+1);
- const summary=document.getElementById('theatreSummary');
- if(summary)summary.innerHTML=[['Scheduled',counts.scheduled],['In progress',counts.in_progress],['Completed',counts.completed],['Rooms',rooms.length]].map(x=>'<div class="card stat"><div class="stat-label">'+x[0]+'</div><div class="stat-value">'+x[1]+'</div><div class="stat-note">Theatre workflow</div></div>').join('');
- const el=document.getElementById('theatreTable');if(!el)return;
- el.innerHTML=rows.length?'<table><thead><tr><th>Scheduled</th><th>Patient</th><th>Procedure</th><th>Doctor</th><th>Room</th><th>Status</th><th>Action</th></tr></thead><tbody>'+rows.map(x=>{
-   const next=x.status==='scheduled'?'in_progress':x.status==='in_progress'?'completed':null;
-   const action=next?'<button class="mini primary" onclick="advanceTheatre('+x.id+',\''+next+'\')">'+(next==='in_progress'?'Start':'Complete')+'</button>':''; const charge=(state.session?.staff?.role==='billing'||state.session?.staff?.role==='admin')?'<button class="mini" onclick="addTheatreCharge('+x.id+')">Charge</button>':''; const handoff=(x.status==='completed'&&!x.ward_returned_at&&x.admission_id)?'<button class="mini" onclick="returnTheatreToWard('+x.id+')">Return to ward</button>':'';
-   const cancel=x.status==='scheduled'?'<button class="mini" onclick="advanceTheatre('+x.id+',\'cancelled\')">Cancel</button>':'';
-   return '<tr><td>'+(x.scheduled_start?fmtDate(x.scheduled_start)+' '+fmtTime(x.scheduled_start):'—')+'</td><td><button class="record-link" onclick="openPatientWorkspace('+x.patient_id+')"><strong>'+esc(x.patient_name||'Patient')+'</strong></button><div style="font-size:11px;color:var(--muted)">'+esc(x.uhid||'')+'</div></td><td>'+esc(x.procedure_name)+'</td><td>'+esc(x.doctor_name||'—')+'</td><td>'+esc(x.theatre_room_name||'—')+'</td><td>'+status(x.status)+'</td><td><div style="display:flex;gap:4px;flex-wrap:wrap">'+action+cancel+charge+handoff+'</div></td></tr>';
- }).join('')+'</tbody></table>':'<div class="empty">No theatre procedures scheduled yet. Open a patient workspace to schedule one against an active IPD admission.</div>';
+  const rows=state.theatre?.procedures||[], rooms=state.theatre?.rooms||[], catalog=state.theatre?.catalog||[];
+  renderTheatreMasterData(rooms,catalog);
+  const counts={scheduled:0,in_progress:0,completed:0,cancelled:0};rows.forEach(x=>counts[x.status]=(counts[x.status]||0)+1);
+  const summary=document.getElementById('theatreSummary');
+  if(summary)summary.innerHTML=[['Scheduled',counts.scheduled],['In progress',counts.in_progress],['Completed',counts.completed],['Rooms',rooms.length]].map(x=>'<div class="card stat"><div class="stat-label">'+x[0]+'</div><div class="stat-value">'+x[1]+'</div><div class="stat-note">Theatre workflow</div></div>').join('');
+  const q=String(document.getElementById('theatreSearch')?.value||'').trim().toLowerCase();
+  const sf=document.getElementById('theatreStatusFilter')?.value||'all';
+  const df=document.getElementById('theatreDateFilter')?.value||'all';
+  const filtered=rows.filter(x=>{
+    if(sf!=='all'&&x.status!==sf)return false;
+    if(!theatreDateMatches(x,df))return false;
+    if(!q)return true;
+    return [x.patient_name,x.uhid,x.admission_number,x.procedure_name,x.doctor_name,x.theatre_room_name,x.status].some(v=>String(v||'').toLowerCase().includes(q));
+  }).sort((a,b)=>new Date(a.scheduled_start||a.created_at||0)-new Date(b.scheduled_start||b.created_at||0));
+  const meta=document.getElementById('theatreWorklistMeta');if(meta)meta.textContent=filtered.length+' of '+rows.length+' procedures shown · '+counts.scheduled+' scheduled · '+counts.in_progress+' in progress · '+counts.completed+' completed · '+counts.cancelled+' cancelled';
+  const el=document.getElementById('theatreTable');if(!el)return;
+  el.innerHTML=filtered.length?'<table><thead><tr><th>Scheduled</th><th>Patient / Admission</th><th>Procedure</th><th>Doctor</th><th>Room</th><th>Status</th><th>Action</th></tr></thead><tbody>'+filtered.map(x=>{
+    const next=x.status==='scheduled'?'in_progress':x.status==='in_progress'?'completed':null;
+    const action=next?'<button class="mini primary" onclick="advanceTheatre('+x.id+',\''+next+'\')">'+(next==='in_progress'?'Start':'Complete')+'</button>':''; const charge=(state.session?.staff?.role==='billing'||state.session?.staff?.role==='admin')?'<button class="mini" onclick="addTheatreCharge('+x.id+')">Charge</button>':''; const handoff=(x.status==='completed'&&!x.ward_returned_at&&x.admission_id)?'<button class="mini" onclick="returnTheatreToWard('+x.id+')">Return to ward</button>':'';
+    const cancel=x.status==='scheduled'?'<button class="mini" onclick="advanceTheatre('+x.id+',\'cancelled\')">Cancel</button>':'';
+    return '<tr><td>'+(x.scheduled_start?fmtDate(x.scheduled_start)+' '+fmtTime(x.scheduled_start):'—')+'</td><td><button class="record-link" onclick="openPatientWorkspace('+x.patient_id+')"><strong>'+esc(x.patient_name||'Patient')+'</strong></button><div style="font-size:11px;color:var(--muted)">'+esc(x.uhid||'')+(x.admission_number?' · BHT '+esc(x.admission_number):'')+'</div></td><td><strong>'+esc(x.procedure_name||'Procedure')+'</strong><div style="font-size:11px;color:var(--muted)">'+(x.scheduled_end?'Until '+fmtTime(x.scheduled_end):'End time not set')+'</div></td><td>'+esc(x.doctor_name||'—')+'</td><td>'+esc(x.theatre_room_name||'—')+'</td><td>'+status(x.status)+'</td><td><div style="display:flex;gap:4px;flex-wrap:wrap">'+action+cancel+charge+handoff+'</div></td></tr>';
+  }).join('')+'</tbody></table>':'<div class="empty">'+(rows.length?'No procedures match the current worklist filters.':'No theatre procedures scheduled yet. Open a patient workspace to schedule one against an active IPD admission.')+'</div>';
 }
 async function advanceTheatre(id,next){
  try{

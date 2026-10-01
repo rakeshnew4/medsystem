@@ -28,14 +28,37 @@ export default async function(req,res){
   const tx=await db.transaction(statements);
   const inv=tx.results?.[0]?.rows?.[0];
   if(!inv)return res.status(500).json({error:"Invoice creation failed"});
-  await logWorkflowEvent(ctx,{patientId:b.patient_id,eventType:"invoice_created",stage:"billing",entityType:"invoice",entityId:inv.id,metadata:{total,paid,status}});
+
+  // Preserve HMIS-style care-episode continuity in billing audit events.
+  // Prefer the canonical doctor_visit encounter when supplied; otherwise resolve
+  // the encounter from the appointment that originated the invoice.
+  let encounterId=null;
+  if(b.visit_id){
+    const er=await db.query(
+      "SELECT encounter_id FROM doctor_visits WHERE id=$1 AND hospital_id=$2 AND patient_id=$3 LIMIT 1",
+      [Number(b.visit_id),ctx.hospitalId,Number(b.patient_id)]
+    );
+    encounterId=er.rows[0]?.encounter_id||null;
+  }
+  if(!encounterId&&b.appointment_id){
+    const er=await db.query(
+      "SELECT id FROM care_encounters WHERE appointment_id=$1 AND hospital_id=$2 AND patient_id=$3 LIMIT 1",
+      [Number(b.appointment_id),ctx.hospitalId,Number(b.patient_id)]
+    );
+    encounterId=er.rows[0]?.id||null;
+  }
+
+  await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId,eventType:"invoice_created",stage:"billing",entityType:"invoice",entityId:inv.id,metadata:{total,paid,status}});
+  if(paid>0){
+    await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId,eventType:"payment_recorded",stage:"billing",entityType:"invoice",entityId:inv.id,metadata:{amount:paid,paid,status,reference:b.reference||null}});
+  }
   if(ctx.staff.role!=="billing")await notifyRoles({hospitalId:ctx.hospitalId,roles:["billing"],title:"New bill ready",body:"A new invoice is waiting for billing/payment action.",kind:"workflow",entityType:"invoice",entityId:inv.id,patientId:b.patient_id,excludeStaffId:ctx.staff.id});
   return res.json(inv);
  }
  if(req.method==="PUT"){
   const b=req.body||{};const amount=Number(b.amount);
   if(!Number.isFinite(amount)||amount<=0)return res.status(400).json({error:"Payment amount must be greater than zero"});
-  const cur=await db.query("SELECT patient_id,total,paid FROM invoices WHERE id=$1 AND hospital_id=$2 FOR UPDATE",[b.id,ctx.hospitalId]);if(!cur.rows[0])return res.status(404).json({error:"Invoice not found"});
+  const cur=await db.query("SELECT patient_id,total,paid,appointment_id,visit_id FROM invoices WHERE id=$1 AND hospital_id=$2 FOR UPDATE",[b.id,ctx.hospitalId]);if(!cur.rows[0])return res.status(404).json({error:"Invoice not found"});
   const due=Math.max(0,Number(cur.rows[0].total)-Number(cur.rows[0].paid));
   if(amount>due)return res.status(400).json({error:"Payment cannot exceed outstanding balance"});
   const nextPaid=Number(cur.rows[0].paid)+amount;
@@ -47,7 +70,24 @@ export default async function(req,res){
   ]);
   const updated=tx.results?.[2]?.rows?.[0];
   if(!updated)return res.status(409).json({error:"Payment could not be applied; outstanding balance may have changed. Please refresh and retry."});
-  await logWorkflowEvent(ctx,{patientId:updated.patient_id,eventType:"payment_recorded",stage:"billing",entityType:"invoice",entityId:b.id,metadata:{amount,paid:updated.paid,status:updated.status,reference:b.reference||null}});
+
+  let encounterId=null;
+  if(cur.rows[0].visit_id){
+    const er=await db.query(
+      "SELECT encounter_id FROM doctor_visits WHERE id=$1 AND hospital_id=$2 AND patient_id=$3 LIMIT 1",
+      [Number(cur.rows[0].visit_id),ctx.hospitalId,Number(updated.patient_id)]
+    );
+    encounterId=er.rows[0]?.encounter_id||null;
+  }
+  if(!encounterId&&cur.rows[0].appointment_id){
+    const er=await db.query(
+      "SELECT id FROM care_encounters WHERE appointment_id=$1 AND hospital_id=$2 AND patient_id=$3 LIMIT 1",
+      [Number(cur.rows[0].appointment_id),ctx.hospitalId,Number(updated.patient_id)]
+    );
+    encounterId=er.rows[0]?.id||null;
+  }
+
+  await logWorkflowEvent(ctx,{patientId:updated.patient_id,encounterId,eventType:"payment_recorded",stage:"billing",entityType:"invoice",entityId:b.id,metadata:{amount,paid:updated.paid,status:updated.status,reference:b.reference||null}});
   return res.json(updated);
  }
  if(req.query?.id){
