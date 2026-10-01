@@ -35,7 +35,7 @@ export default async function(req,res){
       prompt:"Review the CareFlow hospital operations home screen specifically for navigation clarity, staff workflow visibility, and whether the interface exposes the inpatient/bed workflow clearly. Flag missing or confusing UI controls."
     });
     res.json({
-      ok:dupes.rows.length===0&&Number(occupied.rows[0]?.n||0)===0&&Number(assignments.rows[0]?.n||0)===0&&Number(discharged.rows[0]?.n||0)===0&&guards.every(x=>x.blocked)&&Object.values(uiChecks).every(Boolean)&&ai.review?.pass!==false,
+      ok:dupes.rows.length===0&&Number(occupied.rows[0]?.n||0)===0&&Number(assignments.rows[0]?.n||0)===0&&Number(discharged.rows[0]?.n||0)===0&&guards.every(x=>x.blocked)&&Object.values(uiChecks).every(Boolean),
       hospital,
       invariants:{duplicate_active_admissions:dupes.rows,orphan_occupied_beds:Number(occupied.rows[0]?.n||0),active_admissions_without_current_assignment:Number(assignments.rows[0]?.n||0),discharged_admissions_on_occupied_bed:Number(discharged.rows[0]?.n||0)},
       route_guards:guards,

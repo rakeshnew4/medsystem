@@ -62,7 +62,7 @@
       </div>
     </div>
 
-    <div class="nav-group">
+    <div class="nav-group open">
       <button class="nav-group-toggle" onclick="toggleNavGroup(this)">Inpatient care <span>⌄</span></button>
       <div class="nav-sub">
         <button data-section="beds">Beds & admissions</button>
@@ -1941,7 +1941,7 @@ function patientCareTeamActions(p,s){
 // but every staff-facing patient link resolves to the same Patient Workspace.
 async function openClinical(pid,action){return openPatientWorkspace(pid,action||'workspace')}
 window.addEventListener('DOMContentLoaded',()=>{
-  loadAllWithLoader();setTimeout(pollNotifications,1200);setTimeout(()=>document.getElementById('aiAssistantBall')?.classList.add('ai-ball-enter'),180);setTimeout(initAIBallDrag,250);
+  loadAll();setTimeout(pollNotifications,1200);setTimeout(()=>document.getElementById('aiAssistantBall')?.classList.add('ai-ball-enter'),180);setTimeout(initAIBallDrag,250);
   updateReceptionClock();setInterval(updateReceptionClock,1000);
   document.addEventListener('keydown',e=>{
     if(state.session?.staff?.role!=='receptionist')return;
