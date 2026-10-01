@@ -435,6 +435,36 @@ button:disabled,.btn:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:900px){#patientDirectory{max-height:250px}.patient-directory{max-height:310px}.workflow-progress-strip{margin-right:-4px;padding-right:4px}.patient-header-status{margin-bottom:2px}}
 @media(max-width:560px){#patientDirectory{max-height:220px}.patient-directory{max-height:280px}.patient-header-status{gap:5px}.patient-header-status span{font-size:9px;padding:5px 7px}.workflow-progress-item{padding:7px 9px}.care-team-state{align-items:flex-end;flex-direction:column;gap:4px}.care-team-progress{font-size:7px!important}}
 
+/* Final patient-workspace alignment pass */
+.care-team-role-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,420px);align-items:center;column-gap:32px}
+.care-team-patient-details.compact{min-width:0;min-height:86px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding-right:8px}
+.care-team-patient-details.compact .care-team-context-label{margin-bottom:5px}
+.care-team-patient-details.compact .care-team-patient-name{font-size:18px;font-weight:800;line-height:1.2;margin-bottom:3px}
+.care-team-patient-details.compact .care-team-patient-meta{font-size:11px;color:var(--muted);line-height:1.35;margin-bottom:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.care-team-actions-side{min-width:0;min-height:86px;display:flex;flex-direction:column;justify-content:center;align-items:stretch}
+.care-team-actions-title{max-width:100%}
+.care-team-buttons{display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:center}
+.care-team-buttons .mini{flex:0 0 auto}
+.care-team-group-head{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.care-team-group-head>div:first-child{display:flex;align-items:center;min-width:0}
+.care-team-group-head>div:first-child strong{white-space:nowrap}
+.care-team-state{flex:0 0 auto}
+.patient-workspace-action-area{display:block;min-height:0}
+.patient-action-panel{scroll-margin-top:24px}
+@media(max-width:900px){
+ .care-team-role-layout{grid-template-columns:1fr;row-gap:14px}
+ .care-team-patient-details.compact{min-height:0;padding-right:0}
+ .care-team-actions-side{min-height:0;border-top:1px solid var(--line);padding-top:14px}
+ .care-team-buttons{justify-content:flex-start}
+}
+@media(max-width:560px){
+ .care-team-group-head{align-items:flex-start;gap:10px}
+ .care-team-state{align-items:flex-end}
+ .care-team-patient-details.compact .care-team-patient-meta{white-space:normal}
+ .care-team-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+ .care-team-buttons .mini{width:100%}
+}
+
 /* Enterprise shell / compact mobile header */
 .sidebar-footer{padding:14px 8px 8px}
 .sidebar-account{padding:10px 10px 12px;border:1px solid rgba(255,255,255,.10);border-radius:10px;background:rgba(255,255,255,.05);margin-bottom:8px}
