@@ -50,7 +50,7 @@ export default async function(req,res){
     if(a.depreciation_method==="straight_line") book=Math.max(0,price-(price*rate*years));
     else if(a.depreciation_method==="declining_balance") book=Math.max(0,price*Math.pow(Math.max(0,1-rate),years));
     else if(a.depreciation_method==="none") book=price;
-    if(a.useful_life_years) book=Math.max(book,0);
+    if(a.useful_life_years) book=years>=Number(a.useful_life_years)?0:book;
     return {...a,as_of:asOf,elapsed_years:Number(years.toFixed(2)),accumulated_depreciation:Number(Math.max(0,price-book).toFixed(2)),calculated_book_value:Number(book.toFixed(2))};
   });
   return res.json({kind,as_of:asOf,total:out.length,assets:out});
