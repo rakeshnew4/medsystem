@@ -425,4 +425,4 @@ Status: Implemented; authenticated browser verification pending.
 
 ## TC-THEATRE-028 — Full UI-10 loop access boundary
 The Theatre UI remains backed by protected routes; anonymous GET /api/theatre, /api/theatre-charges, /api/theatre-validate and /api/theatre-validation-revert must not expose protected data or mutations.
-Status: Dry-run passed with 0 errors; post-deploy anonymous access verification pending.
+Status: Deployed v421. Dry-run passed with 0 errors; anonymous GET access to /api/theatre, /api/theatre-charges, /api/theatre-validate and /api/theatre-validation-revert returned 401. Authenticated hospital-staff E2E remains pending.
