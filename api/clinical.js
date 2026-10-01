@@ -6,7 +6,9 @@ export default async function(req,res){
  const ctx=await requirePermission(req,res,req.method==="GET"?"action.clinical.view":"action.clinical.write"); if(!ctx)return; const b=req.body||{};
  if(req.method==="POST"||req.method==="PUT"){
   if(b.type==="visit"){
-   if(req.method==="PUT"){const r=await db.query("UPDATE doctor_visits SET clinical_notes=$1,visit_status=$2,ended_at=CASE WHEN $2='completed' THEN COALESCE(ended_at,now()) ELSE ended_at END,encounter_id=COALESCE($3::bigint,encounter_id) WHERE id=$4 AND hospital_id=$5 RETURNING *",[b.clinical_notes||null,b.visit_status||"open",b.encounter_id||null,b.id,ctx.hospitalId]);
+   if(req.method==="PUT"){
+   if(!["doctor","admin"].includes(String(ctx.staff.role||"")))return res.status(403).json({error:"Only doctors can document a consultation"});
+   const r=await db.query("UPDATE doctor_visits SET clinical_notes=$1,visit_status=$2,ended_at=CASE WHEN $2='completed' THEN COALESCE(ended_at,now()) ELSE ended_at END,encounter_id=COALESCE($3::bigint,encounter_id) WHERE id=$4 AND hospital_id=$5 AND (doctor_id=$6 OR $6 IS NULL) RETURNING *",[b.clinical_notes||null,b.visit_status||"open",b.encounter_id||null,b.id,ctx.hospitalId,ctx.staff.doctor_id||null]);
    if(!r.rows[0])return res.json({error:"Visit not found"});
    const visit=r.rows[0];
    if(visit.encounter_id){await db.query("UPDATE care_encounters SET current_stage=$1,status=$2,ended_at=CASE WHEN $2='completed' THEN COALESCE(ended_at,now()) ELSE ended_at END,updated_at=now() WHERE id=$3 AND hospital_id=$4",[b.visit_status==="completed"?"completed":"doctor",b.visit_status==="completed"?"completed":"open",visit.encounter_id,ctx.hospitalId]);}
@@ -18,9 +20,19 @@ export default async function(req,res){
      const ce=await getOrCreateEncounter(ctx,b.patient_id,{appointmentId:b.appointment_id||null,encounterType:'opd',doctorId:b.doctor_id||ctx.staff.doctor_id||null,reason:b.reason||'OPD consultation',stage:'doctor',priority:b.priority||'normal'});
      encounterId=ce.id;
    }
+   if(b.queue_entry_id){
+     const q=await db.query("SELECT stage,doctor_id FROM queue_entries WHERE id=$1 AND hospital_id=$2 AND patient_id=$3",[Number(b.queue_entry_id),ctx.hospitalId,b.patient_id]);
+     if(!q.rows[0])return res.status(404).json({error:"Queue entry not found"});
+     if(q.rows[0].stage!=="in_room")return res.status(409).json({error:"Start the doctor consultation before documenting the visit"});
+     if(ctx.staff.role!=="admin" && Number(q.rows[0].doctor_id)!==Number(ctx.staff.doctor_id))return res.status(403).json({error:"This patient is not assigned to you"});
+   }
    const r=await db.query("INSERT INTO doctor_visits(hospital_id,patient_id,doctor_id,appointment_id,queue_entry_id,encounter_id,visit_number,clinical_notes,visit_status,started_at,ended_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,now(),CASE WHEN $9='completed' THEN now() ELSE NULL END) RETURNING *",[ctx.hospitalId,b.patient_id,b.doctor_id||ctx.staff.doctor_id||null,b.appointment_id||null,b.queue_entry_id||null,encounterId,n.rows[0].n,b.clinical_notes||null,b.visit_status||"open"]);
    await db.query("UPDATE care_encounters SET current_stage=$1,status=$2,ended_at=CASE WHEN $2='completed' THEN COALESCE(ended_at,now()) ELSE ended_at END,updated_at=now() WHERE id=$3 AND hospital_id=$4",[b.visit_status==="completed"?"completed":"doctor",b.visit_status==="completed"?"completed":"open",encounterId,ctx.hospitalId]);
    await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId, eventType:b.visit_status==="completed"?"consultation_completed":"consultation_started",stage:b.visit_status==="completed"?"completed":"doctor",entityType:"doctor_visit",entityId:r.rows[0].id});
+   if(b.visit_status==="completed" && b.queue_entry_id){
+     await db.query("UPDATE queue_entries SET stage='completed',completed_at=now(),updated_at=now() WHERE id=$1 AND hospital_id=$2 AND stage='in_room'",[Number(b.queue_entry_id),ctx.hospitalId]);
+     if(b.appointment_id)await db.query("UPDATE appointments SET status='completed' WHERE id=$1 AND hospital_id=$2",[Number(b.appointment_id),ctx.hospitalId]);
+   }
    return res.json(r.rows[0]);
   }
   if(b.type==="medicine"){
