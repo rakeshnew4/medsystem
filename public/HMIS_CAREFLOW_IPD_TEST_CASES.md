@@ -71,6 +71,15 @@ Scenario: registration → OPD assessment → admission decision → bed allocat
 Expected: no orphan admission, encounter, bed assignment or bed occupancy state.
 Status: Full authenticated E2E gate.
 
+## TC-IPD-017 — IPD automated invariant/security validator
+Route: /api/ipd-validation; Actor: project admin test runner.
+Expected: active admissions have no duplicates; occupied beds have valid active admissions; active admissions have current assignments; discharged admissions do not leave beds occupied; /api/beds, /api/ipd and /api/discharge remain HTTP 401 anonymously.
+Status: Automated and passing in v253.
+
+## TC-IPD-018 — AI/UI infrastructure validation
+Expected: Groq vision review executes against the public UI; LiteLLM health check succeeds; AI keys are never returned to the client.
+Status: Automated and passing in v253. The visual review intentionally uses the public login surface because an authenticated hospital staff browser session is not available to the validator.
+
 ## IPD completion gate
 IPD remains In progress until authenticated admission/transfer/discharge E2E, role boundaries, concurrent-bed safety, discharge checklist enforcement, encounter continuity and workflow events are verified.
 

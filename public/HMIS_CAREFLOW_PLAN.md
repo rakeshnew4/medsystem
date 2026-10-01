@@ -531,6 +531,9 @@ Remaining IPD work:
 - Bed transfer hardened in v247: both beds are locked deterministically and source release, admission update, new assignment and destination occupancy are gated and committed together.
 - Discharge hardened in v248: admission, checklist, current bed, encounter completion, assignment release, bed release and ipd_discharged workflow event commit atomically; incomplete discharge gates cannot change inpatient state.
 - Discharge checklist API now validates insurance/payment states and rejects checklist edits after discharge.
+- Patient workspace discharge UI now mirrors the server gate, preserves checklist selections, and blocks the invalid insurance-approved/payment combination before submission.
+- Added an admin-only IPD validation route: current production invariants are clean, all three protected IPD routes reject anonymous access, Groq vision review is active, and LiteLLM health check is passing.
+- Fixed LiteLLM URL normalization so a host:port secret without a scheme is accepted.
 - Run authenticated nurse/admin/receptionist/doctor role-boundary tests.
 - Verify occupied-bed race, transfer race, discharge checklist enforcement and encounter continuity with synthetic fixtures.
 - Verify full OPD → IPD → transfer → discharge journey in browser E2E.
