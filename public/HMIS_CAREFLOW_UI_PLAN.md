@@ -81,16 +81,18 @@ HMIS reference: nursing workbench and inpatient dashboard.
 - [ ] Authenticated browser E2E for nurse vitals/triage/handoff remains open until a real hospital staff session is available
 
 ### UI-05 — Doctor Consultation
-- [ ] Doctor worklist
-- [ ] Consultation room header
-- [ ] Patient clinical summary
-- [ ] Vitals/triage/history
-- [ ] Clinical notes
-- [ ] Diagnosis
-- [ ] Orders/investigations
-- [ ] Prescription
-- [ ] Follow-up
-- [ ] Consultation completion
+HMIS reference: EMR OPD visit workspace (emr/opd_visit.xhtml) and patient encounter history.
+- [x] Doctor worklist with waiting/today tabs and patient/UHID/token search
+- [x] Consultation room header
+- [x] Patient clinical summary
+- [x] Vitals/triage/history
+- [x] Clinical notes
+- [ ] Diagnosis — no verified CareFlow diagnosis mutation contract exists yet; do not invent one
+- [x] Orders/investigations
+- [x] Prescription
+- [x] Follow-up
+- [x] Consultation completion
+- [ ] Authenticated browser E2E for doctor consultation remains open until a real hospital staff session is available
 
 ### UI-06 — Laboratory
 HMIS reference: laboratory worklist/result verification/LIS flow.

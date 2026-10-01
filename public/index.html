@@ -184,6 +184,7 @@
       <div class="panel-head"><div><h2 class="panel-title">Doctor Room</h2><div id="doctorRoomSubtitle" class="room-subtitle">Your consultation workspace</div></div><button class="btn" onclick="loadDoctorRoom()">Refresh</button></div>
       <div id="doctorRoomStats" class="room-stats"></div>
       <div class="room-tabs"><button class="btn primary" id="roomWaitingTab" onclick="setDoctorRoomTab('waiting')">Waiting</button><button class="btn" id="roomTodayTab" onclick="setDoctorRoomTab('today')">Today's appointments</button></div>
+      <div class="queue-toolbar" style="margin:10px 0"><div class="queue-search"><span>⌕</span><input id="doctorRoomSearch" type="search" placeholder="Search patient, UHID or token…" oninput="renderDoctorRoom()"></div><button class="btn" onclick="document.getElementById('doctorRoomSearch').value='';renderDoctorRoom()">Clear</button></div>
       <div id="doctorRoomList"></div>
     </div>
     <div class="card panel doctor-workspace">
@@ -1074,12 +1075,13 @@ function renderDoctorRoom(){
   document.getElementById('doctorRoomSubtitle').textContent=d?(d.name+' · '+(d.specialty||'Doctor')):'Select or assign a doctor profile to this staff account.';
   document.getElementById('doctorRoomStats').innerHTML='<div><strong>'+r.stats.waiting+'</strong><span>Waiting</span></div><div><strong>'+r.stats.in_room+'</strong><span>In room</span></div><div><strong>'+r.stats.today+'</strong><span>Today</span></div>';
   let html='';
+  const term=String(document.getElementById('doctorRoomSearch')?.value||'').trim().toLowerCase();
   if(state.doctorRoomTab==='waiting'){
-    const q=r.queue||[];
-    html=q.length?q.map(x=>'<div class="room-patient '+(state.doctorRoomPatient?.id==x.patient_id?'selected':'')+'"><div><strong>'+esc(x.patient_name)+'</strong><span>'+esc(x.reason||'General consultation')+'</span></div><div class="room-patient-meta">'+status(x.stage)+' '+(x.priority!=='normal'?status(x.priority):'')+'<small>'+esc(x.token||'')+'</small></div><div class="room-patient-actions">'+(x.stage==='doctor'?'<button class="mini primary" onclick="event.stopPropagation();doctorStartFromQueue('+x.patient_id+','+x.id+')">Bring into room</button>':'<button class="mini" onclick="event.stopPropagation();selectDoctorPatient('+x.patient_id+','+x.id+')">Open consultation</button>')+'</div></div>').join(''):'<div class="empty">No patients are waiting for you.</div>';
+    const q=(r.queue||[]).filter(x=>!term||[x.patient_name,x.uhid,x.token,x.reason].some(v=>String(v||'').toLowerCase().includes(term)));
+    html=q.length?q.map(x=>'<div class="room-patient '+(state.doctorRoomPatient?.id==x.patient_id?'selected':'')+'"><div><strong>'+esc(x.patient_name)+'</strong><span>'+esc(x.reason||'General consultation')+'</span></div><div class="room-patient-meta">'+status(x.stage)+' '+(x.priority!=='normal'?status(x.priority):'')+'<small>'+esc(x.token||'')+'</small></div><div class="room-patient-actions">'+(x.stage==='doctor'?'<button class="mini primary" onclick="event.stopPropagation();doctorStartFromQueue('+x.patient_id+','+x.id+')">Bring into room</button>':'<button class="mini" onclick="event.stopPropagation();selectDoctorPatient('+x.patient_id+','+x.id+')">Open consultation</button>')+'</div></div>').join(''):'<div class="empty">No patients match the doctor worklist.</div>';
   }else{
-    const a=r.appointments||[];
-    html=a.length?a.map(x=>'<button class="room-patient" onclick="selectDoctorAppointment('+x.patient_id+','+(x.id||0)+')"><div><strong>'+esc(x.patient_name)+'</strong><span>'+fmtTime(x.appointment_time)+' · '+esc(x.reason||'Consultation')+'</span></div><div class="room-patient-meta">'+status(x.status)+'</div></button>').join(''):'<div class="empty">No appointments scheduled today.</div>';
+    const a=(r.appointments||[]).filter(x=>!term||[x.patient_name,x.uhid,x.reason].some(v=>String(v||'').toLowerCase().includes(term)));
+    html=a.length?a.map(x=>'<button class="room-patient" onclick="selectDoctorAppointment('+x.patient_id+','+(x.id||0)+')"><div><strong>'+esc(x.patient_name)+'</strong><span>'+fmtTime(x.appointment_time)+' · '+esc(x.reason||'Consultation')+'</span></div><div class="room-patient-meta">'+status(x.status)+'</div></button>').join(''):'<div class="empty">No appointments match the doctor worklist.</div>';
   }
   document.getElementById('doctorRoomList').innerHTML=html;
 }
