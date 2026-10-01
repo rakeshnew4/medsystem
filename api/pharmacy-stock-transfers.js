@@ -87,7 +87,9 @@ export default async function(req,res){
         RETURNING s.id,d.quantity AS quantity_before,s.quantity AS quantity_after,d.transfer_qty,d.hospital_id
       ), tr AS (
         UPDATE pharmacy_stock_transfers SET status='received',received_by=$3,received_at=CURRENT_TIMESTAMP,receive_notes=$4
-        WHERE id=$1 AND hospital_id=$2 AND status='in_transit' RETURNING *
+        WHERE id=$1 AND hospital_id=$2 AND status='in_transit'
+          AND EXISTS (SELECT 1 FROM upd)
+        RETURNING *
       ), led AS (
         INSERT INTO pharmacy_stock_transactions
           (hospital_id,stock_id,transaction_type,quantity,quantity_before,quantity_after,performed_by,notes,transfer_id)
@@ -111,7 +113,9 @@ export default async function(req,res){
       RETURNING s.id,x.quantity_before AS quantity_before,s.quantity AS quantity_after,x.transfer_qty,x.hospital_id
     ), tr AS (
       UPDATE pharmacy_stock_transfers SET status='cancelled',cancelled_by=$3,cancelled_at=CURRENT_TIMESTAMP,notes=COALESCE($4,notes)
-      WHERE id=$1 AND hospital_id=$2 AND status='in_transit' RETURNING *
+      WHERE id=$1 AND hospital_id=$2 AND status='in_transit'
+        AND EXISTS (SELECT 1 FROM upd)
+      RETURNING *
     ), led AS (
       INSERT INTO pharmacy_stock_transactions
         (hospital_id,stock_id,transaction_type,quantity,quantity_before,quantity_after,performed_by,notes,transfer_id)

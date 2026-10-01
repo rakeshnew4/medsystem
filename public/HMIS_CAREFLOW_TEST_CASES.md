@@ -440,3 +440,8 @@ Status: Deployed v421. Dry-run passed with 0 errors; anonymous GET access to /ap
 Route: /api/discharge; Method: POST/PUT; Actor: authenticated staff.
 Expected: checklist creation/update is bound to an active admission lock. If discharge wins the race and sets discharged_at, a concurrent or already-started checklist mutation returns HTTP 409 and cannot modify the terminal admission's checklist.
 Status: Implemented in v450; authenticated staff concurrency execution remains pending.
+
+## TC-INVENTORY-030 — Transfer terminal status requires stock mutation
+Route: /api/pharmacy-stock-transfers; Method: POST action=receive/cancel; Actor: authenticated pharmacy staff.
+Expected: receive changes a transfer to received only when destination stock is actually incremented; cancel changes it to cancelled only when source stock is actually restored. Missing/inactive stock must leave the transfer in_transit and return HTTP 409; no false terminal state or missing ledger movement is allowed.
+Status: Implemented in v451; authenticated staff execution remains pending.
