@@ -480,7 +480,29 @@ Completion gate:
 
 # 08 — Pharmacy / dispensing / stock
 
-Not started.
+**In progress — stock foundation and pharmacist workflow controls implemented in v236.**
+
+HMIS treats pharmacy as an operational module connected to prescriptions, dispensing and inventory; the reference repository lists Pharmacy & Laboratory Information Management and Inventory & Asset Management as core hospital capabilities.
+
+Implemented in CareFlow v236:
+- Added hospital-scoped pharmacy stock batches with medicine name, batch number, expiry date, quantity, reorder level and unit.
+- Added pharmacy stock transaction audit records for stock receipts and future dispensing adjustments.
+- Added protected /api/pharmacy-stock for pharmacist/admin stock receiving and stock visibility.
+- Pharmacy screen now shows stock-unit, low-stock and expired-batch summaries and provides a Receive stock form.
+- Existing prescription/dispensing records remain linked to patient, medication and encounter.
+- Public access to the new stock endpoint is correctly blocked with HTTP 401.
+- A signed-in end-user without hospital staff authentication is also correctly blocked with HTTP 401.
+- Deployment v236 completed with no blocking dry-run errors.
+
+Important completion-gate gap:
+- Existing /api/pharmacy dispensing still records a dispense but has not yet been switched to the new atomic stock-decrement endpoint. The next implementation step is to make dispensing consume non-expired stock atomically, create stock transaction rows, and move the linked pharmacy queue item to completed.
+- Authenticated pharmacist E2E remains pending because the available function runner is not signed into the hospital staff role-preview session.
+- Need verify prescription → pharmacy queue → stock availability → dispense → queue completion → encounter/event continuity.
+- Need add insufficient-stock, expired-stock, duplicate/retry and hospital-isolation tests.
+- Need later add supplier/purchase receiving and richer medicine catalogue only where the HMIS workflow review shows they are required.
+
+Completion gate:
+- Pharmacy remains **In progress** until atomic stock consumption, authenticated pharmacist E2E, role boundaries, invalid/insufficient-stock behavior, encounter linkage and workflow audit events are verified.
 
 # 09 — IPD / admission / beds / transfers / discharge
 
