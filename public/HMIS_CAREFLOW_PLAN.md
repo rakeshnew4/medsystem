@@ -602,7 +602,9 @@ Remaining:
 - Theatre procedure catalogue service types are validated for billable categories.
 - Theatre charge-to-invoice reconciliation now stores a one-to-one invoice_item_id and creates the invoice line atomically with charge linking.
 - Automated database checks verified no duplicate source charges, no duplicate invoice-item links, and no linked Theatre charge missing its invoice line.
-- Remaining: authenticated doctor/nurse/billing E2E with role boundaries, invalid transitions, concurrency/overlap verification, source-charge retry/double-counting checks, and billing continuity.
+- v275 hardened Theatre concurrency: room overlap scheduling now takes a transaction-scoped advisory lock and rechecks conflicts atomically; lifecycle transitions require the expected prior status; ward return is idempotent under retry.
+- v275 production invariant check: invalid procedure statuses = 0, invalid ward-return states = 0, invoice-item links without invoices = 0; anonymous Theatre and Theatre-charge access both return 401.
+- Remaining: authenticated doctor/nurse/billing E2E with role boundaries, invalid-transition execution, concurrent overlap execution, source-charge retry/double-counting execution, and billing/payment continuity.
 
 Theatre remains **In progress** until the authenticated workflow is tested end-to-end.
 
