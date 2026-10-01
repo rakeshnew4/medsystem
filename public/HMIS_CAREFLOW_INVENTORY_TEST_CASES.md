@@ -22,4 +22,8 @@ TC-ASSET-010 Register UI: asset registration, search and transfer controls use t
 
 TC-ASSET-011 Production invariant validator: owner-only `/api/fixed-assets-validation` returns zero violations for lifecycle values, financial bounds, custodian isolation and transfer continuity.
 
+TC-ASSET-012 Warranty/AMC reports: date-filtered warranty and AMC expiry reports remain hospital-scoped and distinguish expired from upcoming assets.
+
+TC-ASSET-013 Transfer report: transfer history can be reviewed by asset/date/location without crossing hospital boundaries.
+
 Authenticated staff E2E remains the final workflow gate; the available test runner currently has no hospital staff session.
