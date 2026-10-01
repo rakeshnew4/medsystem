@@ -118,12 +118,14 @@
         <div id="receptionOverlayBody"></div>
       </div>
     </div>
-    <div class="reception-control-dock">
-      <button type="button" class="reception-control active" onclick="openReceptionPanel('walkin')"><b>1</b><span>WALK-IN</span></button>
-      <button type="button" class="reception-control" onclick="openReceptionPanel('search')"><b>2</b><span>SEARCH</span></button>
-      <button type="button" class="reception-control" onclick="openReceptionPanel('edit')"><b>3</b><span>EDIT</span></button>
+    <div class="reception-control-dock" aria-label="Reception operations">
+      <button type="button" class="reception-control active" onclick="openReceptionPanel('patient')"><b>1</b><span>PATIENT</span></button>
+      <button type="button" class="reception-control" onclick="openReceptionPanel('walkin')"><b>2</b><span>OPD</span></button>
+      <button type="button" class="reception-control" onclick="openReceptionPanel('appointment')"><b>3</b><span>APPOINTMENT</span></button>
       <button type="button" class="reception-control" onclick="openReceptionPanel('queue')"><b>4</b><span>QUEUE</span></button>
-      <button type="button" class="reception-control reception-patient-control" onclick="exitReceptionMinimal()"><b>←</b><span>PATIENT</span></button>
+      <button type="button" class="reception-control" onclick="openReceptionPanel('billing')"><b>5</b><span>BILLING</span></button>
+      <button type="button" class="reception-control" onclick="openReceptionPanel('followup')"><b>6</b><span>FOLLOW-UP</span></button>
+      <button type="button" class="reception-control" onclick="openReceptionPanel('admission')"><b>7</b><span>ADMISSION</span></button>
     </div>
   </div>
 </section>
@@ -389,19 +391,51 @@ function renderReceptionSearch(mode){
   const placeholder=mode==='edit'?'Name, phone or UHID':'Name, phone or UHID';
   return '<div class="reception-search-box"><input id="receptionLookup" autofocus placeholder="'+placeholder+'" oninput="renderReceptionLookup(this.value,&quot;'+mode+'&quot;)"><div id="receptionLookupResults" class="reception-lookup-results"><div class="reception-empty-hint">Start typing to search.</div></div></div>';
 }
+function receptionContinueWithPatient(mode,pid){
+  const p=(state.patients||[]).find(x=>Number(x.id)===Number(pid));
+  if(!p)return;
+  closeReceptionPanel();
+  if(mode==='billing'){
+    const billPatient=document.getElementById('billPatient');if(billPatient)billPatient.value=String(p.id);
+    const search=document.getElementById('billPatientSearch');if(search)search.value=p.name||'';
+    if(typeof openModal==='function')openModal('billingModal');
+  }else if(mode==='followup'){
+    const hid=document.getElementById('followPatient'),search=document.getElementById('followPatientSearch');
+    if(hid)hid.value=p.id;if(search)search.value=p.name||'';
+    if(typeof openModal==='function')openModal('followupModal');
+  }else if(mode==='admission'){
+    const hid=document.getElementById('admitPatient'),search=document.getElementById('admitPatientSearch');
+    if(hid)hid.value=p.id;if(search)search.value=p.name||'';
+    if(typeof openModal==='function')openModal('admitModal');
+  }else{
+    openPatientWorkspace(Number(p.id));
+  }
+}
 function renderReceptionLookup(q,mode){
   const el=document.getElementById('receptionLookupResults');if(!el)return;
   const rows=receptionPatientMatches(q);
   if(!rows.length){el.innerHTML=String(q||'').trim()?'<div class="reception-empty-hint">No patient found.</div>':'<div class="reception-empty-hint">Start typing to search.</div>';return}
-  el.innerHTML=rows.map(p=>'<div class="reception-lookup-row"><div><strong>'+esc(p.name||'Patient')+'</strong><span>'+esc(p.uhid||'No UHID')+(p.phone?' · '+esc(p.phone):'')+'</span></div><button type="button" class="reception-row-action" onclick="'+(mode==='edit'?'editPatient('+Number(p.id)+');closeReceptionPanel()':'openPatientWorkspace('+Number(p.id)+');closeReceptionPanel()')+'">'+(mode==='edit'?'EDIT':'OPEN')+'</button></div>').join('');
+  el.innerHTML=rows.map(p=>{
+    const id=Number(p.id);
+    const actions=mode==='edit'
+      ? '<button type="button" class="reception-row-action" onclick="editPatient('+id+');closeReceptionPanel()">EDIT</button>'
+      : mode==='patient'
+        ? '<div class="reception-row-actions"><button type="button" class="reception-row-action" onclick="openPatientWorkspace('+id+');closeReceptionPanel()">OPEN</button><button type="button" class="reception-row-action secondary" onclick="editPatient('+id+');closeReceptionPanel()">EDIT</button></div>'
+        : ['billing','followup','admission'].includes(mode)
+          ? '<button type="button" class="reception-row-action" onclick="receptionContinueWithPatient(\''+mode+'\','+id+')">'+(mode==='billing'?'BILL':mode==='followup'?'SCHEDULE':'ADMIT')+'</button>'
+          : '<button type="button" class="reception-row-action" onclick="openPatientWorkspace('+id+');closeReceptionPanel()">OPEN</button>';
+    return '<div class="reception-lookup-row"><div><strong>'+esc(p.name||'Patient')+'</strong><span>'+esc(p.uhid||'No UHID')+(p.phone?' · '+esc(p.phone):'')+'</span></div>'+actions+'</div>';
+  }).join('');
 }
 async function openReceptionPanel(mode){
   const ov=document.getElementById('receptionOverlay'),body=document.getElementById('receptionOverlayBody'),title=document.getElementById('receptionOverlayTitle'),kicker=document.getElementById('receptionOverlayKicker');
   if(!ov||!body)return;
   document.querySelectorAll('.reception-control').forEach(x=>x.classList.toggle('selected',x.getAttribute('onclick')?.includes("'"+mode+"'")));
-  const titles={walkin:'Walk-in / OPD',appointment:'Book appointment',search:'Search patient',edit:'Edit patient',queue:'Today’s queue'};
+  const titles={patient:'Patients · Search / Register',walkin:'OPD · Walk-in registration',appointment:'Appointments · Book / Check-in',queue:'Queue · Today',billing:'Billing · Patient account',followup:'Follow-up · Schedule',admission:'Admission · Start IPD',search:'Search patient',edit:'Edit patient'};
   kicker.textContent='RECEPTION';title.textContent=titles[mode]||'Reception';
-  if(mode==='walkin'){
+  if(mode==='patient'){
+    body.innerHTML=renderReceptionSearch('patient')+'<button type="button" class="reception-submit reception-secondary-action" onclick="closeReceptionPanel();openModal(\'patientRegisterModal\')">+ REGISTER NEW PATIENT</button>';
+  }else if(mode==='walkin'){
     body.innerHTML='<form id="receptionWalkinForm" class="reception-form kiosk-form"><div class="reception-form-grid"><div class="field full"><label>Patient</label><input id="receptionPatientSearch" required placeholder="Name, phone or UHID" autofocus></div><div class="field"><label>Phone</label><input id="receptionPatientPhone" type="tel" placeholder="+91 98765 43210"></div><div class="field"><label>Date of birth</label><input id="receptionPatientDob" type="date"></div><div class="field"><label>Doctor</label><select id="receptionDoctor" required></select></div><div class="field"><label>Priority</label><select id="receptionPriority"><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option></select></div><div class="field full"><label>Reason</label><input id="receptionReason" placeholder="General consultation"></div></div><button class="reception-submit" type="submit">ISSUE TOKEN → WAITING</button></form>';
     renderReceptionDesk();document.getElementById('receptionWalkinForm').addEventListener('submit',e=>submitReceptionWalkin(e).catch(x=>alert(x.message)));
   }else if(mode==='appointment'){
@@ -416,6 +450,12 @@ async function openReceptionPanel(mode){
       const rows=Array.isArray(q)?q:(q.queue||[]);
       body.innerHTML=rows.length?'<div class="reception-queue-list">'+rows.slice(0,18).map(x=>'<button type="button" class="reception-queue-row" onclick="openPatientWorkspace('+Number(x.patient_id)+');closeReceptionPanel()"><b>'+esc(x.token||x.token_number||'—')+'</b><span><strong>'+esc(x.patient_name||x.name||'Patient')+'</strong><small>'+esc(prettyStatus(x.stage||'waiting'))+(x.doctor_name?' · '+esc(x.doctor_name):'')+'</small></span><i>›</i></button>').join('')+'</div>':'<div class="reception-empty-hint">No queue items today.</div>';
     }catch(e){body.innerHTML='<div class="reception-empty-hint">'+esc(e.message||'Could not load queue')+'</div>'}
+  }else if(mode==='billing'){
+    body.innerHTML='<div class="reception-action-intro"><strong>Create or review a patient bill</strong><span>Search the patient first, then open the billing workflow.</span></div>'+renderReceptionSearch('billing') ;
+  }else if(mode==='followup'){
+    body.innerHTML='<div class="reception-action-intro"><strong>Schedule a follow-up</strong><span>Choose the patient and continue in the follow-up form.</span></div>'+renderReceptionSearch('followup');
+  }else if(mode==='admission'){
+    body.innerHTML='<div class="reception-action-intro"><strong>Start an IPD admission</strong><span>Select the patient, then continue with bed and admission details.</span></div>'+renderReceptionSearch('admission');
   }
   ov.classList.add('open');ov.setAttribute('aria-hidden','false');document.getElementById('receptionStage')?.classList.add('dim');
   setTimeout(()=>body.querySelector('input,select')?.focus(),30);
@@ -1685,7 +1725,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     if(e.ctrlKey||e.altKey||e.metaKey)return;
     const tag=e.target?.tagName?.toLowerCase();
     if(['input','textarea','select'].includes(tag))return;
-    const map={F1:'walkin',F2:'search',F3:'edit',F4:'queue'};
+    const map={F1:'patient',F2:'walkin',F3:'appointment',F4:'queue',F5:'billing',F6:'followup',F7:'admission'};
     if(map[e.key]){e.preventDefault();openReceptionPanel(map[e.key])}
   });
 });
