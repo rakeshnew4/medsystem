@@ -441,3 +441,8 @@ Not started.
 - Compared these concepts with the current CareFlow patient API/registration flow.
 - Implemented search-first patient registration and duplicate-review protection.
 - Preserved existing patient/OPD/admission UX while linking appointments to selected existing identities.
+- Hardened Queue Board Call next with atomic server-side claiming using FOR UPDATE SKIP LOCKED.
+- Made dispatch role-derived on the server and preserved urgent/high/normal plus token/arrival ordering.
+- Updated Queue Board ordering and deployed CareFlow v225.
+- Dry-run passed with no blocking errors; anonymous queue access remained protected.
+- Validated the new atomic SQL path with a no-op candidate test so no real patient was moved without an authenticated staff test session.
