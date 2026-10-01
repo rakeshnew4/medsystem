@@ -967,6 +967,38 @@ td{font-size:13px}
   }
 }
 
+/* Mobile patient workspace: keep the document itself scrollable after a patient is opened. */
+@media(max-width:760px){
+  html,body{
+    height:auto!important;
+    min-height:100%!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+  }
+  .app-shell{
+    height:auto!important;
+    min-height:100dvh!important;
+    overflow:visible!important;
+  }
+  .main{
+    height:auto!important;
+    min-height:0!important;
+    overflow:visible!important;
+    touch-action:pan-y;
+  }
+  .section.active{
+    height:auto!important;
+    min-height:0!important;
+    overflow:visible!important;
+  }
+  .patient-workspace-layout,
+  .patient-workspace-main,
+  #patientWorkspaceBody{
+    overflow:visible!important;
+    height:auto!important;
+  }
+}
+
 /* Receptionist kiosk must retain its full-screen layout on all sizes. */
 .receptionist-mode .main{
   padding:0!important;
