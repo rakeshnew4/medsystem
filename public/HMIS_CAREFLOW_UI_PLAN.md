@@ -269,7 +269,7 @@ A module is UI-complete only when the UI reflects the verified HMIS workflow, al
 16. UI-15 Global Responsive Shell Hardening
 
 ## Current release gates
-- Live baseline: v474.
+- Live baseline: v482; visual/UI runner is deployed and operational.
 - Frontend main-script syntax parsing passes after the v469 interaction-regression repair.
 - Physical-device mobile verification remains open.
 - Authenticated hospital-staff E2E remains open for each module that explicitly lists it; role-preview and owner-level validators do not satisfy that gate.
