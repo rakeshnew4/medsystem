@@ -6,6 +6,10 @@ export const methods=["GET","POST"];
 export default async function(req,res){
  const ctx=await requirePermission(req,res,req.method==="GET"?"action.clinical.view":"action.pharmacy.manage"); if(!ctx)return;
  if(req.method==="GET"){
+  if(req.query?.view==="stock"){
+   const r=await db.query("SELECT * FROM pharmacy_stock WHERE hospital_id=$1 AND active=true ORDER BY medicine_name, expiry_date NULLS LAST, batch_no",[ctx.hospitalId]);
+   return res.json(r.rows);
+  }
   const pid=req.query?.patient_id;
   const r=await db.query("SELECT m.id AS medication_id,m.patient_id,p.name AS patient_name,m.medicine_name,m.dose,m.frequency,m.duration,m.instructions,m.encounter_id,m.prescribed_at,COALESCE(x.quantity,0) AS dispensed_quantity,COALESCE(x.status,'pending') AS dispense_status,x.dispensed_at FROM medications m JOIN patients p ON p.id=m.patient_id LEFT JOIN LATERAL (SELECT pd.quantity,pd.status,pd.dispensed_at FROM pharmacy_dispenses pd WHERE pd.hospital_id=m.hospital_id AND pd.medication_id=m.id ORDER BY pd.dispensed_at DESC LIMIT 1) x ON true WHERE m.hospital_id=$1 AND ($2::bigint IS NULL OR m.patient_id=$2) ORDER BY m.prescribed_at DESC LIMIT 300",[ctx.hospitalId,pid||null]);return res.json(r.rows);
  }
