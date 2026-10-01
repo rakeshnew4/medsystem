@@ -43,6 +43,14 @@ For each domain:
 - [ ] 14 Integrations / REST / FHIR / LIS
 - [ ] 15 Reporting / analytics
 
+## Current implementation status — 2026-10-01
+
+- **Staff landing/navigation correction completed:** aligned the CareFlow staff shell with the HMIS-style workflow separation so authentication lands on the normal hospital home rather than forcing the receptionist operational screen.
+- Receptionists now default to `dashboard` on a fresh authenticated entry, even if an older receptionist-specific last/pinned screen exists in browser storage.
+- Reception workflow remains available from Patient Workspace, where the logged-in role can select the appropriate operational action/screen for the patient.
+- Verification target for the next run: authenticated receptionist browser flow → normal home → Patient Workspace → Reception action → return/back to normal home.
+- Known unrelated production issue still visible in logs: `/api/lis/test-results` is returning HTTP 500 against the external DB adapter and should be handled in the Laboratory iteration.
+
 ---
 
 # 01 — Patient Registration
