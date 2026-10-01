@@ -1068,7 +1068,22 @@ async function loadAssets(force=false){
     state.assets=Array.isArray(r)?r:[];
     const categories=[...new Set(state.assets.map(a=>String(a.category||'').trim()).filter(Boolean))].sort();
     const cat=document.getElementById('assetCategoryFilter');if(cat){const current=cat.value;cat.innerHTML='<option value="all">All categories</option>'+categories.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');if(categories.includes(current))cat.value=current}
-    const summary=document.getElementById('assetSummary');if(summary){const active=state.assets.filter(x=>String(x.status||'active').toLowerCase()==='active').length;const maintenance=state.assets.filter(x=>String(x.status||'').toLowerCase()==='maintenance').length;const totalValue=state.assets.reduce((n,x)=>n+Number(x.current_value??x.purchase_price??0),0);const expiring=state.assets.filter(x=>{const d=x.warranty_expiry||x.amc_expiry;if(!d)return false;const t=new Date(d+'T23:59:59').getTime();return t>=Date.now()&&t<=Date.now()+30*86400000}).length;summary.innerHTML='<div class="stat"><span>Total assets</span><strong>'+state.assets.length+'</strong><small>Hospital register</small></div><div class="stat"><span>Active</span><strong>'+active+'</strong><small>Operational</small></div><div class="stat"><span>Maintenance</span><strong>'+maintenance+'</strong><small>Needs service</small></div><div class="stat"><span>Register value</span><strong>₹ '+totalValue.toLocaleString('en-IN',{maximumFractionDigits:0})+'</strong><small>Current / purchase value</small></div><div class="stat"><span>Expiry watch</span><strong>'+expiring+'</strong><small>Next 30 days</small></div>}
+    const summary=document.getElementById('assetSummary');
+    if(summary){
+      const active=state.assets.filter(x=>String(x.status||'active').toLowerCase()==='active').length;
+      const maintenance=state.assets.filter(x=>String(x.status||'').toLowerCase()==='maintenance').length;
+      const totalValue=state.assets.reduce((n,x)=>n+Number(x.current_value??x.purchase_price??0),0);
+      const expiring=state.assets.filter(x=>{
+        const d=x.warranty_expiry||x.amc_expiry;if(!d)return false;
+        const t=new Date(d+'T23:59:59').getTime();
+        return t>=Date.now()&&t<=Date.now()+30*86400000;
+      }).length;
+      summary.innerHTML=`<div class="stat"><span>Total assets</span><strong>${state.assets.length}</strong><small>Hospital register</small></div>
+        <div class="stat"><span>Active</span><strong>${active}</strong><small>Operational</small></div>
+        <div class="stat"><span>Maintenance</span><strong>${maintenance}</strong><small>Needs service</small></div>
+        <div class="stat"><span>Register value</span><strong>₹ ${totalValue.toLocaleString('en-IN',{maximumFractionDigits:0})}</strong><small>Current / purchase value</small></div>
+        <div class="stat"><span>Expiry watch</span><strong>${expiring}</strong><small>Next 30 days</small></div>`;
+    }
     renderAssets();
   }catch(e){if(e.status!==403)alert(e.message||'Could not load assets')}
 }
