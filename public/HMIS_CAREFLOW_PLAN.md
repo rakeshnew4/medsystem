@@ -626,6 +626,9 @@ Not started.
 
 ## Change log
 
+### 2026-10-01
+- Deployed CareFlow v276 with Theatre concurrency hardening and production integrity verification carried forward. Theatre remains In Progress pending authenticated doctor/nurse/billing E2E and remaining role-boundary/retry/payment continuity gates.
+
 ### 2026-09-30
 
 - Started IPD workflow hardening and deployed CareFlow v242: added the active-admission uniqueness constraint and the dedicated 15-case IPD test matrix; anonymous bed access remains correctly blocked with HTTP 401. Existing IPD mutation endpoints still require authenticated staff E2E and further atomic concurrency hardening before completion.
