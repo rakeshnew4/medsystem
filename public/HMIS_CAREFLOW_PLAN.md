@@ -606,6 +606,7 @@ Remaining:
 - v275 hardened Theatre concurrency: room overlap scheduling now takes a transaction-scoped advisory lock and rechecks conflicts atomically; lifecycle transitions require the expected prior status; ward return is idempotent under retry.
 - v275 production invariant check: invalid procedure statuses = 0, invalid ward-return states = 0, invoice-item links without invoices = 0; anonymous Theatre and Theatre-charge access both return 401.
 - v281: applied Theatre migrations 0046–0051 to the actual external `medsystem` PostgreSQL database used by CareFlow; the owner-only Theatre validator now passes 8/8 integrity/isolation checks, including active-room overlap and billing-link invariants.
+- v284: Theatre scheduling now requires an explicit hospital-scoped room that is currently available; when a responsible doctor is supplied, the server verifies that doctor belongs to the same hospital before scheduling. Existing transaction-scoped room-overlap locking remains in place.
 - Remaining: authenticated doctor/nurse/billing E2E with role boundaries, invalid-transition execution, concurrent overlap execution, source-charge retry/double-counting execution, and billing/payment continuity.
 
 Theatre remains **In progress** until the authenticated workflow is tested end-to-end.
@@ -629,7 +630,8 @@ Not started.
 ## Change log
 
 ### 2026-10-01
-- Deployed CareFlow v276 with Theatre concurrency hardening and production integrity verification carried forward. Theatre remains In Progress pending authenticated doctor/nurse/billing E2E and remaining role-boundary/retry/payment continuity gates.
+- Deployed CareFlow v284 with Theatre scheduling validation: every procedure must use a hospital-scoped available theatre room, and supplied responsible doctors must belong to the same hospital. Existing atomic room-overlap and lifecycle race protections remain active; the Theatre validator continues to pass 8/8 production integrity/isolation checks.
+- Theatre remains In Progress pending authenticated doctor/nurse/billing E2E and remaining role-boundary/retry/payment continuity gates.
 
 ### 2026-09-30
 
