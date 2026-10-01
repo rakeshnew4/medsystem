@@ -1,5 +1,6 @@
 import { db } from "../lib/db.js";
 import { requireStaff, getPermissions } from "../lib/authz.js";
+import { logAudit } from "../lib/audit.js";
 export const access="user";
 export const methods=["GET","PUT","DELETE"];
 export default async function(req,res){
@@ -21,11 +22,14 @@ export default async function(req,res){
     const departmentId=(b.department_id!=null&&b.department_id!=="")?Number(b.department_id):null;
     if(departmentId!=null){const dep=await db.query("SELECT id FROM departments WHERE id=$1 AND hospital_id=$2",[departmentId,ctx.hospitalId]);if(!dep.rows.length)return res.status(400).json({error:"Department is not in this hospital"});}
     await db.query("DELETE FROM user_permissions WHERE staff_id=$1 AND permission_key=$2 AND ((department_id=$3) OR (department_id IS NULL AND $3 IS NULL))",[b.staff_id,b.permission_key,departmentId]);
+    await logAudit(ctx,{action:"staff_permission_cleared",entityType:"staff_profile",entityId:b.staff_id,details:{permission_key:b.permission_key,department_id:departmentId}});
     return res.json({ok:true,cleared:true});
   }
   if(b.scope==="role"){
     if(!b.role||!b.permission_key)return res.status(400).json({error:"Role and permission are required"});
+    const previous=await db.query("SELECT allowed FROM role_permissions WHERE role=$1 AND permission_key=$2",[b.role,b.permission_key]);
     await db.query("INSERT INTO role_permissions(role,permission_key,allowed) VALUES($1,$2,$3) ON CONFLICT(role,permission_key) DO UPDATE SET allowed=EXCLUDED.allowed",[b.role,b.permission_key,b.allowed===true]);
+    await logAudit(ctx,{action:"role_permission_changed",entityType:"staff_profile",entityId:null,details:{role:b.role,permission_key:b.permission_key,before:previous.rows[0]?.allowed??null,after:b.allowed===true}});
   }else if(b.scope==="user"){
     if(!b.staff_id||!b.permission_key)return res.status(400).json({error:"Staff member and permission are required"});
     const staff=await db.query("SELECT id,department_id FROM staff_profiles WHERE id=$1 AND hospital_id=$2",[b.staff_id,ctx.hospitalId]);
@@ -33,7 +37,9 @@ export default async function(req,res){
     const departmentId=(b.department_id!=null&&b.department_id!=="")?Number(b.department_id):null;
     if(departmentId!=null){const dep=await db.query("SELECT id FROM departments WHERE id=$1 AND hospital_id=$2",[departmentId,ctx.hospitalId]);if(!dep.rows.length)return res.status(400).json({error:"Department is not in this hospital"});}
     if(typeof b.allowed!=="boolean")return res.status(400).json({error:"allowed must be boolean"});
+    const previous=await db.query("SELECT allowed FROM user_permissions WHERE staff_id=$1 AND permission_key=$2 AND ((department_id=$3) OR (department_id IS NULL AND $3 IS NULL))",[b.staff_id,b.permission_key,departmentId]);
     await db.query("INSERT INTO user_permissions(staff_id,permission_key,allowed,department_id) VALUES($1,$2,$3,$4) ON CONFLICT (staff_id,permission_key,COALESCE(department_id,0)) DO UPDATE SET allowed=EXCLUDED.allowed",[b.staff_id,b.permission_key,b.allowed,departmentId]);
+    await logAudit(ctx,{action:"staff_permission_changed",entityType:"staff_profile",entityId:b.staff_id,details:{permission_key:b.permission_key,department_id:departmentId,before:previous.rows[0]?.allowed??null,after:b.allowed}});
   }else return res.status(400).json({error:"Unknown permission scope"});
   res.json({ok:true});
 }
