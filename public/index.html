@@ -1400,7 +1400,9 @@ async function signOut(){await hatchable.auth.signOut();location.replace('/login
 // Patient workspace care-team UI: every department gets its own section.
 // The active role gets actionable buttons; admins can operate every section.
 function patientCareTeamActions(p,s){
-  const role=String(s?.role||'').toLowerCase();
+  const rawRole=String(s?.role||'').toLowerCase();
+  const roleAliases={frontdesk:'receptionist',reception:'receptionist',labtechnician:'lab',laboratory:'lab',pharmacist:'pharmacy',accounts:'billing',finance:'billing'};
+  const role=roleAliases[rawRole]||rawRole;
   const admin=role==='admin';
   const active=r=>admin||role===r;
   const escq=v=>esc(v);
@@ -1425,8 +1427,8 @@ function patientCareTeamActions(p,s){
     const stateLabel=admin?'ADMIN ACCESS':(mine?'YOUR WORK':'CARE TEAM');
     const icon=({receptionist:'R',nurse:'N',doctor:'D',lab:'L',pharmacy:'P',billing:'₹'})[roleKey]||num;
     const buttons=actions.map((a,i)=>'<button type="button" class="mini '+(mine&&i===0?'primary':'')+'" '+(mine?'onclick="'+a.onclick+'"':'disabled')+'>'+escq(a.label)+'</button>').join('');
-    const isLoggedRole=role===roleKey;
-    return '<div class="care-team-group '+(isLoggedRole?'current-role ':'')+'workflow-'+progress.toLowerCase().replace(' ','-')+'" data-care-role="'+roleKey+'"><div class="care-team-group-head"><div class="care-team-role-title"><span class="care-team-step">'+num+'</span><span class="care-team-role-icon" aria-hidden="true">'+icon+'</span><strong>'+escq(label)+'</strong></div><div class="care-team-state"><span class="care-team-ownership '+(mine?'mine':'')+'">'+stateLabel+'</span><span class="care-team-progress '+progress.toLowerCase().replace(' ','-')+'">'+progress+'</span></div></div><div class="care-team-role-layout"><div class="care-team-role-copy"><div class="care-team-actions-title">'+escq(desc)+'</div></div><div class="care-team-actions-side"><div class="care-team-buttons">'+buttons+'</div></div></div></div>';
+    const isLoggedRole=!admin&&role===roleKey;
+    return '<div class="care-team-group '+(isLoggedRole?'current-role logged-role ':'')+'workflow-'+progress.toLowerCase().replace(' ','-')+'" data-care-role="'+roleKey+'"><div class="care-team-group-head"><div class="care-team-role-title"><span class="care-team-step">'+num+'</span><span class="care-team-role-icon" aria-hidden="true">'+icon+'</span><strong>'+escq(label)+'</strong></div><div class="care-team-state"><span class="care-team-ownership '+(mine?'mine':'')+'">'+stateLabel+'</span><span class="care-team-progress '+progress.toLowerCase().replace(' ','-')+'">'+progress+'</span></div></div><div class="care-team-role-layout"><div class="care-team-role-copy"><div class="care-team-actions-title">'+escq(desc)+'</div></div><div class="care-team-actions-side"><div class="care-team-buttons">'+buttons+'</div></div></div></div>';
   };
   const sections=[
     section('01','receptionist','Reception','Registration, OPD check-in and front-desk work.',[
