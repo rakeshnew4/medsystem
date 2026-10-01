@@ -677,16 +677,26 @@ Remaining Staff/Roles gates:
 - Staff session remains unavailable, so Integration work has started without claiming Staff E2E completion.
 
 Integrations / REST / FHIR / LIS increment:
-- HMIS REST API guide reviewed: standard APIs use explicit authentication headers, a consistent response envelope, resource registration/capability documentation, and module-specific AI tooling. HMIS documents FHIR Patient under /fhir/Patient and distinguishes API authentication schemes by module.
-- CareFlow v359 adds administrator-controlled integration settings and one-time FHIR API-key rotation using a stored SHA-256 hash.
-- CareFlow v359 adds hospital-scoped /api/fhir/Patient read/search with Bearer-key authentication, FHIR Patient resources, and Bundle/searchset results. Invalid/absent keys return FHIR OperationOutcome 401; FHIR is disabled unless explicitly enabled for the hospital.
-- Authenticated administrator E2E for integration configuration/key rotation and deeper LIS result exchange remain open.
+- HMIS REST API guide and the current HMIS LIMS API documentation were reviewed. HMIS exposes analyzer middleware result exchange through `/api/middleware/test_results` and documents the JSON result fields `sampleId`, `testCode`, `resultValueString`, and `resultUnits`; the repository explicitly treats result-writing endpoints as high-blast-radius and requires verified sample identity before writes.
+- CareFlow v359 added administrator-controlled REST/FHIR settings and one-time SHA-256-hashed API-key rotation.
+- CareFlow v361 generalizes that secret into a hospital-scoped integration key while retaining the legacy FHIR hash for compatibility. FHIR Patient now accepts the shared key.
+- CareFlow v361 adds `/api/lis/test-results`, a Bearer-key protected JSON boundary that maps HMIS middleware result fields to an existing CareFlow `lab_orders.id` as `sampleId`. It validates hospital scope, REST enablement, order lifecycle, test identity, rejects unknown/mismatched orders, records audit provenance, and uses a database advisory lock plus audit fingerprint to make duplicate submissions safe. Results remain `received_pending_verification`; clinical verification is still performed by the existing laboratory workflow.
+- A reusable `public/HMIS_CAREFLOW_INTEGRATION_API.md` documents the FHIR/LIS contract and the explicit CareFlow sample-ID mapping. ASTM/HL7 transport remains a later adapter layer and must not bypass the result-verification boundary.
+- v361 dry-run passed with no blocking errors; post-deploy anonymous LIS/FHIR access checks remain expected 401 gates. Authenticated administrator/staff E2E remains open because the available runner still lacks the hospital staff session.
 
-Next: complete authenticated integration E2E where possible, then implement HMIS-aligned LIS/result interoperability and capability documentation before Reporting/Analytics.
+Next: authenticated integration E2E for key rotation/FHIR/LIS, then add capability/discovery documentation and safe HL7/ASTM adapter boundaries before Reporting/Analytics.
 
 # 14 — Integrations / REST / FHIR / LIS
 
-Not started.
+**In progress — REST/FHIR foundation and HMIS-aligned LIS JSON result intake implemented; authenticated E2E remains open.**
+
+Current completion gates:
+- Authenticated administrator key rotation and REST/FHIR enablement.
+- Authenticated/realistic LIS result exchange using a verified hospital lab order.
+- Hospital-isolation and duplicate/idempotency execution tests.
+- Capability/discovery documentation and, if required, HL7/ASTM transport adapters.
+
+Only after these gates are handled should Reporting/Analytics become the active workflow.
 
 # 15 — Reporting / analytics
 
