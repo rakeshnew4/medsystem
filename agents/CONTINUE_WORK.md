@@ -34,14 +34,28 @@ Use public/HMIS_CAREFLOW_PLAN.md as the source of truth. Prefer the earliest unf
 
 ## Current continuation target
 
-The current workflow is **Theatre / procedures**. Continue in this order unless the plan changes:
-1. Obtain/use a real authenticated hospital staff session and run Theatre E2E as doctor, nurse and billing: schedule → start → complete → ward return → charge creation → invoice linkage → payment continuity.
-   - v297 hardened active-admission/encounter continuity and room-state race protection; v301 also requires admission-linked Theatre ward return with a linked IPD encounter; v305/v306 added HMIS-aligned surgical-team continuity and lifecycle timestamp checks; production validator now passes 22/22 with zero violations.
-   - If the session is unavailable in the current execution environment, do not claim E2E completion; continue with safe production invariant checks and documentation, and keep the gate explicitly open.
-2. Run authenticated Theatre role-boundary, invalid-transition, concurrent room-overlap, source-charge retry/double-counting and hospital-isolation tests; production validator now also audits the v287 source/lifecycle invariants, v291 encounter integrity, v293 source-type/charge-type consistency, the latest admission/encounter continuity checks, and v303 completed-procedure billing continuity.
-   - For every Theatre increment, inspect the corresponding HMIS repository code/design first (especially surgery_add.xhtml, surgery_edit.xhtml, SurgeryBillController/billing linkage, surgery_clinical_details.xhtml, and relevant Theatre/inpatient workflows) and adapt the workflow concept rather than copying implementation. The current CareFlow increment adds surgical-team continuity and lifecycle timestamp validation from that review. If authenticated staff session remains unavailable, continue safe production invariant and API-contract testing without mutating clinical data.
-3. If all Theatre completion gates pass, mark Theatre Complete; otherwise fix the first failing gate. Only then advance to Inventory / Assets.
+The current workflow is **Theatre / procedures**. The next-task loop is mandatory:
+1. At the beginning of EVERY work turn, re-read this file and public/HMIS_CAREFLOW_PLAN.md.
+2. Before changing any workflow, inspect the relevant hmislk/hmis repository code/design on the development branch and use it as the domain, workflow, UI and data-model reference. Do not invent HMIS-like behavior without checking the repository.
+3. Execute the FIRST unfinished task listed below immediately. Do not stop at a status report when a safe implementation/test task remains.
+4. After each task: test → update this file with the next concrete task → update the HMIS plan/test cases → dry-run → deploy → verify.
+5. If authenticated staff E2E is unavailable, leave that gate open but continue the next safe automated/invariant/API work; never claim E2E completion.
+6. Before any new workflow is started, verify its required CareFlow schema exists in the external PostgreSQL adapter database.
 
-Before future workflow implementation, verify the relevant CareFlow schema exists in the external PostgreSQL adapter database; Hatchable migrations do not automatically migrate that external database. After each completed increment, update this section to the next concrete target before responding.
+### NEXT TASK QUEUE — always keep this current
+1. Theatre authenticated E2E gate: doctor/nurse/billing schedule → start → complete → surgical team → ward return → Theatre charge → invoice → payment.
+2. Theatre authenticated safety tests: role boundaries, invalid transitions, concurrent room overlap, source-charge retry/double-counting, surgical-team mutation, hospital isolation.
+3. Theatre HMIS gap review: inspect the corresponding HMIS surgery/theatre/inpatient code again and implement the next concrete CareFlow gap found; do not mark Theatre Complete until the full completion gate passes.
+4. After Theatre completion: begin Inventory / Assets, starting with HMIS repository review of inventory/asset entities, controllers/services, UI pages and persistence behavior.
+5. Then continue in plan order: Staff/Roles → Integrations/REST/FHIR/LIS → Reporting/Analytics, always using the HMIS repository as the design/code reference.
 
-This is a project-level continuation reminder. It does not itself create a scheduled task or execute code after a chat response.
+### Current Theatre status
+- Production validator: 22/22 passed, 0 violations.
+- Anonymous Theatre access: 401.
+- Authenticated hospital-staff E2E: still open because the available execution environment has not established a real staff session.
+- Theatre remains In progress until the authenticated completion gate passes.
+
+### HMIS reference rule
+For every Theatre increment, inspect at minimum the relevant HMIS surgery/theatre/inpatient pages/controllers/services and persistence model; current references include surgery_add.xhtml, surgery_edit.xhtml, SurgeryBillController, surgery_clinical_details.xhtml, patient_surgery.xhtml, and the inpatient Theatre workflow. For future domains, replace these with that domain's actual HMIS repository code before implementation.
+
+This file is the persistent next-task/reminder loop. It must never be left with an empty or stale NEXT TASK QUEUE.
