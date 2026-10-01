@@ -659,6 +659,8 @@ Implemented in this increment:
 - v344 dry-run passed with no blocking errors. Post-deploy access checks confirmed `/api/permissions`, `/api/team`, and `/api/departments` remain denied to anonymous and unsigned app-user execution; the available runner still cannot establish the hospital staff session required by `requireStaff()`.
 - Added owner-only `/api/staff-permission-validation` to audit production staff/permission integrity: hospital ownership, department isolation, orphan permissions, null permission states, unknown permission keys, and active-pending staff conflicts.
 - Deployed CareFlow v345: modeled the existing `billing` and `store` permission roles in staff administration and Store default workspace routing. Production `/api/staff-permission-validation` now returns **7/7 checks, 0 violations**; anonymous access remains HTTP 401 and unsigned app-user execution remains blocked by the hospital staff session gate.
+- HMIS configuration review confirms ConfigOption-based behavior should resolve department-specific configuration before institution-wide defaults and should never hard-code hospital names. CareFlow currently models hospital-wide settings/features/modules, so this is recorded as a configuration-model gap.
+- Added owner-only `/api/hospital-config-validation` to check service/department isolation, working-hour validity, and blank configuration keys before introducing department-scoped configuration.
 
 Remaining Staff/Roles gates:
 - Authenticated staff E2E for role boundaries and department-specific permission precedence.
