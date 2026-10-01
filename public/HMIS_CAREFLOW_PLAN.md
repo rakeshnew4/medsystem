@@ -614,6 +614,9 @@ Remaining:
 - v288: deployed the Theatre billing-integrity validator extension. Production external-DB checks returned zero violations for invoice-item identity/amount continuity, Theatre-charge-to-procedure patient continuity, and completed-procedure outcome integrity. These are automated integrity checks only; authenticated billing execution remains pending.
 - v289 deployment audit: the live deployment contains the protected Billing, Theatre and Theatre-validation routes; the protected Billing and Theatre routes remain on the CareFlow `user` access plane, so anonymous access is correctly denied. The available automated `user` runner still cannot establish the hospital staff session required by `requireStaff()`, therefore authenticated workflow execution is not claimed.
 - Current increment: admission-linked Theatre scheduling now requires an open hospital/patient-matching IPD encounter, and any explicitly supplied encounter is validated against hospital, patient, open status and selected admission. This closes a cross-entity integrity gap before the procedure can be scheduled.
+- Current increment: Theatre lifecycle start/complete and ward-return now revalidate the linked admission and open IPD encounter, preventing stale procedures from continuing after discharge or returning into a mismatched care episode.
+- Current increment: room availability is rechecked inside the same transaction that acquires the room overlap lock, closing the validation-to-insert room-state race.
+- Current increment: owner-only Theatre validation now audits admission/patient/hospital continuity and active admission/encounter continuity.
 - Remaining: authenticated doctor/nurse/billing E2E with role boundaries, invalid-transition execution, concurrent overlap execution, source-charge retry/double-counting execution, and billing/payment continuity.
 
 Theatre remains **In progress** until the authenticated workflow is tested end-to-end.
@@ -641,6 +644,7 @@ Added owner-only `/api/billing-validation` to audit production financial invaria
 ## Change log
 
 ### 2026-10-01
+- Current increment before deployment: Theatre lifecycle/ward-return now revalidate active admission and open IPD encounter continuity; room scheduling rechecks room availability inside the overlap-lock transaction; owner-only validator extended with admission/encounter continuity checks.
 - Deployed CareFlow v294 with Theatre source-charge integrity hardening: unsupported `professional_fee` source identities are rejected, source types must match their charge categories, and theatre-service validation now checks the real `hospital_services` source entity. Dry-run had no blocking errors; authenticated Theatre E2E remains the completion gate.
 - Deployed CareFlow v291 with HMIS-aligned Theatre encounter validation: admission-linked procedures now require an open IPD encounter matching the hospital and patient; explicitly supplied encounters must also belong to the selected admission. Post-deploy Theatre validator remains 14/14 with zero violations, and anonymous Theatre access remains HTTP 401.
 - Theatre remains In Progress because authenticated doctor/nurse/billing E2E and the remaining role-boundary, invalid-transition, concurrency, retry and payment-continuity gates are still not executable from the available hospital staff session.

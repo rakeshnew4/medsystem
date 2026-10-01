@@ -82,7 +82,7 @@ export default async function(req,res){
    if(start&&isNaN(start))return res.status(400).json({error:"Invalid scheduled_start"});
    if(end&&isNaN(end))return res.status(400).json({error:"Invalid scheduled_end"});
    if(start&&end&&end<=start)return res.status(400).json({error:"scheduled_end must be after scheduled_start"});
-   const r=await db.query("WITH lock AS (SELECT pg_advisory_xact_lock(hashtextextended(('theatre-room:'||$1||':'||$2)::text,0))), conflict AS (SELECT id FROM theatre_procedures WHERE hospital_id=$1 AND theatre_room_id=$2 AND status IN ('scheduled','in_progress') AND scheduled_start IS NOT NULL AND ($3::timestamptz < COALESCE(scheduled_end,scheduled_start+interval '1 hour')) AND ($4::timestamptz > scheduled_start) LIMIT 1) INSERT INTO theatre_procedures (hospital_id,patient_id,admission_id,encounter_id,doctor_id,theatre_room_id,procedure_name,status,scheduled_start,scheduled_end,clinical_notes,created_by) SELECT $1,$5,$6,$7,$8,$2,$9,'scheduled',$3,$4,$10,$11 FROM lock WHERE NOT EXISTS (SELECT 1 FROM conflict) RETURNING *", [ctx.hospitalId,roomId,start,end,b.patient_id,admissionId,encounterId,doctorId,String(b.procedure_name).trim(),b.clinical_notes||null,ctx.user.email]);
+   const r=await db.query("WITH lock AS (SELECT pg_advisory_xact_lock(hashtextextended(('theatre-room:'||$1||':'||$2)::text,0))), room_state AS (SELECT id FROM theatre_rooms WHERE id=$2 AND hospital_id=$1 AND status='available'), conflict AS (SELECT id FROM theatre_procedures WHERE hospital_id=$1 AND theatre_room_id=$2 AND status IN ('scheduled','in_progress') AND scheduled_start IS NOT NULL AND ($3::timestamptz < COALESCE(scheduled_end,scheduled_start+interval '1 hour')) AND ($4::timestamptz > scheduled_start) LIMIT 1) INSERT INTO theatre_procedures (hospital_id,patient_id,admission_id,encounter_id,doctor_id,theatre_room_id,procedure_name,status,scheduled_start,scheduled_end,clinical_notes,created_by) SELECT $1,$5,$6,$7,$8,$2,$9,'scheduled',$3,$4,$10,$11 FROM lock JOIN room_state ON true WHERE NOT EXISTS (SELECT 1 FROM conflict) RETURNING *", [ctx.hospitalId,roomId,start,end,b.patient_id,admissionId,encounterId,doctorId,String(b.procedure_name).trim(),b.clinical_notes||null,ctx.user.email]);
    if(!r.rows[0])return res.status(409).json({error:"Theatre room is already scheduled for another procedure"});
    const row=r.rows[0];
    await logWorkflowEvent(ctx,{patientId:b.patient_id,eventType:"procedure_scheduled",stage:"theatre",entityType:"theatre_procedure",entityId:row.id,metadata:{procedure_name:row.procedure_name,admission_id:admissionId,theatre_room_id:roomId}});
@@ -108,6 +108,15 @@ export default async function(req,res){
    if(!cur.rows[0])return res.status(404).json({error:"Procedure not found"});
    if(cur.rows[0].status!=="completed")return res.status(409).json({error:"Only completed procedures can be returned to the ward"});
    if(cur.rows[0].ward_returned_at)return res.status(409).json({error:"Procedure has already been returned to the ward"});
+   if(cur.rows[0].admission_id){
+     const a=await db.query("SELECT id,patient_id,discharged_at FROM admissions WHERE id=$1 AND hospital_id=$2",[cur.rows[0].admission_id,ctx.hospitalId]);
+     if(!a.rows[0]||Number(a.rows[0].patient_id)!==Number(cur.rows[0].patient_id))return res.status(409).json({error:"Procedure admission no longer matches its patient"});
+     if(a.rows[0].discharged_at)return res.status(409).json({error:"A discharged admission cannot receive a Theatre ward return"});
+     if(cur.rows[0].encounter_id){
+       const e=await db.query("SELECT id,status,admission_id,patient_id FROM care_encounters WHERE id=$1 AND hospital_id=$2",[cur.rows[0].encounter_id,ctx.hospitalId]);
+       if(!e.rows[0]||e.rows[0].status!=="open"||Number(e.rows[0].patient_id)!==Number(cur.rows[0].patient_id)||Number(e.rows[0].admission_id)!==Number(cur.rows[0].admission_id))return res.status(409).json({error:"Theatre ward return requires the current open IPD encounter"});
+     }
+   }
    const r=await db.query("UPDATE theatre_procedures SET ward_returned_at=now(),ward_return_notes=$1,ward_returned_by=$2,updated_at=now() WHERE id=$3 AND hospital_id=$4 AND status='completed' AND ward_returned_at IS NULL RETURNING *",[String(b.notes||"").trim()||null,ctx.user.email,id,ctx.hospitalId]);
    if(!r.rows[0])return res.status(409).json({error:"Procedure has already been returned to the ward"});
    const row=r.rows[0];
@@ -124,6 +133,15 @@ export default async function(req,res){
  const transitions={scheduled:["in_progress","cancelled"],in_progress:["completed"],completed:[],cancelled:[]};
  if(!transitions[old]?.includes(b.status))return res.status(409).json({error:"Invalid transition from "+old+" to "+b.status});
  if(b.status==="completed"&&!String(b.outcome||"").trim())return res.status(400).json({error:"Outcome is required to complete a procedure"});
+ if((b.status==="in_progress"||b.status==="completed")&&cur.rows[0].admission_id){
+   const a=await db.query("SELECT id,patient_id,discharged_at FROM admissions WHERE id=$1 AND hospital_id=$2",[cur.rows[0].admission_id,ctx.hospitalId]);
+   if(!a.rows[0]||Number(a.rows[0].patient_id)!==Number(cur.rows[0].patient_id))return res.status(409).json({error:"Procedure admission no longer matches its patient"});
+   if(a.rows[0].discharged_at)return res.status(409).json({error:"A discharged admission cannot continue a Theatre procedure"});
+   if(cur.rows[0].encounter_id){
+     const e=await db.query("SELECT id,status,admission_id,patient_id FROM care_encounters WHERE id=$1 AND hospital_id=$2",[cur.rows[0].encounter_id,ctx.hospitalId]);
+     if(!e.rows[0]||e.rows[0].status!=="open"||Number(e.rows[0].patient_id)!==Number(cur.rows[0].patient_id)||Number(e.rows[0].admission_id)!==Number(cur.rows[0].admission_id))return res.status(409).json({error:"Theatre lifecycle requires the current open IPD encounter"});
+   }
+ }
  const now=new Date();
  const r=await db.query(`UPDATE theatre_procedures SET status=$1,
    started_at=CASE WHEN $1='in_progress' THEN COALESCE(started_at,$6) ELSE started_at END,

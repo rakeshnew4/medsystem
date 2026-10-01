@@ -179,6 +179,14 @@ Status: Implemented in current draft; authenticated execution pending.
 A Theatre charge may use only a verified source type: theatre_service → theatre_service charge, medicine/pharmacy_dispense → medicine charge. `professional_fee` remains a valid charge category but cannot be presented as a fabricated source identity until a verified professional-fee source entity exists.
 Status: Implemented in v294; automated production validator includes source-type/charge-type consistency; authenticated mutation test pending.
 
+## TC-THEATRE-027 — Active IPD continuity during Theatre lifecycle
+Admission-linked procedures cannot start or complete after the admission is discharged, and the linked encounter must remain open, hospital/patient/admission consistent.
+Status: Implemented in the current increment; production validator added, authenticated mutation test pending.
+
+## TC-THEATRE-028 — Room availability race
+Scheduling rechecks the theatre room's available state inside the same transaction that takes the room overlap lock, preventing a room-status race between initial validation and insertion.
+Status: Implemented in the current increment; concurrent authenticated execution pending.
+
 ## TC-THEATRE-025 — Production Theatre integrity validation
 Verify Theatre procedure states, completed-outcome requirements, ward-return state, active room overlap, duplicate source-charge protection, duplicate invoice-item linkage, linked-charge invoice-line continuity, room availability, and source-record validity directly against the production database.
 Status: Automated production invariant check passed: the original eight integrity/isolation checks returned zero violations; v287 added four additional checks (completed-without-outcome, scheduled-on-unavailable-room, invalid theatre-service source, invalid medicine/pharmacy-dispense source), all zero against the external PostgreSQL database; v288 added invoice-item identity/amount continuity and charge-patient continuity checks, also zero. Admission-linked Theatre scheduling now also requires a validated open IPD encounter; authenticated execution remains pending.
