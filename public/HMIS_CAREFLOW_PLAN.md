@@ -641,6 +641,7 @@ Added owner-only `/api/billing-validation` to audit production financial invaria
 ## Change log
 
 ### 2026-10-01
+- Deployed CareFlow v294 with Theatre source-charge integrity hardening: unsupported `professional_fee` source identities are rejected, source types must match their charge categories, and theatre-service validation now checks the real `hospital_services` source entity. Dry-run had no blocking errors; authenticated Theatre E2E remains the completion gate.
 - Deployed CareFlow v291 with HMIS-aligned Theatre encounter validation: admission-linked procedures now require an open IPD encounter matching the hospital and patient; explicitly supplied encounters must also belong to the selected admission. Post-deploy Theatre validator remains 14/14 with zero violations, and anonymous Theatre access remains HTTP 401.
 - Theatre remains In Progress because authenticated doctor/nurse/billing E2E and the remaining role-boundary, invalid-transition, concurrency, retry and payment-continuity gates are still not executable from the available hospital staff session.
 - Deployed CareFlow v287 with extended Theatre production integrity validation. Four additional lifecycle/source invariants were checked directly against the external PostgreSQL adapter before deployment and all returned zero violations: completed procedures without outcomes, scheduled procedures using unavailable rooms, invalid theatre-service sources, and invalid medicine/pharmacy-dispense sources.
