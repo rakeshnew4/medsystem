@@ -384,27 +384,29 @@ Remaining queue/token work:
 
 # 05 — Nursing / vitals / triage
 
-**In progress — vitals foundation plus dedicated nursing triage record implemented.**
+**In progress — nursing workflow now enforces vitals → triage → doctor handoff.**
 
 Implemented:
 - Existing vitals workflow records BP, pulse, temperature, weight, height, SpO₂ and respiratory rate against patient/queue/encounter.
-- Fixed post-vitals queue advancement to use the hospital-local date rather than database UTC/current_date.
+- Vitals are now linked to the active queue entry and leave the queue in the **vitals** stage rather than bypassing nursing triage.
+- Fixed hospital-local date handling in the vitals workflow.
 - Added dedicated `triage_assessments` persistence linked to patient, queue entry and canonical encounter.
 - Added protected `/api/triage` for nurse triage create/update/history.
-- Triage captures chief complaint, pain score, consciousness, mobility, pregnancy status, red flags, disposition and nurse notes.
-- Acuity is explicitly recorded by the staff member rather than inferred automatically.
+- Added nurse Patient Workspace triage form covering acuity, chief complaint, pain score, observed consciousness/mobility, pregnancy status, red flags, disposition and notes.
+- Latest triage is shown in the Patient Workspace alongside current-care context.
+- Added protected `/api/nursing-handoff`; only nursing/admin workflow actors can complete the handoff.
+- Server-side handoff requires both a queue-linked vitals record and queue-linked triage assessment before changing the queue to **doctor**.
+- Handoff updates the encounter stage, records a workflow event and notifies the assigned doctor.
+- Acuity is explicitly recorded by staff rather than inferred automatically.
 - Triage acuity maps operationally to queue priority: emergency → urgent, urgent/priority → high, routine → normal.
-- Triage writes workflow events and escalates urgent/emergency assessments to doctors through staff notifications.
-- Deployment v227 completed with no blocking dry-run errors.
-- Anonymous access to the triage API remains correctly protected with HTTP 401.
-- Database schema was verified after deployment.
+- Deployment **v229** completed with no blocking dry-run errors.
+- Anonymous access to nursing/triage routes remains correctly protected with HTTP 401; authenticated end-to-end staff testing is still pending because the available function test session is not signed in to the hospital staff auth plane.
 
 Remaining Nursing/Triage work:
-- Add the triage form to the nurse Queue/Patient Workspace UI.
-- Show the latest triage assessment beside vitals and encounter context.
-- Add explicit nurse handoff/triage-complete transition and prevent accidental doctor dispatch before required nursing fields are captured.
-- Define hospital-configurable required fields and escalation rules rather than hard-coding clinical thresholds.
-- Authenticated end-to-end test of nurse vitals → triage → doctor queue transition.
+- Add hospital-configurable required-field and escalation-rule configuration rather than hard-coding clinical thresholds.
+- Run an authenticated nurse test: call next → vitals → triage → complete nursing → doctor queue.
+- Verify doctor-side receipt and assigned-doctor notification in a real staff session.
+- After that, mark Nursing/Triage complete and begin Doctor Consultation.
 
 # 06 — Doctor consultation
 
