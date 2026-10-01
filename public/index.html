@@ -360,7 +360,7 @@ function receptionPatientMatches(q){
 function renderReceptionSearch(mode){
   const title=mode==='edit'?'Edit patient':'Search patient';
   const placeholder=mode==='edit'?'Name, phone or UHID':'Name, phone or UHID';
-  return '<div class="reception-search-box"><input id="receptionLookup" autofocus placeholder="'+placeholder+'" oninput="renderReceptionLookup(this.value,''+mode+'')"><div id="receptionLookupResults" class="reception-lookup-results"><div class="reception-empty-hint">Start typing to search.</div></div></div>';
+  return '<div class="reception-search-box"><input id="receptionLookup" autofocus placeholder="'+placeholder+'" oninput="renderReceptionLookup(this.value,&quot;'+mode+'&quot;)"><div id="receptionLookupResults" class="reception-lookup-results"><div class="reception-empty-hint">Start typing to search.</div></div></div>';
 }
 function renderReceptionLookup(q,mode){
   const el=document.getElementById('receptionLookupResults');if(!el)return;
