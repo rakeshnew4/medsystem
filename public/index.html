@@ -83,6 +83,7 @@
         <button data-section="analytics">Admin insights</button>
         <button data-section="communication">Staff communication</button>
         <button data-section="display">Displays & ads</button>
+        <button data-section="assets">Inventory / assets</button>
       </div>
     </div>
 
@@ -203,6 +204,30 @@
   <div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Operation Theatre / Procedures</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Schedule, start and complete clinical procedures linked to inpatient admissions.</div></div><button class="btn" onclick="loadTheatre()">Refresh</button></div><div id="theatreSummary" class="grid stats" style="margin-top:12px"></div><div id="theatreTable" class="table-wrap" style="margin-top:12px"></div></div>
   <div id="theatreMasterData" class="card panel" style="margin-top:16px;display:none"><div class="panel-head"><div><h3 class="panel-title">Theatre master data</h3><div style="font-size:12px;color:var(--muted);margin-top:4px">Administrator-only room and procedure catalogue management.</div></div></div><div id="theatreRoomsAdmin" class="table-wrap"></div><div id="theatreCatalogAdmin" class="table-wrap" style="margin-top:16px"></div></div>
 </section>
+<section id="assets" class="section">
+  <div class="card panel">
+    <div class="panel-head"><div><h2 class="panel-title">Inventory / fixed assets</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Hospital-scoped asset register with purchase, depreciation, warranty, custodian and transfer history.</div></div><button class="btn" onclick="loadAssets(true)">Refresh</button></div>
+    <div class="card" style="margin-top:14px;background:var(--surface-soft,#f8faf9)">
+      <form id="assetForm" class="form-grid">
+        <div class="field"><label>Asset code</label><input id="assetCode" required placeholder="AST-0001"></div>
+        <div class="field"><label>Category</label><input id="assetCategory" required placeholder="Medical equipment"></div>
+        <div class="field full"><label>Description</label><input id="assetDescription" required placeholder="Patient monitor"></div>
+        <div class="field"><label>Serial number</label><input id="assetSerial"></div>
+        <div class="field"><label>Purchase date</label><input id="assetPurchaseDate" type="date"></div>
+        <div class="field"><label>Purchase price</label><input id="assetPurchasePrice" type="number" min="0" step="0.01" value="0"></div>
+        <div class="field"><label>Depreciation rate %</label><input id="assetDepRate" type="number" min="0" max="100" step="0.01" value="0"></div>
+        <div class="field"><label>Depreciation method</label><select id="assetDepMethod"><option value="straight_line">Straight line</option><option value="declining_balance">Declining balance</option><option value="none">None</option></select></div>
+        <div class="field"><label>Location</label><input id="assetLocation" placeholder="Ward / room / store"></div>
+        <div class="field"><label>Warranty expiry</label><input id="assetWarranty" type="date"></div>
+        <div class="field"><label>AMC expiry</label><input id="assetAmc" type="date"></div>
+        <div class="field full"><label>Notes</label><textarea id="assetNotes" placeholder="Optional asset notes"></textarea></div>
+        <div class="field full"><button class="btn primary">Register asset</button></div>
+      </form>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:16px;flex-wrap:wrap"><input id="assetSearch" class="input" placeholder="Search code, description or serial" style="min-width:240px;flex:1" onkeydown="if(event.key==='Enter')loadAssets(true)"><button class="btn" onclick="loadAssets(true)">Search</button><span id="assetCount" style="font-size:12px;color:var(--muted)"></span></div>
+    <div id="assetsTable" class="table-wrap" style="margin-top:12px"></div>
+  </div>
+</section>
 <section id="pharmacy" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Pharmacy</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Prescription → stock check → dispensing → patient exit.</div></div><div style="display:flex;gap:8px"><button class="btn" onclick="openModal('pharmacyStockModal')">+ Receive stock</button><button class="btn" onclick="loadPharmacy()">Refresh</button></div></div><div id="pharmacyStockSummary" class="grid stats" style="margin-top:12px"></div><div id="pharmacyTable" class="table-wrap" style="margin-top:12px"></div></div></section>
 <section id="display" class="section">
   <div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Displays & advertising</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Turn waiting-room TVs into live token boards plus hospital or paid local advertising.</div></div><button class="btn" onclick="loadDisplayAdmin()">Refresh</button></div>
@@ -278,7 +303,7 @@
 <script src="/analytics.js"></script>
 <script>
 const API='/api';
-let state={dashboardRange:{preset:'today',from:'',to:''},dashboard:null,patients:[],doctors:[],appointments:[],followups:[],queue:[],beds:[],billing:[],lab:[],theatre:{procedures:[],rooms:[],catalog:[]},theatreCharges:[],pharmacy:[],pharmacyStock:[],opsTasks:[],staff:[],permissionCatalog:[],rolePermissions:[],queueView:'kanban',queueTimer:null,session:null,doctorRoom:null,doctorRoomTab:'waiting',doctorRoomPatient:null,hospitalConfig:null,displayAdmin:{devices:[],campaigns:[],summary:{}},communication:null,activeConversation:null,callPeer:null,callId:null,callTimer:null};
+let state={dashboardRange:{preset:'today',from:'',to:''},dashboard:null,assets:[],patients:[],doctors:[],appointments:[],followups:[],queue:[],beds:[],billing:[],lab:[],theatre:{procedures:[],rooms:[],catalog:[]},theatreCharges:[],pharmacy:[],pharmacyStock:[],opsTasks:[],staff:[],permissionCatalog:[],rolePermissions:[],queueView:'kanban',queueTimer:null,session:null,doctorRoom:null,doctorRoomTab:'waiting',doctorRoomPatient:null,hospitalConfig:null,displayAdmin:{devices:[],campaigns:[],summary:{}},communication:null,activeConversation:null,callPeer:null,callId:null,callTimer:null};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtTime=t=>t?String(t).slice(0,5):'';
 const fmtDate=d=>d?new Date(String(d).slice(0,10)+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
@@ -332,10 +357,10 @@ async function api(path,opts={}){
     return j;
   }finally{if(show)hideCareFlowLoader()}
 }
-const VALID_SECTIONS=['dashboard','reception-desk','queue','doctor-room','appointments','patients','doctors','beds','followups','billing','lab','theatre','pharmacy','display','analytics','staff','communication','setup'];
+const VALID_SECTIONS=['dashboard','reception-desk','queue','doctor-room','appointments','patients','doctors','beds','followups','billing','lab','theatre','pharmacy','assets','display','analytics','staff','communication','setup'];
 const ROLE_DEFAULT_SECTIONS={admin:'dashboard',doctor:'doctor-room',nurse:'beds',receptionist:'reception-desk',lab:'lab',pharmacy:'pharmacy',billing:'billing',pending:'dashboard'};
-const SECTION_TITLES={dashboard:'Hospital overview','reception-desk':'OPD Desk',queue:'Patient queue','doctor-room':'Doctor Room',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',lab:'Lab investigations',theatre:'Operation Theatre / Procedures',pharmacy:'Pharmacy',display:'Displays & ads',analytics:'Admin insights',staff:'Staff',communication:'Staff communication',setup:'Hospital setup'};
-const SECTION_PERMISSIONS={dashboard:'page.dashboard','reception-desk':'action.patient.create',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',theatre:'action.theatre.manage',pharmacy:'action.pharmacy.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup'};
+const SECTION_TITLES={dashboard:'Hospital overview','reception-desk':'OPD Desk',queue:'Patient queue','doctor-room':'Doctor Room',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',lab:'Lab investigations',theatre:'Operation Theatre / Procedures',pharmacy:'Pharmacy',assets:'Inventory / fixed assets',display:'Displays & ads',analytics:'Admin insights',staff:'Staff',communication:'Staff communication',setup:'Hospital setup'};
+const SECTION_PERMISSIONS={dashboard:'page.dashboard','reception-desk':'action.patient.create',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',theatre:'action.theatre.manage',pharmacy:'action.pharmacy.manage',assets:'action.assets.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup'};
 function staffStorageKey(kind){return 'careflow:'+kind+':'+encodeURIComponent(state.session?.user?.email||'default')}
 function saveWorkingContext(ctx){const value={...ctx,updatedAt:Date.now()};try{localStorage.setItem(staffStorageKey('workingContext'),JSON.stringify(value))}catch(e){}try{sessionStorage.setItem(staffStorageKey('workingContext'),JSON.stringify(value))}catch(e){}renderResumeBar()}
 function readWorkingContext(){try{const raw=sessionStorage.getItem(staffStorageKey('workingContext'))||localStorage.getItem(staffStorageKey('workingContext'));if(!raw)return null;const v=JSON.parse(raw);if(!v||!v.section)return null;if(v.updatedAt&&Date.now()-Number(v.updatedAt)>24*60*60*1000){clearWorkingContext();return null}return v}catch(e){return null}}
@@ -815,6 +840,7 @@ async function loadSectionData(id,force=false){
     billing:async()=>{if(!p['page.billing'])return;state.billing=await api('/billing');await loadTheatreCharges();renderAll()},
     lab:async()=>{if(!p['action.clinical.view'])return;await loadLab();renderAll()},
     theatre:async()=>{if(!p['action.theatre.manage'])return;await loadTheatre();renderAll()},
+    assets:async()=>{if(!p['action.assets.manage'])return;await loadAssets();},
     pharmacy:async()=>{if(!p['action.pharmacy.manage'])return;await loadPharmacy();renderAll()},
     display:async()=>{if(!p['page.setup'])return;await loadDisplayAdmin()},
     analytics:async()=>{if(!p['page.admin_insights'])return;await loadAnalytics();if(p['page.admin_insights']){state.opsTasks=await api('/ops-tasks').catch(()=>[]);renderOpsTasks()}},
@@ -870,6 +896,37 @@ async function loadAll(){
     const host=document.getElementById('stats');
     if(host)host.innerHTML='<div class="card panel empty" style="grid-column:1/-1"><strong>Workspace data could not be loaded.</strong><div style="margin-top:6px">Please use Refresh once. If it continues, the error has been logged for diagnosis.</div><button class="btn" style="margin-top:12px" onclick="loadAllWithLoader()">Retry</button></div>';
   }finally{hideCareFlowLoader(true)}
+}
+async function loadAssets(force=false){
+  try{
+    const q=String(document.getElementById('assetSearch')?.value||'').trim();
+    const r=await api('/fixed-assets'+(q?'?q='+encodeURIComponent(q):''),{loading:false});
+    state.assets=Array.isArray(r)?r:[];
+    const count=document.getElementById('assetCount');if(count)count.textContent=state.assets.length+' asset'+(state.assets.length===1?'':'s');
+    const host=document.getElementById('assetsTable');if(!host)return;
+    if(!state.assets.length){host.innerHTML='<div class="empty">No fixed assets found. Register the first asset above.</div>';return}
+    host.innerHTML='<table><thead><tr><th>Asset</th><th>Category</th><th>Value</th><th>Location</th><th>Status</th><th>Warranty / AMC</th><th>Actions</th></tr></thead><tbody>'+
+      state.assets.map(a=>'<tr><td><strong>'+esc(a.asset_code)+'</strong><div style="font-size:11px;color:var(--muted)">'+esc(a.description)+(a.serial_number?' · '+esc(a.serial_number):'')+'</div></td><td>'+esc(a.category)+'</td><td>₹ '+Number(a.current_value??a.purchase_price??0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td><td>'+esc(a.location||'—')+'</td><td><span class="role-pill">'+esc(a.status)+'</span></td><td><div style="font-size:11px">W: '+esc(fmtDate(a.warranty_expiry)||'—')+'</div><div style="font-size:11px">AMC: '+esc(fmtDate(a.amc_expiry)||'—')+'</div></td><td><button class="btn" onclick="viewAsset('+Number(a.id)+')">History</button> <button class="btn" onclick="transferAsset('+Number(a.id)+')">Transfer</button></td></tr>').join('')+
+      '</tbody></table>';
+  }catch(e){if(e.status!==403)alert(e.message||'Could not load assets')}
+}
+async function viewAsset(id){
+  try{
+    const a=await api('/fixed-assets?id='+Number(id));
+    const history=(a.transfer_history||[]).map(h=>'<div style="padding:9px 0;border-top:1px solid var(--border);font-size:12px"><strong>'+esc(fmtDate(h.transferred_at)||h.transferred_at||'')+'</strong> · '+esc(h.from_location||'—')+' → '+esc(h.to_location||'—')+(h.reason?' · '+esc(h.reason):'')+'</div>').join('');
+    alert(a.asset_code+' · '+a.description+'\nPurchase: ₹'+Number(a.purchase_price||0).toLocaleString('en-IN')+'\nDepreciation: '+a.depreciation_method+' @ '+a.depreciation_rate+'%\n\nTransfer history:\n'+(history.replace(/<[^>]+>/g,'')||'No transfers yet.'));
+  }catch(e){alert(e.message)}
+}
+async function transferAsset(id){
+  const a=state.assets.find(x=>Number(x.id)===Number(id));if(!a)return;
+  const toLocation=prompt('Destination location',a.location||'');if(toLocation===null||!toLocation.trim())return;
+  const reason=prompt('Transfer reason','Operational relocation')||'';
+  const custodian=prompt('Destination custodian staff ID (optional)',a.custodian_staff_id||'');
+  if(custodian===null)return;
+  try{
+    await api('/fixed-assets',{method:'POST',body:JSON.stringify({action:'transfer',asset_id:Number(id),to_location:toLocation.trim(),to_custodian_staff_id:custodian.trim()?Number(custodian):null,reason})});
+    await loadAssets(true);
+  }catch(e){alert(e.message)}
 }
 async function loadDisplayAdmin(){return api('/display-admin').then(r=>{state.displayAdmin=r;renderDisplayAdmin()}).catch(e=>{if(e.status!==403)alert(e.message)})}
 function createDisplayDevice(){const name=prompt('Display name:','Reception TV');if(!name)return;const location=prompt('Location:','Reception');if(location===null)return;const token=Number(prompt('Token area percentage (0-100):','50'));const ad=100-token;const seconds=Number(prompt('Advertisement rotation seconds:','10'));api('/display-admin',{method:'POST',body:JSON.stringify({type:'device',name,location,token_percent:token,ad_percent:ad,ad_rotation_seconds:seconds})}).then(loadDisplayAdmin).catch(e=>alert(e.message))}
@@ -1763,6 +1820,7 @@ const permissionRoleEl=document.getElementById('permissionRole');
 if(permissionRoleEl)permissionRoleEl.onchange=()=>renderPermissionMatrix();
   const analyticsNav=document.querySelector('.nav button[data-section="analytics"]');if(analyticsNav)analyticsNav.onclick=()=>{if(!can('page.admin_insights'))return;showSection('analytics');loadAnalytics()};
 window.addEventListener('DOMContentLoaded',()=>{
+document.getElementById('assetForm').onsubmit=async e=>{e.preventDefault();try{await api('/fixed-assets',{method:'POST',body:JSON.stringify({asset_code:assetCode.value,description:assetDescription.value,category:assetCategory.value,serial_number:assetSerial.value,purchase_date:assetPurchaseDate.value||null,purchase_price:Number(assetPurchasePrice.value||0),depreciation_rate:Number(assetDepRate.value||0),depreciation_method:assetDepMethod.value,location:assetLocation.value,warranty_expiry:assetWarranty.value||null,amc_expiry:assetAmc.value||null,notes:assetNotes.value})});e.target.reset();assetPurchasePrice.value='0';assetDepRate.value='0';await loadAssets(true);alert('Asset registered successfully.')}catch(x){alert(x.message)}};
 document.getElementById('staffForm').onsubmit=async e=>{e.preventDefault();try{await api('/team',{method:'POST',body:JSON.stringify({email:staffEmail.value,role:staffRole.value,doctor_id:staffDoctor.value||null,active:staffActive.value==='true'})});closeModal('staffModal');e.target.reset();await loadAll();alert('Staff email registered. Only that email can sign in, and the account must be active.')}catch(x){alert(x.message)}};
 document.getElementById('billingForm').onsubmit=async e=>{e.preventDefault();try{await api('/billing',{method:'POST',body:JSON.stringify({patient_id:billPatient.value,items:[{description:billDescription.value,quantity:1,unit_price:Number(billAmount.value)}],discount:Number(billDiscount.value||0),tax:Number(billTax.value||0),paid:Number(billPaid.value||0),payment_method:billMethod.value,notes:billNotes.value})});closeModal('billingModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}};
 });
