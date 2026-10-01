@@ -1471,7 +1471,7 @@ function renderQueue(){
  const visible=state.queue.filter(queueMatches);
  const summary=[['waiting','Waiting'],['vitals','Vitals'],['doctor','Waiting for doctor'],['in_room','In doctor room'],['lab','Lab'],['pharmacy','Pharmacy']].map(([s,l])=>'<button class="queue-summary-item '+(s===actionStage?'is-action':'')+'" onclick="setQueueStageFilter(\''+s+'\')"><strong>'+state.queue.filter(x=>x.stage===s).length+'</strong><span>'+l+'</span></button>').join('')+'<div class="queue-summary-total"><strong>'+state.queue.length+'</strong><span>Active today</span></div>';
  document.getElementById('queueSummary').innerHTML=summary;
- const banner=actionStage?'<div class="work-queue-banner"><div><strong>'+actionCount+' patient'+(actionCount===1?'':'s')+' need your action</strong><span>Showing the <b>'+queueStageLabel(actionStage)+'</b> step for your role.</span></div><button class="btn primary" onclick="setQueueStageFilter(\''+actionStage+'\')">Show my work</button></div>':'';
+ const banner=actionStage?'<div class="work-queue-banner"><div><strong>'+actionCount+' patient'+(actionCount===1?'':'s')+' need your action</strong><span>Showing the <b>'+queueStageLabel(actionStage)+'</b> step for your role.</span></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="setQueueStageFilter(\''+actionStage+'\')">Show my work</button><button class="btn primary" onclick="callNextForMyRole()">Call next</button></div></div>':'';
  if(!visible.length){document.getElementById('queueBoard').innerHTML=banner+'<div class="queue-empty"><div class="queue-empty-icon">✓</div><strong>No patients match these filters</strong><span>Try clearing the search or stage filter.</span></div>';return}
  if(state.queueView==='list'){document.getElementById('queueBoard').innerHTML=banner+'<div class="queue-list">'+visible.map(queueCard).join('')+'</div>';return}
  document.getElementById('queueBoard').innerHTML=banner+'<div class="kanban">'+stages.map(([stage,label])=>{const rows=visible.filter(x=>x.stage===stage);return '<div class="kanban-col '+(stage===actionStage?'needs-action':'')+'" data-stage="'+stage+'" ondragover="event.preventDefault()" ondrop="dropQueue(event,\''+stage+'\')"><div class="kanban-head"><div><strong>'+label+(stage===actionStage?' · YOUR ACTION':'')+'</strong><small>'+rows.length+' patient'+(rows.length===1?'':'s')+'</small></div><span>'+rows.length+'</span></div><div class="kanban-list">'+rows.map(queueCard).join('')+'</div></div>'}).join('')+'</div>';
@@ -1486,6 +1486,17 @@ function setQueueView(v){state.queueView=v;document.getElementById('kanbanBtn').
 function setQueueStageFilter(stage){const el=document.getElementById('queueStageFilter');if(el)el.value=stage;renderQueue()}
 function clearQueueFilters(){const s=document.getElementById('queueSearch'),st=document.getElementById('queueStageFilter'),p=document.getElementById('queuePriorityFilter');if(s)s.value='';if(st)st.value='all';if(p)p.value='all';renderQueue()}
 function filterQueueToMyWork(){const role=state.session?.staff?.role||'admin';const stage={nurse:'vitals',doctor:'doctor',lab:'lab',pharmacy:'pharmacy',receptionist:'waiting'}[role];if(stage)setQueueStageFilter(stage)}
+async function callNextForMyRole(){
+  const role=state.session?.staff?.role||'admin';
+  const from={nurse:'waiting',doctor:'doctor',lab:'lab',pharmacy:'pharmacy',receptionist:'waiting'}[role];
+  const to={nurse:'vitals',doctor:'in_room',lab:'followup',pharmacy:'completed',receptionist:'vitals'}[role];
+  if(!from||!to){alert('Your role does not have a queue dispatch step.');return}
+  const rows=state.queue.filter(x=>x.stage===from).slice().sort((a,b)=>{
+    const rank={urgent:0,high:1,normal:2};return (rank[a.priority]??2)-(rank[b.priority]??2)||Number(a.token_number||999999)-Number(b.token_number||999999)
+  });
+  if(!rows.length){alert('No patient is currently waiting for your role.');return}
+  try{await moveQueue(rows[0].id,to)}catch(e){alert(e.message)}
+}
 async function moveQueue(id,stage){try{await api('/queue',{method:'PUT',body:JSON.stringify({id:Number(id),stage})});await loadAll()}catch(e){alert(e.message)}}
 function openVitals(qid,pid){openPatientWorkspace(pid,'vitals')}
 

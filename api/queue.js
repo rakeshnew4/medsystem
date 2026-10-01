@@ -5,7 +5,15 @@ import { allocateOpdToken, hospitalLocalDate } from "../lib/opd.js";
 import { notifyStage } from "../lib/staff-notifications.js";
 
 export const access="user";
-export const methods=["GET","POST","PUT"];
+export const methods=["GET","POST","PUT"]; // HMIS queue dispatch integration
+
+const queueDispatchForRole={
+  nurse:{from:"waiting",to:"vitals"},
+  doctor:{from:"doctor",to:"in_room"},
+  lab:{from:"lab",to:"followup"},
+  pharmacy:{from:"pharmacy",to:"completed"},
+  receptionist:{from:"waiting",to:"vitals"}
+};
 
 export default async function(req,res){
   const ctx=await requirePermission(req,res,req.method==="GET"?"page.queue":"action.queue.manage");
@@ -71,7 +79,7 @@ export default async function(req,res){
 
   const localDate=await hospitalLocalDate(hid);
   const r=await db.query(
-    "SELECT q.id,q.patient_id,q.appointment_id,q.doctor_id,q.stage,q.priority,q.token,q.token_date,q.token_number,q.public_token,q.reason,q.notes,q.checked_in_at,p.name AS patient_name,p.uhid,p.phone,d.name AS doctor_name FROM queue_entries q JOIN patients p ON p.id=q.patient_id LEFT JOIN doctors d ON d.id=q.doctor_id WHERE q.hospital_id=$1 AND q.completed_at IS NULL AND q.token_date=$2 ORDER BY q.token_number NULLS LAST,q.checked_in_at",
+    "SELECT q.id,q.patient_id,q.appointment_id,q.doctor_id,q.stage,q.priority,q.token,q.token_date,q.token_number,q.public_token,q.reason,q.notes,q.checked_in_at,p.name AS patient_name,p.uhid,p.phone,d.name AS doctor_name FROM queue_entries q JOIN patients p ON p.id=q.patient_id LEFT JOIN doctors d ON d.id=q.doctor_id WHERE q.hospital_id=$1 AND q.completed_at IS NULL AND q.token_date=$2 ORDER BY CASE q.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,q.token_number NULLS LAST,q.checked_in_at",
     [hid,localDate]
   );
   res.json(r.rows);
