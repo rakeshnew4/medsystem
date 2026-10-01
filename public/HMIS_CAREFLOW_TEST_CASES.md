@@ -204,6 +204,11 @@ Route: /api/theatre-validate; Method: POST; Actor: billing/admin with Theatre va
 Expected: only a completed, unvalidated procedure can be validated; every Theatre charge must already have both invoice_id and invoice_item_id; validation records validated_at/validated_by and creates a theatre_procedure_validated workflow event.
 Status: Implemented in v310; anonymous access returns HTTP 401. Authenticated execution pending.
 
+## TC-THEATRE-035 — HMIS-style Surgery Validation Revert
+Route: /api/theatre-validation-revert; Method: POST; Actor: billing/admin with validation-revert permission.
+Expected: only a completed, currently validated procedure can be reverted; a non-empty reason is required; validation fields are cleared so controlled corrections can proceed; revert actor/time/reason are retained and a `theatre_procedure_validation_reverted` workflow event is created. Doctor/nurse Theatre management does not grant this authority.
+Status: Implemented; authenticated execution remains pending.
+
 ## TC-THEATRE-034 — Surgery Validation permission boundary
 Route: /api/theatre-validate; Method: POST; Actor: billing/admin vs doctor/nurse.
 Expected: billing/admin can reach the validation handler; doctor/nurse do not receive validation authority merely from Theatre management. The endpoint remains protected by the hospital staff auth plane.
