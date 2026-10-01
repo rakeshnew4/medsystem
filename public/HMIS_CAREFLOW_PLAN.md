@@ -597,8 +597,10 @@ Remaining:
 - Added Theatre billing-charge foundation: charges are tied to procedures/patients, can be linked once to a same-patient invoice, and invoice subtotal/total/status are recalculated transactionally.
 - Billing-side Theatre charge reconciliation UI implemented in the current iteration: billing users can review unbilled charges and link them once to same-patient invoices.
 - Theatre-to-ward handoff/return implemented in current iteration: completed admission-linked procedures can be returned once, with ward notes, actor and IPD encounter stage restoration.
-- Theatre charge categories are now explicitly constrained to procedure, theatre service, professional fee, medicine, or consumable.
-- Remaining: richer service/master-data mapping and authenticated doctor/nurse/billing E2E with role boundaries and concurrency/overlap verification.
+- Theatre charge categories are explicitly constrained to procedure, theatre service, professional fee, medicine, or consumable.
+- Theatre charges now support hospital-scoped catalogue linkage and source_type/source_id identities with a unique source guard, preventing the same source charge from being represented twice.
+- Theatre procedure catalogue service types are validated for billable categories.
+- Remaining: authenticated doctor/nurse/billing E2E with role boundaries, invalid transitions, concurrency/overlap verification, source-charge retry/double-counting checks, and billing continuity.
 
 Theatre remains **In progress** until the authenticated workflow is tested end-to-end.
 
