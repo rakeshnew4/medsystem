@@ -71,13 +71,14 @@ HMIS references: OPD patient lookup, token, queue, OPD billing.
 
 ### UI-04 — Nursing / Vitals / Triage
 HMIS reference: nursing workbench and inpatient dashboard.
-- [ ] Nurse worklist/admission selector
-- [ ] Patient header
-- [ ] Vitals entry
-- [ ] Triage assessment
-- [ ] Nursing handoff
-- [ ] Alerts/red flags
-- [ ] Clinical history/report separation
+- [x] Nurse worklist/admission selector via role-aware Queue → My work and persistent Patient Workspace
+- [x] Patient header
+- [x] Vitals entry
+- [x] Triage assessment
+- [x] Nursing handoff
+- [x] Alerts/red flags
+- [x] Clinical history/report separation through Patient Workspace Actions vs Reports & History
+- [ ] Authenticated browser E2E for nurse vitals/triage/handoff remains open until a real hospital staff session is available
 
 ### UI-05 — Doctor Consultation
 - [ ] Doctor worklist
