@@ -143,7 +143,7 @@ HMIS reference: inpatient search plus central Admission Profile.
 - [x] Payment history — invoice-level payment ledger is presented with date, amount, method, reference and receiver
 - [x] Payment entry — existing protected incremental-payment transition is exposed through invoice detail
 - [x] Outstanding/paid states — unpaid/partial/paid counts and outstanding amount are visible in the billing worklist
-- [ ] Insurance
+- [x] Insurance — read-only hospital-scoped claims worklist with payer/policy/claim/patient search and claim-state filters; uses existing protected `/api/insurance` contract
 - [x] PDF/print actions — invoice detail opens the existing protected /api/invoice-pdf route
 - [ ] Financial audit/history
 
@@ -231,3 +231,4 @@ A module is UI-complete only when the UI reflects the verified HMIS workflow, al
 - 2026-10-01: UI-00 baseline cleanup: shared legacy controls now have consistent focus-visible, disabled, action-row, table-hover and error/loading presentation.
 - 2026-10-01: UI-09 increment deployed as v408: Billing is a searchable/filterable financial worklist with explicit outstanding-balance summary and patient/UHID/phone context; existing billing mutation contracts are unchanged. Dry-run passed with 0 errors. Anonymous billing access remains protected and the available signed-in app-user harness is rejected by hospital-staff authorization. Next UI-09 task: charge grouping and invoice detail/payment-history presentation; authenticated billing E2E remains open.
 - 2026-10-01: UI-00 baseline cleanup increment: normalized shared legacy controls with consistent focus-visible treatment, disabled-state behavior, action-row alignment, table hover feedback and common error/loading presentation. No workflow or backend behavior changed. Next UI target: UI-01 identifier search coverage.
+- 2026-10-01: UI-09 Insurance increment deployed as v413: added a dedicated Insurance/TPA claims worklist backed by the existing protected `/api/insurance` contract. Claims can be searched by payer, claim/policy number, patient or UHID and filtered by pending/submitted/approved/partially-approved/rejected/paid state; no financial mutation contract was introduced. Public access to the underlying route remains protected (401 in the pre-deploy access test). Next UI-09 task: financial audit/history; invoice editor remains blocked until a verified server mutation contract exists.
