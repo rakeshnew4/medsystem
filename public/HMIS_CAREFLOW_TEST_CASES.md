@@ -81,7 +81,7 @@ Pharmacy is marked Complete only after atomic stock consumption, authenticated p
 
 ## TC-THEATRE-001 — Public access blocked
 GET /api/theatre anonymously must return HTTP 401.
-Status: Pending deployment verification.
+Status: Verified in v299 — HTTP 401.
 
 ## TC-THEATRE-002 — Procedure requires patient and name
 POST without patient_id or procedure_name must return HTTP 400.
@@ -161,7 +161,7 @@ Status: Implemented in v293; anonymous route protection and production charge/pr
 
 ## TC-THEATRE-021 — Charge-to-invoice linkage
 A Theatre charge can be linked once to an invoice belonging to the same patient; linking is idempotency-protected and invoice subtotal/total/status are recalculated.
-Status: Implemented in v276; authenticated execution pending.
+Status: Atomic implementation hardened in v299; authenticated execution pending.
 
 ## TC-THEATRE-024 — Charge type validation
 Theatre billing accepts only procedure, theatre_service, professional_fee, medicine, or consumable charge categories and rejects arbitrary categories.
