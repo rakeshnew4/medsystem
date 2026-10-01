@@ -384,7 +384,27 @@ Remaining queue/token work:
 
 # 05 — Nursing / vitals / triage
 
-Not started.
+**In progress — vitals foundation plus dedicated nursing triage record implemented.**
+
+Implemented:
+- Existing vitals workflow records BP, pulse, temperature, weight, height, SpO₂ and respiratory rate against patient/queue/encounter.
+- Fixed post-vitals queue advancement to use the hospital-local date rather than database UTC/current_date.
+- Added dedicated `triage_assessments` persistence linked to patient, queue entry and canonical encounter.
+- Added protected `/api/triage` for nurse triage create/update/history.
+- Triage captures chief complaint, pain score, consciousness, mobility, pregnancy status, red flags, disposition and nurse notes.
+- Acuity is explicitly recorded by the staff member rather than inferred automatically.
+- Triage acuity maps operationally to queue priority: emergency → urgent, urgent/priority → high, routine → normal.
+- Triage writes workflow events and escalates urgent/emergency assessments to doctors through staff notifications.
+- Deployment v227 completed with no blocking dry-run errors.
+- Anonymous access to the triage API remains correctly protected with HTTP 401.
+- Database schema was verified after deployment.
+
+Remaining Nursing/Triage work:
+- Add the triage form to the nurse Queue/Patient Workspace UI.
+- Show the latest triage assessment beside vitals and encounter context.
+- Add explicit nurse handoff/triage-complete transition and prevent accidental doctor dispatch before required nursing fields are captured.
+- Define hospital-configurable required fields and escalation rules rather than hard-coding clinical thresholds.
+- Authenticated end-to-end test of nurse vitals → triage → doctor queue transition.
 
 # 06 — Doctor consultation
 
