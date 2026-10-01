@@ -36,4 +36,12 @@ TC-ASSET-017 Stock-history isolation: the read-only history report must filter b
 
 TC-ASSET-018 Stock-history continuity: receipts and dispensing create transaction rows tied to the hospital-scoped stock record.
 
-Authenticated staff E2E remains the final workflow gate; the available test runner currently has no hospital staff session.
+TC-ASSET-019 Bin-card report: hospital-scoped stock movement report exposes medicine, batch, transaction direction, quantity and balance-after without crossing hospitals.
+
+TC-ASSET-020 Stock balance invariant: latest transaction quantity_after equals current pharmacy_stock.quantity for every stock item with ledger activity.
+
+TC-ASSET-021 Stock ledger continuity: each transaction quantity_before equals the preceding transaction quantity_after for the same stock; receipt/dispense arithmetic is enforced.
+
+TC-ASSET-022 Stock mutation snapshots: receipt and dispensing persist quantity_before/quantity_after with the ledger row, so the bin card can reconstruct movement without guessing from current stock.
+
+Production validation: `/api/pharmacy-stock-validation` returned 0 violations across all 8 ledger/balance checks after the external schema update. Authenticated staff E2E remains the final workflow gate; the available test runner currently has no hospital staff session.
