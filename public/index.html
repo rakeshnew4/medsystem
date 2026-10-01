@@ -1061,8 +1061,9 @@ function patientCareTeamActions(p,s){
    ['Appointments','View and manage this patient\'s appointments.',true,'patientWorkspaceAppointments('+id+')',true]
   ]},
   {role:'nurse',label:'Nurse',step:'02',items:[
-   ['Record vitals','Record BP, pulse, temperature, SpO₂ and other measurements.',q==='waiting'||q==='vitals','workspaceVitals('+id+')',clinical],
-   ['Send to doctor','After vitals, place the patient in the doctor waiting queue.',q==='vitals','movePatient('+id+',\'doctor\');refreshPatientWorkspace('+id+')',clinical]
+   ['Record vitals','Record BP, pulse, temperature, SpO₂ and other measurements.',q==='waiting','workspaceVitals('+id+')',clinical],
+   ['Triage assessment','Document acuity and nursing assessment before handoff.',q==='vitals','workspaceTriage('+id+')',clinical],
+   ['Complete nursing','Send the patient to the doctor only after vitals and triage are recorded.',q==='vitals','workspaceCompleteNursing('+id+')',clinical]
   ]},
   {role:'doctor',label:'Doctor',step:'03',items:[
    ['Bring into doctor room','Start the consultation and mark the patient as in the doctor room.',q==='doctor','doctorStartFromQueue('+id+','+(p.active_queue_id||0)+')',clinical],
@@ -1127,7 +1128,7 @@ function patientNextActions(p,s){
    if(clinical)add('vitals','Record vitals','Patient is waiting for clinical assessment.','workspaceVitals('+p.id+')');
    else add('doctor','Open queue','Move the patient through the OPD queue.','showSection(\'queue\')');
  } else if(q==='vitals'){
-   if(clinical)add('doctor','Open Doctor Room','Vitals are recorded; continue the consultation workflow.','workspaceOpenDoctor('+p.id+')');
+   if(clinical)add('triage','Complete triage','Vitals are recorded. Document the nursing triage assessment before handoff.','workspaceTriage('+p.id+')');
  } else if(q==='doctor'){
    if(s.role==='doctor')add('consult','Patient ready for consultation','Vitals are completed. The patient is waiting for you.','workspaceOpenDoctor('+p.id+')');
    else add('doctor','Vitals completed','Patient is now waiting for the doctor to start the consultation.','showSection(\'queue\')',false);
@@ -1240,8 +1241,23 @@ function workspaceIPDPanel(pid,admissionId){
  workspaceActionPanel({title:'IPD actions',body},pid);
 }
 function workspaceVitals(pid){
- const b='<form class="form-grid" onsubmit="workspaceSaveVitals(event,'+pid+')"><div class="field"><label>BP systolic</label><input name="blood_pressure_systolic"></div><div class="field"><label>BP diastolic</label><input name="blood_pressure_diastolic"></div><div class="field"><label>Pulse</label><input name="pulse"></div><div class="field"><label>Temperature</label><input name="temperature"></div><div class="field"><label>Weight kg</label><input name="weight_kg"></div><div class="field"><label>Height cm</label><input name="height_cm"></div><div class="field"><label>SpO₂</label><input name="spo2"></div><div class="field"><label>Respiratory rate</label><input name="respiratory_rate"></div><div class="field full"><label>Notes</label><textarea name="notes"></textarea></div><div class="field full"><button class="btn primary">Save vitals</button></div></form>';
+ const qid=state.activePatientRecord?.patient?.active_queue_id||null;
+ const b='<form class="form-grid" onsubmit="workspaceSaveVitals(event,'+pid+')"><div class="field"><label>BP systolic</label><input name="blood_pressure_systolic" inputmode="numeric"></div><div class="field"><label>BP diastolic</label><input name="blood_pressure_diastolic" inputmode="numeric"></div><div class="field"><label>Pulse</label><input name="pulse" inputmode="numeric"></div><div class="field"><label>Temperature</label><input name="temperature" inputmode="decimal"></div><div class="field"><label>Weight kg</label><input name="weight_kg" inputmode="decimal"></div><div class="field"><label>Height cm</label><input name="height_cm" inputmode="decimal"></div><div class="field"><label>SpO₂</label><input name="spo2" inputmode="numeric"></div><div class="field"><label>Respiratory rate</label><input name="respiratory_rate" inputmode="numeric"></div><div class="field full"><label>Notes</label><textarea name="notes" placeholder="Nursing observations / measurements notes"></textarea></div><div class="field full"><button class="btn primary">Save vitals</button></div></form>';
  workspaceActionPanel({title:'Record vitals',body:b},pid,'nurse');
+}
+function workspaceTriage(pid){
+ const qid=state.activePatientRecord?.patient?.active_queue_id||null;
+ const latest=(state.activePatientRecord?.triage||[])[0]||{};
+ const b='<form class="form-grid" onsubmit="workspaceSaveTriage(event,'+pid+','+(qid||'null')+')"><div class="field"><label>Acuity</label><select name="acuity" required><option value="routine" '+(latest.acuity==='routine'?'selected':'')+'>Routine</option><option value="priority" '+(latest.acuity==='priority'?'selected':'')+'>Priority</option><option value="urgent" '+(latest.acuity==='urgent'?'selected':'')+'>Urgent</option><option value="emergency" '+(latest.acuity==='emergency'?'selected':'')+'>Emergency</option></select></div><div class="field"><label>Pain score (0–10)</label><input name="pain_score" type="number" min="0" max="10" step="1" value="'+esc(latest.pain_score??'')+'"></div><div class="field full"><label>Chief complaint</label><input name="chief_complaint" value="'+esc(latest.chief_complaint||'')+'" placeholder="Patient-reported reason for visit"></div><div class="field"><label>Consciousness</label><input name="consciousness" value="'+esc(latest.consciousness||'')+'" placeholder="Document observed state"></div><div class="field"><label>Mobility</label><input name="mobility" value="'+esc(latest.mobility||'')+'" placeholder="Document observed mobility"></div><div class="field"><label>Pregnancy status</label><input name="pregnancy_status" value="'+esc(latest.pregnancy_status||'')+'" placeholder="If applicable / documented"></div><div class="field"><label>Disposition</label><input name="disposition" value="'+esc(latest.disposition||'')+'" placeholder="Per hospital workflow"></div><div class="field full"><label>Red flags / concerns</label><textarea name="red_flags" placeholder="Document observed concerns; do not diagnose here.">'+esc(latest.red_flags||'')+'</textarea></div><div class="field full"><label>Nursing notes</label><textarea name="notes">'+esc(latest.notes||'')+'</textarea></div><div class="field full"><button class="btn primary">Save triage assessment</button></div></form>';
+ workspaceActionPanel({title:'Nursing triage',body:b},pid,'nurse');
+}
+async function workspaceSaveTriage(e,pid,qid){
+ e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());b.patient_id=pid;if(qid)b.queue_entry_id=qid;await api('/triage',{method:'POST',body:JSON.stringify(b)});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+}
+async function workspaceCompleteNursing(pid){
+ const qid=state.activePatientRecord?.patient?.active_queue_id;
+ if(!qid)return alert('No active OPD queue entry is attached to this patient.');
+ try{await api('/nursing-handoff',{method:'POST',body:JSON.stringify({patient_id:pid,queue_entry_id:qid})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
 }
 function workspacePrescription(pid){
  const b='<form class="form-grid" onsubmit="workspaceSavePrescription(event,'+pid+')"><div class="field"><label>Medicine</label><input name="medicine_name" required></div><div class="field"><label>Dose</label><input name="dose"></div><div class="field"><label>Frequency</label><input name="frequency" placeholder="1-0-1"></div><div class="field"><label>Duration</label><input name="duration" placeholder="5 days"></div><div class="field full"><label>Instructions</label><textarea name="instructions"></textarea></div><div class="field full"><button class="btn primary">Save prescription</button></div></form>';
@@ -1256,7 +1272,7 @@ function workspaceInvoice(pid,anchorRole){
  workspaceActionPanel({title:'Create bill / collect payment',body:b},pid,anchorRole||'billing');
 }
 async function workspaceSaveVitals(e,pid){
- e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());b.patient_id=pid;await api('/vitals',{method:'POST',body:JSON.stringify(b)});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+ e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());b.patient_id=pid;const qid=state.activePatientRecord?.patient?.active_queue_id;if(qid)b.queue_entry_id=qid;await api('/vitals',{method:'POST',body:JSON.stringify(b)});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
 }
 async function workspaceSavePrescription(e,pid){
  e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());b.patient_id=pid;b.type='medicine';await api('/clinical',{method:'POST',body:JSON.stringify(b)});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
@@ -1277,6 +1293,11 @@ async function workspaceCheckIn(aid,pid){
 }
 async function refreshPatientWorkspace(pid){
  const r=await api('/patient-workspace?patient_id='+encodeURIComponent(pid));state.activePatientRecord=r;renderPatientWorkspace();
+}
+function patientTriageSummary(rows){
+ const t=(rows||[])[0];
+ if(!t)return '<div class="workspace-card"><div class="panel-head"><h3 class="panel-title">Nursing triage</h3></div><div class="empty">No triage assessment recorded yet.</div></div>';
+ return '<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Nursing triage</h3><div class="record-section-note">Latest staff-entered assessment</div></div><span class="status '+esc(t.acuity)+'">'+esc(t.acuity)+'</span></div><div class="encounter-context-grid"><div><span>Pain</span><strong>'+(t.pain_score??'—')+'</strong></div><div><span>Chief complaint</span><strong>'+esc(t.chief_complaint||'—')+'</strong></div><div><span>Consciousness</span><strong>'+esc(t.consciousness||'—')+'</strong></div><div><span>Mobility</span><strong>'+esc(t.mobility||'—')+'</strong></div></div><div class="record-section-note" style="margin-top:10px">'+esc(t.notes||t.red_flags||'No additional notes')+'</div></div>';
 }
 function patientEncounterPanel(s){
  const rows=s.encounters||[], active=rows.find(e=>e.status==='open')||rows[0];
@@ -1303,6 +1324,7 @@ function renderPatientWorkspace(){
  '<!-- summary moved into patient header -->'+
  '<div class="patient-workspace-grid"><div class="patient-workspace-column">'+
  '<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Today / current care</h3><div class="record-section-note">What staff need to know before taking the next action.</div></div></div>'+patientCurrentCare(p,activeAdm,latestVitals,lastVisit,s)+'</div>'+
+ (s.permissions.clinical?patientTriageSummary(s.triage||[]):'')+
    (s.role==='doctor'&&s.permissions.clinical?'<div class="workspace-card ai-clinical-card"><div class="panel-head"><div><h3 class="panel-title">🎙 AI Listen Summary</h3><div class="record-section-note">Listen to the consultation, then generate a documentation draft. Review and approve before saving.</div></div></div><textarea id="aiScribeInput" rows="5" placeholder="Conversation transcript will appear here…"></textarea><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn" onclick="toggleClinicalDictation()">🎙 Start Listening</button><button class="btn primary" onclick="runClinicalScribe()">Stop & Summarize</button></div><div id="aiScribeDraft" style="margin-top:10px"></div></div><div class="workspace-card consultation-card"><div class="panel-head"><div><h3 class="panel-title">Doctor consultation</h3><div class="record-section-note">Review the AI draft or write/edit the final clinical note yourself.</div></div></div><textarea id="doctorConsultationNote" rows="8" placeholder="Chief complaint, history, examination, assessment, plan…">'+esc(lastVisit?.visit_status==='open'?lastVisit.clinical_notes||'':'')+'</textarea><div class="consultation-footer"><button class="btn" onclick="saveDoctorVisit(false)">Save draft</button><button class="btn primary" onclick="saveDoctorVisit(true)">Save & complete visit</button></div></div>':'')+
  '<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Appointments</h3><div class="record-section-note">Recent and upcoming visits.</div></div><button class="mini" onclick="showSection(\'appointments\')">Open appointments</button></div>'+patientAppointments(ap)+'</div>'+
  (s.permissions.clinical?'<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Clinical summary</h3><div class="record-section-note">Documentation already recorded for this patient.</div></div><button class="mini" onclick="openClinical('+p.id+')">Full clinical record</button></div>'+patientClinicalSummary(c)+'</div>':'<div class="workspace-card"><div class="empty">Clinical details are restricted for your role.</div></div>')+

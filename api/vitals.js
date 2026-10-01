@@ -20,12 +20,10 @@ export default async function(req,res){
    }
   }
   const r=await db.query("INSERT INTO vitals(hospital_id,patient_id,queue_entry_id,encounter_id,recorded_by,blood_pressure_systolic,blood_pressure_diastolic,pulse,temperature,weight_kg,height_cm,spo2,respiratory_rate,notes) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *",[ctx.hospitalId,b.patient_id,b.queue_entry_id||null,encounterId,ctx.user.email,b.blood_pressure_systolic||null,b.blood_pressure_diastolic||null,b.pulse||null,b.temperature||null,b.weight_kg||null,b.height_cm||null,b.spo2||null,b.respiratory_rate||null,b.notes||null]);
-  if(encounterId)await db.query("UPDATE care_encounters SET current_stage='doctor',updated_at=now() WHERE id=$1",[encounterId]);
-  // Completing vitals advances the active OPD queue to the doctor waiting stage.
-  // Only waiting/vitals entries are advanced; later workflow stages are left untouched.
-  const localDate=await (async()=>{const h=await db.query("SELECT timezone FROM hospitals WHERE id=$1",[ctx.hospitalId]);const timezone=h.rows[0]?.timezone||"Asia/Kolkata";const parts=new Intl.DateTimeFormat("en-CA",{timeZone:timezone,year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const get=k=>parts.find(x=>x.type===k)?.value;return get("year")+"-"+get("month")+"-"+get("day")})();
-  const qStage=await db.query("SELECT id,doctor_id,token FROM queue_entries WHERE hospital_id=$1 AND patient_id=$2 AND token_date=$3 AND completed_at IS NULL AND stage IN ('waiting','vitals') ORDER BY id DESC LIMIT 1",[ctx.hospitalId,b.patient_id,localDate]);
-  if(qStage.rows[0])await db.query("UPDATE queue_entries SET stage='doctor',updated_at=now() WHERE id=$1 AND hospital_id=$2",[qStage.rows[0].id,ctx.hospitalId]);
+  if(encounterId)await db.query("UPDATE care_encounters SET current_stage='vitals',updated_at=now() WHERE id=$1",[encounterId]);
+  if(b.queue_entry_id){
+    await db.query("UPDATE queue_entries SET stage=CASE WHEN stage IN ('waiting','vitals') THEN 'vitals' ELSE stage END,updated_at=now() WHERE id=$1 AND hospital_id=$2 AND patient_id=$3 AND completed_at IS NULL",[Number(b.queue_entry_id),ctx.hospitalId,b.patient_id]);
+  }
   await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId,eventType:"vitals_recorded",stage:"vitals",entityType:"vitals",entityId:r.rows[0].id});
   const q=b.queue_entry_id?await db.query("SELECT doctor_id,token FROM queue_entries WHERE id=$1 AND hospital_id=$2",[b.queue_entry_id,ctx.hospitalId]):{rows:[]};
   await notifyRoles({hospitalId:ctx.hospitalId,roles:["doctor"],doctorId:q.rows[0]?.doctor_id||ctx.staff.doctor_id,title:"Vitals recorded",body:"Vitals are recorded and the patient is ready for consultation."+(q.rows[0]?.token?" Token "+q.rows[0].token+".":""),kind:"workflow",entityType:"patient",entityId:b.patient_id,patientId:b.patient_id,excludeStaffId:ctx.staff.id});
