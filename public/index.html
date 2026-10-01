@@ -101,7 +101,31 @@
 </header>
 <div id="roleWorkspaceBar" class="role-workspace-bar" style="display:none"></div><div id="resumeContextBar" class="resume-context-bar" style="display:none"></div><div id="workflowToastHost" class="workflow-toast-host" aria-live="polite"></div>
 
-<section id="reception-desk" class="section"><div class="reception-desk-page"><div class="reception-desk-head"><div><div class="kicker">RECEPTION</div><h2 class="reception-desk-title">OPD Desk</h2><p>Register a walk-in and issue a token, or book an appointment.</p></div></div><div class="reception-tabs"><button type="button" class="reception-tab active" onclick="setReceptionMode('walkin')">Walk-in / OPD</button><button type="button" class="reception-tab" onclick="setReceptionMode('appointment')">Appointment</button></div><div id="receptionWalkin" class="reception-mode"><form id="receptionWalkinForm" class="reception-form"><div class="reception-form-grid"><div class="field full"><label>Patient</label><input id="receptionPatientSearch" required placeholder="Name, phone or UHID"></div><div class="field"><label>Phone</label><input id="receptionPatientPhone" type="tel" placeholder="+91 98765 43210"></div><div class="field"><label>Date of birth</label><input id="receptionPatientDob" type="date"></div><div class="field"><label>Doctor</label><select id="receptionDoctor" required></select></div><div class="field"><label>Priority</label><select id="receptionPriority"><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option></select></div><div class="field full"><label>Reason</label><input id="receptionReason" placeholder="General consultation"></div></div><button class="reception-submit" type="submit">Issue token &amp; send to waiting</button></form></div><div id="receptionAppointment" class="reception-mode" style="display:none"><form id="receptionAppointmentForm" class="reception-form"><div class="reception-form-grid"><div class="field full"><label>Patient</label><input id="receptionApptPatient" required placeholder="Name or phone"></div><div class="field"><label>Phone</label><input id="receptionApptPhone" type="tel" placeholder="+91 98765 43210"></div><div class="field"><label>Doctor</label><select id="receptionApptDoctor" required></select></div><div class="field"><label>Date</label><input id="receptionApptDate" type="date" required></div><div class="field"><label>Time</label><input id="receptionApptTime" type="time" required></div><div class="field"><label>Type</label><select id="receptionApptType"><option value="in_person">In-person</option><option value="online">Online</option></select></div><div class="field full"><label>Reason</label><input id="receptionApptReason" placeholder="Consultation, follow-up, review"></div></div><button class="reception-submit" type="submit">Book appointment</button></form></div><div id="receptionDeskResult" class="reception-result" aria-live="polite"></div></div></section>
+<section id="reception-desk" class="section">
+  <div class="reception-kiosk">
+    <div class="reception-kiosk-head">
+      <div class="reception-brand"><span class="reception-brand-mark">+</span><div><strong>CareFlow</strong><span>Reception</span></div></div>
+      <div class="reception-kiosk-status"><span id="receptionClock">--:--</span><span id="receptionUserLabel">Reception desk</span><button type="button" class="reception-fullscreen" onclick="toggleReceptionFullscreen()">⛶ Full screen</button></div>
+    </div>
+    <div id="receptionStage" class="reception-stage">
+      <div class="reception-idle"><div class="reception-idle-mark">+</div><h2>Ready</h2><p>Select an action below.</p></div>
+      <div id="receptionDeskResult" class="reception-result" aria-live="polite"></div>
+    </div>
+    <div id="receptionOverlay" class="reception-overlay" aria-hidden="true">
+      <div class="reception-overlay-card">
+        <div class="reception-overlay-head"><div><span class="kicker" id="receptionOverlayKicker">RECEPTION</span><h2 id="receptionOverlayTitle">Walk-in / OPD</h2></div><button type="button" class="reception-close" onclick="closeReceptionPanel()">×</button></div>
+        <div id="receptionOverlayBody"></div>
+      </div>
+    </div>
+    <div class="reception-control-dock">
+      <button type="button" class="reception-control active" onclick="openReceptionPanel('walkin')"><b>1</b><span>WALK-IN</span></button>
+      <button type="button" class="reception-control" onclick="openReceptionPanel('appointment')"><b>2</b><span>APPOINTMENT</span></button>
+      <button type="button" class="reception-control" onclick="openReceptionPanel('search')"><b>3</b><span>SEARCH</span></button>
+      <button type="button" class="reception-control" onclick="openReceptionPanel('edit')"><b>4</b><span>EDIT</span></button>
+      <button type="button" class="reception-control" onclick="openReceptionPanel('queue')"><b>5</b><span>QUEUE</span></button>
+    </div>
+  </div>
+</section>
 
 <section id="dashboard" class="section active">
   <div class="dashboard-toolbar"><div class="dashboard-toolbar-label"><strong>Dashboard period</strong><span>Appointments follow this range · Active IPD stays current</span></div><div class="dashboard-range-controls"><select id="dashboardRange" aria-label="Dashboard period" onchange="changeDashboardRange(this.value)"><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="last7">Last 7 days</option><option value="next7">Next 7 days</option><option value="last30">Last 30 days</option><option value="next30">Next 30 days</option><option value="custom">Custom range</option></select><input id="dashboardFrom" type="date" aria-label="From date" style="display:none" onchange="applyCustomDashboardRange()"><span id="dashboardRangeSep" style="display:none">to</span><input id="dashboardTo" type="date" aria-label="To date" style="display:none" onchange="applyCustomDashboardRange()"><button class="btn" type="button" onclick="loadAllWithLoader()">Apply</button></div></div>
@@ -310,12 +334,64 @@ function renderResumeBar(){const el=document.getElementById('resumeContextBar');
 function resumeWorkingContext(){const c=readWorkingContext();if(!c)return;if(c.section==='doctor-room'&&c.patientId){showSection('doctor-room');loadDoctorRoom().then(()=>selectDoctorPatient(c.patientId,c.queueId||null,c.appointmentId||null,c.action||null)).catch(()=>{})}else if(c.section==='patients'&&c.patientId){(c.mode==='clinical'?openClinical(c.patientId,c.action||null):openPatientWorkspace(c.patientId)).catch(()=>{})}else if(c.section==='queue'&&c.patientId){showSection('queue');setTimeout(()=>openClinical(c.patientId,c.action||null),50)}else showSection(c.section)}
 function restoreWorkingContext(){const c=readWorkingContext();if(!c)return false;if(!VALID_SECTIONS.includes(c.section)||!canSection(c.section))return false;resumeWorkingContext();return true}
 function roleDefaultSection(){return ROLE_DEFAULT_SECTIONS[state.session?.staff?.role]||'dashboard'}
-function setReceptionMode(mode){
-  document.querySelectorAll('.reception-tab').forEach((x,i)=>x.classList.toggle('active',(mode==='walkin'&&i===0)||(mode==='appointment'&&i===1)));
-  const w=document.getElementById('receptionWalkin'),a=document.getElementById('receptionAppointment');
-  if(w)w.style.display=mode==='walkin'?'block':'none';
-  if(a)a.style.display=mode==='appointment'?'block':'none';
-  const r=document.getElementById('receptionDeskResult');if(r)r.innerHTML='';
+function setReceptionMode(mode){openReceptionPanel(mode==='appointment'?'appointment':'walkin')}
+function receptionEscapeHtml(v){return esc(v)}
+function updateReceptionClock(){
+  const el=document.getElementById('receptionClock');if(!el)return;
+  const d=new Date();el.textContent=d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:false});
+}
+async function toggleReceptionFullscreen(){
+  try{
+    if(document.fullscreenElement){await document.exitFullscreen?.();return}
+    await document.documentElement.requestFullscreen?.();
+    try{await screen.orientation?.lock?.('landscape')}catch(e){}
+  }catch(e){}
+}
+function closeReceptionPanel(){
+  const ov=document.getElementById('receptionOverlay');if(ov){ov.classList.remove('open');ov.setAttribute('aria-hidden','true')}
+  document.querySelectorAll('.reception-control').forEach(x=>x.classList.remove('selected'));
+  const stage=document.getElementById('receptionStage');if(stage)stage.classList.remove('dim');
+}
+function receptionPatientMatches(q){
+  const term=String(q||'').trim().toLowerCase();
+  if(!term)return [];
+  return (state.patients||[]).filter(p=>[p.name,p.phone,p.uhid].some(v=>String(v||'').toLowerCase().includes(term))).slice(0,12);
+}
+function renderReceptionSearch(mode){
+  const title=mode==='edit'?'Edit patient':'Search patient';
+  const placeholder=mode==='edit'?'Name, phone or UHID':'Name, phone or UHID';
+  return '<div class="reception-search-box"><input id="receptionLookup" autofocus placeholder="'+placeholder+'" oninput="renderReceptionLookup(this.value,''+mode+'')"><div id="receptionLookupResults" class="reception-lookup-results"><div class="reception-empty-hint">Start typing to search.</div></div></div>';
+}
+function renderReceptionLookup(q,mode){
+  const el=document.getElementById('receptionLookupResults');if(!el)return;
+  const rows=receptionPatientMatches(q);
+  if(!rows.length){el.innerHTML=String(q||'').trim()?'<div class="reception-empty-hint">No patient found.</div>':'<div class="reception-empty-hint">Start typing to search.</div>';return}
+  el.innerHTML=rows.map(p=>'<div class="reception-lookup-row"><div><strong>'+esc(p.name||'Patient')+'</strong><span>'+esc(p.uhid||'No UHID')+(p.phone?' · '+esc(p.phone):'')+'</span></div><button type="button" class="reception-row-action" onclick="'+(mode==='edit'?'editPatient('+Number(p.id)+');closeReceptionPanel()':'openPatientWorkspace('+Number(p.id)+');closeReceptionPanel()')+'">'+(mode==='edit'?'EDIT':'OPEN')+'</button></div>').join('');
+}
+async function openReceptionPanel(mode){
+  const ov=document.getElementById('receptionOverlay'),body=document.getElementById('receptionOverlayBody'),title=document.getElementById('receptionOverlayTitle'),kicker=document.getElementById('receptionOverlayKicker');
+  if(!ov||!body)return;
+  document.querySelectorAll('.reception-control').forEach(x=>x.classList.toggle('selected',x.getAttribute('onclick')?.includes("'"+mode+"'")));
+  const titles={walkin:'Walk-in / OPD',appointment:'Book appointment',search:'Search patient',edit:'Edit patient',queue:'Today’s queue'};
+  kicker.textContent='RECEPTION';title.textContent=titles[mode]||'Reception';
+  if(mode==='walkin'){
+    body.innerHTML='<form id="receptionWalkinForm" class="reception-form kiosk-form"><div class="reception-form-grid"><div class="field full"><label>Patient</label><input id="receptionPatientSearch" required placeholder="Name, phone or UHID" autofocus></div><div class="field"><label>Phone</label><input id="receptionPatientPhone" type="tel" placeholder="+91 98765 43210"></div><div class="field"><label>Date of birth</label><input id="receptionPatientDob" type="date"></div><div class="field"><label>Doctor</label><select id="receptionDoctor" required></select></div><div class="field"><label>Priority</label><select id="receptionPriority"><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option></select></div><div class="field full"><label>Reason</label><input id="receptionReason" placeholder="General consultation"></div></div><button class="reception-submit" type="submit">ISSUE TOKEN → WAITING</button></form>';
+    renderReceptionDesk();document.getElementById('receptionWalkinForm').addEventListener('submit',e=>submitReceptionWalkin(e).catch(x=>alert(x.message)));
+  }else if(mode==='appointment'){
+    body.innerHTML='<form id="receptionAppointmentForm" class="reception-form kiosk-form"><div class="reception-form-grid"><div class="field full"><label>Patient</label><input id="receptionApptPatient" required placeholder="Name or phone" autofocus></div><div class="field"><label>Phone</label><input id="receptionApptPhone" type="tel" required placeholder="+91 98765 43210"></div><div class="field"><label>Doctor</label><select id="receptionApptDoctor" required></select></div><div class="field"><label>Date</label><input id="receptionApptDate" type="date" required></div><div class="field"><label>Time</label><input id="receptionApptTime" type="time" required></div><div class="field"><label>Type</label><select id="receptionApptType"><option value="in_person">In-person</option><option value="online">Online</option></select></div><div class="field full"><label>Reason</label><input id="receptionApptReason" placeholder="Consultation, follow-up, review"></div></div><button class="reception-submit" type="submit">BOOK APPOINTMENT</button></form>';
+    renderReceptionDesk();document.getElementById('receptionAppointmentForm').addEventListener('submit',e=>submitReceptionAppointment(e).catch(x=>alert(x.message)));
+  }else if(mode==='search'||mode==='edit'){
+    body.innerHTML=renderReceptionSearch(mode);
+  }else if(mode==='queue'){
+    body.innerHTML='<div class="reception-queue-loading">Loading queue…</div>';
+    try{
+      const q=await api('/queue');
+      const rows=Array.isArray(q)?q:(q.queue||[]);
+      body.innerHTML=rows.length?'<div class="reception-queue-list">'+rows.slice(0,18).map(x=>'<button type="button" class="reception-queue-row" onclick="openPatientWorkspace('+Number(x.patient_id)+');closeReceptionPanel()"><b>'+esc(x.token||x.token_number||'—')+'</b><span><strong>'+esc(x.patient_name||x.name||'Patient')+'</strong><small>'+esc(prettyStatus(x.stage||'waiting'))+(x.doctor_name?' · '+esc(x.doctor_name):'')+'</small></span><i>›</i></button>').join('')+'</div>':'<div class="reception-empty-hint">No queue items today.</div>';
+    }catch(e){body.innerHTML='<div class="reception-empty-hint">'+esc(e.message||'Could not load queue')+'</div>'}
+  }
+  ov.classList.add('open');ov.setAttribute('aria-hidden','false');document.getElementById('receptionStage')?.classList.add('dim');
+  setTimeout(()=>body.querySelector('input,select')?.focus(),30);
 }
 function renderReceptionDesk(){
   const doctors=state.doctors||[];
@@ -340,7 +416,7 @@ async function submitReceptionWalkin(e){
   const r=await receptionFindOrCreatePatient(name,phone,dob);
   const q=await api('/queue',{method:'POST',body:JSON.stringify({patient_id:r.id,doctor_id:Number(doctor),stage:'waiting',priority,reason:reason||'General consultation'})});
   const box=document.getElementById('receptionDeskResult');box.innerHTML='<strong>Token '+esc(q.token?.token||q.token||'—')+'</strong><span>'+esc(r.name||name)+' · '+esc(r.uhid||'')+' · Waiting for vitals</span>';
-  e.target.reset();document.getElementById('receptionDoctor').value='';await loadSectionData('reception-desk',true);
+  e.target.reset();document.getElementById('receptionDoctor').value='';closeReceptionPanel();setTimeout(()=>box.innerHTML='',5000);
 }
 async function submitReceptionAppointment(e){
   e.preventDefault();
@@ -348,7 +424,7 @@ async function submitReceptionAppointment(e){
   if(!name||!phone||!doctor||!date||!time)return;
   const r=await api('/appointments',{method:'POST',body:JSON.stringify({patient_name:name,patient_phone:phone,doctor_id:Number(doctor),appointment_date:date,appointment_time:time,reason:reason||null,consultation_type:type,source:'reception'})});
   const box=document.getElementById('receptionDeskResult');box.innerHTML='<strong>Appointment booked</strong><span>'+esc(r.patient?.name||name)+' · '+esc(date)+' · '+esc(time)+'</span>';
-  e.target.reset();document.getElementById('receptionApptDate').value=new Date().toISOString().slice(0,10);
+  e.target.reset();document.getElementById('receptionApptDate').value=new Date().toISOString().slice(0,10);closeReceptionPanel();setTimeout(()=>box.innerHTML='',5000);
 }
 function renderRoleWorkspace(){
   const el=document.getElementById('roleWorkspaceBar');if(!el)return;
@@ -1524,8 +1600,16 @@ function patientCareTeamActions(p,s){
 async function openClinical(pid,action){return openPatientWorkspace(pid,action||'workspace')}
 window.addEventListener('DOMContentLoaded',()=>{
   loadAllWithLoader();setTimeout(pollNotifications,1200);setTimeout(()=>document.getElementById('aiAssistantBall')?.classList.add('ai-ball-enter'),180);
-  document.getElementById('receptionWalkinForm')?.addEventListener('submit',e=>submitReceptionWalkin(e).catch(x=>alert(x.message)));
-  document.getElementById('receptionAppointmentForm')?.addEventListener('submit',e=>submitReceptionAppointment(e).catch(x=>alert(x.message)));
+  updateReceptionClock();setInterval(updateReceptionClock,1000);
+  document.addEventListener('keydown',e=>{
+    if(state.session?.staff?.role!=='receptionist')return;
+    if(e.key==='Escape'){closeReceptionPanel();return}
+    if(e.ctrlKey||e.altKey||e.metaKey)return;
+    const tag=e.target?.tagName?.toLowerCase();
+    if(['input','textarea','select'].includes(tag))return;
+    const map={F1:'walkin',F2:'appointment',F3:'search',F4:'edit',F5:'queue'};
+    if(map[e.key]){e.preventDefault();openReceptionPanel(map[e.key])}
+  });
 });
 </script>
 
