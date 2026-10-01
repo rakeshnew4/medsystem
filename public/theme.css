@@ -328,15 +328,15 @@ button:disabled,.btn:disabled{opacity:.55;cursor:not-allowed}
   .app-shell{display:block!important;grid-template-columns:1fr;width:100%;min-width:0}
   .main{width:100%;min-width:0;box-sizing:border-box}
   body{overflow-x:hidden}
-  .sidebar{position:fixed;z-index:1000;left:0;top:0;bottom:0;width:min(84vw,320px);height:100dvh;overflow-y:auto;transform:translateX(-105%);transition:transform .2s ease;box-shadow:18px 0 40px rgba(0,0,0,.2)}
-  body.mobile-nav-open .sidebar{transform:translateX(0)!important;visibility:visible!important;opacity:1!important}
-  .mobile-backdrop{position:fixed;inset:0;background:rgba(10,30,25,.42);z-index:999}
+  .sidebar{position:fixed;z-index:1000;left:0;top:0;bottom:0;width:min(86vw,360px);height:100vh;height:100dvh;max-height:100dvh;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;transform:translate3d(-105%,0,0);transition:transform .2s ease;box-shadow:18px 0 40px rgba(0,0,0,.2);-webkit-overflow-scrolling:touch}
+  body.mobile-nav-open .sidebar{transform:translate3d(0,0,0)!important;visibility:visible!important;opacity:1!important}
+  .mobile-backdrop{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;background:rgba(10,30,25,.42);z-index:999;touch-action:none}
   body.mobile-nav-open .mobile-backdrop{display:block}
   .mobile-menu-btn{display:inline-flex}
   .mobile-nav-close{display:grid;place-items:center;width:40px;height:40px;margin-left:auto;border:1px solid rgba(255,255,255,.15);border-radius:10px;background:rgba(255,255,255,.06);color:#fff;font-size:24px;line-height:1;cursor:pointer}
   .sidebar{box-sizing:border-box!important;width:min(86vw,360px)!important;max-width:360px!important;min-width:0!important;padding:16px!important}
   .sidebar .brand{width:100%;box-sizing:border-box}
-  .sidebar .nav{display:block!important;grid-template-columns:none!important;width:100%;min-width:0}
+  .sidebar .nav{display:block!important;grid-template-columns:none!important;width:100%;min-width:0;overflow:visible}
   .sidebar .nav-group{display:block!important;width:100%;min-width:0}
   .sidebar .nav-group-toggle,.sidebar .nav button{width:100%;box-sizing:border-box}
   .sidebar .nav-sub{display:block;width:auto;min-width:0;margin-left:8px}

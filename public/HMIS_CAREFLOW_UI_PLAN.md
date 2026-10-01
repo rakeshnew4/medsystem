@@ -222,6 +222,13 @@ HMIS references: `Privileges.java`, `UserPrivilageController.java`, `ConfigOptio
 - [x] Inventory reports — v437: existing fixed-asset and pharmacy closing-stock report contracts are surfaced as optional inventory snapshot hooks when the staff permission allows.
 - [ ] Authenticated reporting E2E — genuine hospital-staff execution remains open.
 
+### UI-15 — Global Responsive Shell Hardening
+- [x] Mobile sidebar drawer geometry — fixed overlay drawer uses viewport-safe sizing, touch scrolling and transform-based opening below the responsive breakpoint.
+- [x] Mobile backdrop — full viewport touch-safe backdrop remains behind the drawer and above the workspace.
+- [x] AI floating assistant positioning — removed viewport-sized entrance animation that could make the fixed assistant appear to originate from the middle of a phone/desktop-mode viewport; assistant now stays anchored to the viewport and respects mobile safe-area insets.
+- [x] Desktop-mode-on-phone baseline — fixed AI control no longer depends on a viewport-height animation, and the sidebar keeps normal desktop behavior when the browser deliberately reports a desktop-width viewport.
+- [ ] Physical-device browser verification — final tap/scroll/rotation verification on an actual phone remains a manual device gate.
+
 ## Per-module completion gate
 A module is UI-complete only when the UI reflects the verified HMIS workflow, all states have visible feedback, patient/encounter/department context is clear, actions are permission-aware, mutation buttons map to existing server transitions, desktop and mobile layouts work, no console-breaking UI errors are introduced, and authenticated browser E2E is recorded separately when available.
 
@@ -265,3 +272,4 @@ A module is UI-complete only when the UI reflects the verified HMIS workflow, al
 - 2026-10-01: UI-09 financial audit/history increment deployed as v415: added protected, read-only `/api/billing-audit` with hospital-scoped payment ledger, billing workflow events and matching invoice audit events, plus an Audit history action from invoice detail. Public access returns 401 and the available unsigned app-user runner is rejected by `requireStaff()`. No financial mutation was introduced. Invoice editor remains blocked pending a verified server-side mutation contract.
 - 2026-10-01: UI-10 Theatre increment deployed as v417: procedure worklist now follows the HMIS surgery-search pattern with patient/UHID/admission/procedure/doctor/room search, status/date filters, BHT/admission context, scheduled end-time context and lifecycle-aware existing actions. No Theatre backend mutation contract changed. Dry-run passed with 0 errors; anonymous `/api/theatre` remains 401. Next UI-10 task: room schedule.
 - 2026-10-01: UI-10 Theatre full UI loop implemented and deployed as v421: room schedule, patient/procedure header, surgical team, lifecycle controls, charge presentation, ward return, validation/revert, and clinical/financial closure view. Permission-aware controls use existing protected Theatre/billing contracts; no scheduling or clinical/financial mutation contract was invented. Dry-run passed with 0 errors; production Theatre validator returned 22/22 checks passing with 0 violations; anonymous protected Theatre routes returned 401. Authenticated hospital-staff E2E remains open.
+- 2026-10-01: UI-15 responsive shell hardening implemented: mobile sidebar is a viewport-safe transform drawer with touch-safe backdrop/scrolling, and the AI floating assistant no longer uses a viewport-height entrance animation that could visually originate from the middle of a phone or desktop-mode viewport. Mobile assistant positioning now respects safe-area insets. Physical-device verification remains the final manual gate.
