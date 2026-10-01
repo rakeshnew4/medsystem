@@ -428,6 +428,13 @@ button:disabled,.btn:disabled{opacity:.55;cursor:not-allowed}
   .care-team-buttons .mini{min-height:44px;padding:10px 9px;font-size:11px}
 }
 
+/* Patient workspace hierarchy and journey states */
+.patient-header-status{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.patient-header-status span{display:inline-flex;align-items:center;padding:5px 8px;border:1px solid var(--line);border-radius:999px;background:var(--surface-2);font-size:10px;color:var(--muted);font-weight:700}.patient-header-status span:first-child,.patient-header-status span:nth-child(2){color:var(--accent);background:var(--accent-2);border-color:#b8dfd1}
+.workflow-progress-strip{display:flex;gap:5px;overflow-x:auto;padding:0 0 14px;margin-bottom:4px;scrollbar-width:none}.workflow-progress-strip::-webkit-scrollbar{display:none}.workflow-progress-item{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;padding:6px 9px;border:1px solid var(--line);border-radius:999px;background:#fff;color:#8a9692;font-size:9px;font-weight:700}.workflow-progress-item b{font-size:8px}.workflow-progress-item.done{color:#65756f;background:#f4f7f5}.workflow-progress-item.current{color:var(--accent);background:var(--accent-2);border-color:#9fd4c4;box-shadow:0 0 0 2px rgba(27,127,103,.06)}
+.care-team-state{display:flex;align-items:center;gap:7px;justify-content:flex-end}.care-team-progress{font-size:8px!important;letter-spacing:.06em;font-weight:800!important;padding:4px 7px;border-radius:999px;background:#f4f6f5;color:#87938f}.care-team-progress.current{background:var(--accent-2);color:var(--accent)}.care-team-progress.done{background:#eef3f0;color:#687771}.care-team-progress.up-next{background:#f8faf9;color:#87938f}.care-team-group.workflow-current{border-color:#8ccdbb}.care-team-group.workflow-done{opacity:.88}.care-team-group.workflow-done .care-team-actions-side{opacity:.88}
+@media(max-width:900px){#patientDirectory{max-height:250px}.patient-directory{max-height:310px}.workflow-progress-strip{margin-right:-4px;padding-right:4px}.patient-header-status{margin-bottom:2px}}
+@media(max-width:560px){#patientDirectory{max-height:220px}.patient-directory{max-height:280px}.patient-header-status{gap:5px}.patient-header-status span{font-size:9px;padding:5px 7px}.workflow-progress-item{padding:7px 9px}.care-team-state{align-items:flex-end;flex-direction:column;gap:4px}.care-team-progress{font-size:7px!important}}
+
 /* Enterprise shell / compact mobile header */
 .sidebar-footer{padding:14px 8px 8px}
 .sidebar-account{padding:10px 10px 12px;border:1px solid rgba(255,255,255,.10);border-radius:10px;background:rgba(255,255,255,.05);margin-bottom:8px}

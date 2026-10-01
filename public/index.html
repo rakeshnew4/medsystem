@@ -947,11 +947,11 @@ function renderPatientWorkspace(){
  const outstanding=bills.reduce((n,x)=>n+Math.max(0,Number(x.due||Number(x.total||0)-Number(x.paid||0))),0);
  const currentStep=p.queue_stage?prettyStatus(p.queue_stage):(activeAdm?'Admitted':'Registered');
  const body=document.getElementById('patientWorkspaceBody');
- body.innerHTML='<div class="patient-workspace-header"><div><div class="kicker">'+esc(p.uhid||'Patient record')+'</div><h2 class="patient-workspace-name">'+esc(p.name)+'</h2><div class="patient-workspace-meta">'+(patientAge(p.date_of_birth)?patientAge(p.date_of_birth)+' · ':'')+esc(p.phone||'No phone')+(p.email?' · '+esc(p.email):'')+'</div></div><div>'+patientWorkspaceActionButtons(p)+'</div></div>'+
+ body.innerHTML='<div class="patient-workspace-header"><div><div class="kicker">'+esc(p.uhid||'PATIENT RECORD')+'</div><h2 class="patient-workspace-name">'+esc(p.name)+'</h2><div class="patient-workspace-meta">'+(patientAge(p.date_of_birth)?patientAge(p.date_of_birth)+' · ':'')+esc(p.phone||'No phone')+(p.email?' · '+esc(p.email):'')+'</div><div class="patient-header-status"><span>'+esc(activeAdm?'IPD':'OPD')+'</span><span>'+esc(currentStep)+'</span><span>'+((c?.visits||[]).length)+' visits</span><span>'+fu.filter(x=>x.status!=='completed').length+' follow-ups</span>'+(outstanding>0?'<span>₹'+outstanding.toFixed(2)+' due</span>':'')+'</div></div><div>'+patientWorkspaceActionButtons(p)+'</div></div>'+
  patientNextActions(p,s)+
  patientCareTeamActions(p,s)+
  '<div id="patientWorkspaceActionArea" class="patient-workspace-action-area"></div>'+
- '<div class="patient-summary-strip"><div><span>Current care</span><strong>'+esc(activeAdm?'IPD':'OPD')+'</strong></div><div><span>Current step</span><strong>'+esc(currentStep)+'</strong></div><div><span>Visits</span><strong>'+((c?.visits||[]).length)+'</strong></div><div><span>Open follow-ups</span><strong>'+fu.filter(x=>x.status!=='completed').length+'</strong></div><div><span>Outstanding</span><strong>₹'+outstanding.toFixed(2)+'</strong></div></div>'+
+ '<!-- summary moved into patient header -->'+
  '<div class="patient-workspace-grid"><div class="patient-workspace-column">'+
  '<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Today / current care</h3><div class="record-section-note">What staff need to know before taking the next action.</div></div></div>'+patientCurrentCare(p,activeAdm,latestVitals,lastVisit,s)+'</div>'+
    (s.role==='doctor'&&s.permissions.clinical?'<div class="workspace-card ai-clinical-card"><div class="panel-head"><div><h3 class="panel-title">🎙 AI Listen Summary</h3><div class="record-section-note">Listen to the consultation, then generate a documentation draft. Review and approve before saving.</div></div></div><textarea id="aiScribeInput" rows="5" placeholder="Conversation transcript will appear here…"></textarea><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn" onclick="toggleClinicalDictation()">🎙 Start Listening</button><button class="btn primary" onclick="runClinicalScribe()">Stop & Summarize</button></div><div id="aiScribeDraft" style="margin-top:10px"></div></div><div class="workspace-card consultation-card"><div class="panel-head"><div><h3 class="panel-title">Doctor consultation</h3><div class="record-section-note">Review the AI draft or write/edit the final clinical note yourself.</div></div></div><textarea id="doctorConsultationNote" rows="8" placeholder="Chief complaint, history, examination, assessment, plan…">'+esc(lastVisit?.visit_status==='open'?lastVisit.clinical_notes||'':'')+'</textarea><div class="consultation-footer"><button class="btn" onclick="saveDoctorVisit(false)">Save draft</button><button class="btn primary" onclick="saveDoctorVisit(true)">Save & complete visit</button></div></div>':'')+
@@ -1405,18 +1405,27 @@ function patientCareTeamActions(p,s){
   const active=r=>admin||role===r;
   const escq=v=>esc(v);
   const id=Number(p.id);
-  const age=patientAge(p.date_of_birth);
   const care=p.care_type==='ipd'?'IPD':'OPD';
-  const queue=p.queue_stage?prettyStatus(p.queue_stage):'Registered';
-  const phone=p.phone||'No phone';
-  const uhid=p.uhid||'No UHID';
-  const patientDetails='<div class="care-team-patient-details compact"><div class="care-team-context-label">CURRENT PATIENT</div><div class="care-team-patient-tags"><span class="care-team-patient-tag">'+escq(care)+'</span><span class="care-team-patient-tag">'+escq(queue)+'</span>'+(p.ward||p.bed_number?'<span class="care-team-patient-tag">'+escq(p.ward||'Ward')+(p.bed_number?' · '+escq(p.bed_number):'')+'</span>':'')+'</div></div>';
+  const queue=String(p.queue_stage||'').toLowerCase();
+  const outstanding=(s.billing||[]).reduce((n,x)=>n+Math.max(0,Number(x.due??(Number(x.total||0)-Number(x.paid||0)))),0);
+  const stageMap={receptionist:0,nurse:1,doctor:2,lab:3,pharmacy:4,billing:5};
+  let currentStage=0;
+  if(s.ipd?.admissions?.some(a=>!a.discharged_at))currentStage=5;
+  else if(queue==='waiting')currentStage=1;
+  else if(queue==='vitals'||queue==='doctor'||queue==='in_room')currentStage=2;
+  else if(queue==='lab')currentStage=3;
+  else if(queue==='pharmacy')currentStage=4;
+  else if(outstanding>0)currentStage=5;
+  else if(p.today_token)currentStage=1;
+  const patientDetails='<div class="care-team-patient-details compact"><div class="care-team-context-label">CURRENT PATIENT</div><div class="care-team-patient-tags"><span class="care-team-patient-tag">'+escq(care)+'</span><span class="care-team-patient-tag">'+escq(p.queue_stage?prettyStatus(p.queue_stage):'Registered')+'</span>'+(p.ward||p.bed_number?'<span class="care-team-patient-tag">'+escq(p.ward||'Ward')+(p.bed_number?' · '+escq(p.bed_number):'')+'</span>':'')+'</div></div>';
   const section=(num,roleKey,label,desc,actions)=>{
     const mine=active(roleKey);
+    const idx=stageMap[roleKey];
+    const progress=idx<currentStage?'DONE':idx===currentStage?'CURRENT':'UP NEXT';
     const stateLabel=admin?'ADMIN ACCESS':(mine?'YOUR WORK':'CARE TEAM');
     const icon=({receptionist:'R',nurse:'N',doctor:'D',lab:'L',pharmacy:'P',billing:'₹'})[roleKey]||num;
     const buttons=actions.map((a,i)=>'<button type="button" class="mini '+(mine&&i===0?'primary':'')+'" '+(mine?'onclick="'+a.onclick+'"':'disabled')+'>'+escq(a.label)+'</button>').join('');
-    return '<div class="care-team-group '+(mine?'current-role':'')+'" data-care-role="'+roleKey+'"><div class="care-team-group-head"><div><span class="care-team-step">'+num+'</span><span class="care-team-role-icon" aria-hidden="true">'+icon+'</span><strong>'+escq(label)+'</strong></div><span class="care-team-ownership '+(mine?'mine':'')+'">'+stateLabel+'</span></div><div class="care-team-role-layout">'+patientDetails+'<div class="care-team-actions-side"><div class="care-team-actions-title">'+escq(desc)+'</div><div class="care-team-buttons">'+buttons+'</div></div></div></div>';
+    return '<div class="care-team-group '+(mine?'current-role ':'')+'workflow-'+progress.toLowerCase().replace(' ','-')+'" data-care-role="'+roleKey+'"><div class="care-team-group-head"><div><span class="care-team-step">'+num+'</span><span class="care-team-role-icon" aria-hidden="true">'+icon+'</span><strong>'+escq(label)+'</strong></div><div class="care-team-state"><span class="care-team-ownership '+(mine?'mine':'')+'">'+stateLabel+'</span><span class="care-team-progress '+progress.toLowerCase().replace(' ','-')+'">'+progress+'</span></div></div><div class="care-team-role-layout">'+patientDetails+'<div class="care-team-actions-side"><div class="care-team-actions-title">'+escq(desc)+'</div><div class="care-team-buttons">'+buttons+'</div></div></div></div>';
   };
   const sections=[
     section('01','receptionist','Reception','Registration, OPD check-in and front-desk work.',[
@@ -1450,7 +1459,8 @@ function patientCareTeamActions(p,s){
       {label:'Open billing',onclick:"showSection('billing')"}
     ])
   ];
-  return '<div class="workspace-card care-team-actions-card"><div class="panel-head"><div><h3 class="panel-title">Care team workflow</h3><div class="record-section-note">Shared patient context · role-specific work stays in one continuous flow.</div></div><span class="role-pill">'+escq(admin?'Admin':(role||'staff'))+'</span></div><div class="care-team-flow">'+sections.join('')+'</div></div>';
+  const progressStrip=Object.entries(stageMap).map(([rk,idx])=>'<span class="workflow-progress-item '+(idx<currentStage?'done':idx===currentStage?'current':'')+'"><b>'+String(idx+1).padStart(2,'0')+'</b>'+escq({receptionist:'Reception',nurse:'Nurse',doctor:'Doctor',lab:'Lab',pharmacy:'Pharmacy',billing:'Billing'}[rk])+'</span>').join('');
+  return '<div class="workspace-card care-team-actions-card"><div class="panel-head"><div><h3 class="panel-title">Care team workflow</h3><div class="record-section-note">Follow the patient journey from registration to clinical care, investigations, dispensing and billing.</div></div><span class="role-pill">'+escq(admin?'Admin':(role||'staff'))+'</span></div><div class="workflow-progress-strip">'+progressStrip+'</div><div class="care-team-flow">'+sections.join('')+'</div></div>';
 }
 
 // Canonical patient-detail entry point. Older clinical-detail helpers remain for their edit forms,
