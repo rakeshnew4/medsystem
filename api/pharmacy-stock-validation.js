@@ -15,9 +15,9 @@ export default async function(req,res){
   await add("transfer_state_integrity","SELECT count(*) AS violations FROM pharmacy_stock_transfers WHERE (status='in_transit' AND (received_at IS NOT NULL OR cancelled_at IS NOT NULL OR received_by IS NOT NULL OR cancelled_by IS NOT NULL)) OR (status='received' AND (received_at IS NULL OR received_by IS NULL OR cancelled_at IS NOT NULL OR cancelled_by IS NOT NULL)) OR (status='cancelled' AND (cancelled_at IS NULL OR cancelled_by IS NULL OR received_at IS NOT NULL OR received_by IS NOT NULL))");
   await add("transfer_ledger_integrity",`WITH x AS (
     SELECT t.id,t.status,COUNT(*) FILTER (WHERE l.transaction_type='transfer_out') AS outs,
-      COUNT(*) FILTER (WHERE l.transaction_type='transfer_in') AS ins,COUNT(*) FILTER (WHERE l.transaction_type='transfer_return') AS returns
+      COUNT(*) FILTER (WHERE l.transaction_type='transfer_in') AS ins,COUNT(*) FILTER (WHERE l.transaction_type='transfer_return') AS return_count
     FROM pharmacy_stock_transfers t LEFT JOIN pharmacy_stock_transactions l ON l.transfer_id=t.id GROUP BY t.id,t.status
-  ) SELECT COUNT(*) AS violations FROM x WHERE (status='in_transit' AND (outs<>1 OR ins<>0 OR returns<>0)) OR (status='received' AND (outs<>1 OR ins<>1 OR returns<>0)) OR (status='cancelled' AND (outs<>1 OR ins<>0 OR returns<>1))`);
+  ) SELECT COUNT(*) AS violations FROM x WHERE (status='in_transit' AND (outs<>1 OR ins<>0 OR return_count<>0)) OR (status='received' AND (outs<>1 OR ins<>1 OR return_count<>0)) OR (status='cancelled' AND (outs<>1 OR ins<>0 OR return_count<>1))`);
   await add("transfer_hospital_isolation","SELECT count(*) AS violations FROM pharmacy_stock_transfers t LEFT JOIN pharmacy_stock s ON s.id=t.source_stock_id WHERE s.id IS NULL OR s.hospital_id<>t.hospital_id");
   return res.json({ok:checks.every(x=>x.violations===0),checks,total_violations:checks.reduce((a,x)=>a+x.violations,0)});
 }
