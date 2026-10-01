@@ -32,7 +32,7 @@ export default async function(req,res){
     if(!s.rows[0])return res.status(404).json({error:"Destination custodian not found"});
    }
    const tx=await db.transaction([{
-    sql:"WITH locked AS (SELECT * FROM fixed_assets WHERE id=$1 AND hospital_id=$2 FOR UPDATE), inserted AS (INSERT INTO fixed_asset_transfers(hospital_id,asset_id,from_location,to_location,from_custodian_staff_id,to_custodian_staff_id,reason,transferred_by) SELECT hospital_id,id,location,$3,custodian_staff_id,$4,$5,$6 FROM locked WHERE status='active' RETURNING *) UPDATE fixed_assets a SET location=$3,custodian_staff_id=$4,updated_at=now() FROM inserted i WHERE a.id=i.asset_id AND a.hospital_id=$2 RETURNING a.*,i.from_location,i.to_location,i.from_custodian_staff_id,i.to_custodian_staff_id",
+    sql:"WITH locked AS (SELECT * FROM fixed_assets WHERE id=$1 AND hospital_id=$2 FOR UPDATE), inserted AS (INSERT INTO fixed_asset_transfers(hospital_id,asset_id,from_location,to_location,from_custodian_staff_id,to_custodian_staff_id,reason,transferred_by) SELECT hospital_id,id,location,$3,custodian_staff_id,$4,$5,$6 FROM locked WHERE status='active' AND (location IS DISTINCT FROM $3 OR custodian_staff_id IS DISTINCT FROM $4) RETURNING *) UPDATE fixed_assets a SET location=$3,custodian_staff_id=$4,updated_at=now() FROM inserted i WHERE a.id=i.asset_id AND a.hospital_id=$2 RETURNING a.*,i.from_location,i.to_location,i.from_custodian_staff_id,i.to_custodian_staff_id",
     params:[id,ctx.hospitalId,toLocation,toStaff,String(b.reason||"").trim()||null,ctx.user.email]
    }]);
    const row=tx.results?.[0]?.rows?.[0];
