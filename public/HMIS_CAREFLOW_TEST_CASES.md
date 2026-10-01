@@ -320,8 +320,8 @@ Expected: hospital configuration validator returns zero violations.
 Status: v431, 7/7 checks and 0 violations.
 
 ## TC-U12-021 — Documentation/test pass
-Expected: U12 implementation, permissions, configuration and audit documentation remain synchronized.
-Status: Open.
+Expected: U12 implementation, permissions, configuration and audit documentation remain synchronized; role-preview tooling is not counted as genuine staff E2E.
+Status: Refreshed v463. U12 UI plan, continuation queue and test-case state are synchronized with v462/v463; configuration validation remains 7/7 with 0 violations, the staff/permission/configuration invariant suite remains 14/14 with 0 violations, and protected staff/setup routes remain anonymous-401 gated. Genuine administrator/staff browser E2E remains a separate open gate.
 
 ## TC-U12-022 — Automated access/contract verification
 Expected: all staff/permission/hospital configuration invariants pass and protected anonymous routes return 401.
