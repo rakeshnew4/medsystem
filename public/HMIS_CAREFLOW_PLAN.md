@@ -600,6 +600,8 @@ Remaining:
 - Theatre charge categories are explicitly constrained to procedure, theatre service, professional fee, medicine, or consumable.
 - Theatre charges now support hospital-scoped catalogue linkage and source_type/source_id identities with a unique source guard, preventing the same source charge from being represented twice.
 - Theatre procedure catalogue service types are validated for billable categories.
+- Theatre charge-to-invoice reconciliation now stores a one-to-one invoice_item_id and creates the invoice line atomically with charge linking.
+- Automated database checks verified no duplicate source charges, no duplicate invoice-item links, and no linked Theatre charge missing its invoice line.
 - Remaining: authenticated doctor/nurse/billing E2E with role boundaries, invalid transitions, concurrency/overlap verification, source-charge retry/double-counting checks, and billing continuity.
 
 Theatre remains **In progress** until the authenticated workflow is tested end-to-end.
