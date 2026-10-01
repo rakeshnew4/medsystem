@@ -49,6 +49,38 @@ export default async function(req,res){
 
   if(req.method==="PUT"){
     const b=req.body||{};
+
+    // Atomic HMIS-style dispatch: select and claim the next eligible queue row in one UPDATE.
+    // FOR UPDATE SKIP LOCKED prevents two staff members from calling the same patient concurrently.
+    if(b.action==="call_next"){
+      const role=String(ctx.staff.role||"");
+      const dispatch=queueDispatchForRole[role];
+      if(!dispatch)return res.status(400).json({error:"Your role does not have a queue dispatch step"});
+      const localDate=await hospitalLocalDate(hid);
+      const params=[hid,localDate,dispatch.from];
+      let doctorClause="";
+      if(role==="doctor"){
+        if(!ctx.staff.doctor_id)return res.status(409).json({error:"Your staff profile is not linked to a doctor"});
+        params.push(ctx.staff.doctor_id);
+        doctorClause=" AND q.doctor_id=$4";
+      }
+      const claim=await db.query(
+        "WITH candidate AS (SELECT q.id FROM queue_entries q WHERE q.hospital_id=$1 AND q.token_date=$2 AND q.completed_at IS NULL AND q.stage=$3"+doctorClause+" ORDER BY CASE q.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,q.token_number NULLS LAST,q.checked_in_at,q.id FOR UPDATE SKIP LOCKED LIMIT 1) UPDATE queue_entries q SET stage=$5,started_at=CASE WHEN $5 IN ('doctor','in_room','vitals','lab','followup') AND q.started_at IS NULL THEN now() ELSE q.started_at END,completed_at=CASE WHEN $5='completed' THEN now() ELSE q.completed_at END,updated_at=now() FROM candidate c WHERE q.id=c.id RETURNING q.id,q.patient_id,q.appointment_id,q.stage,q.priority,q.doctor_id,q.token,q.token_date,q.token_number,q.public_token",
+        [...params,dispatch.to]
+      );
+      if(!claim.rows[0])return res.status(404).json({error:"No patient is currently waiting for your role"});
+      const q=claim.rows[0];
+      const encounter=await findOpenEncounter(ctx,q.patient_id,{appointmentId:q.appointment_id||null,encounterType:"opd"});
+      if(encounter){
+        await db.query("UPDATE care_encounters SET doctor_id=COALESCE($1,doctor_id),current_stage=$2,priority=$3,status=CASE WHEN $2='completed' THEN 'completed' ELSE status END,ended_at=CASE WHEN $2='completed' THEN COALESCE(ended_at,now()) ELSE ended_at END,updated_at=now() WHERE id=$4",[q.doctor_id,q.stage,q.priority||"normal",encounter.id]);
+      }
+      q.encounter_id=encounter?.id||null;
+      await logWorkflowEvent(ctx,{patientId:q.patient_id,encounterId:encounter?.id||null,eventType:q.stage==="completed"?"queue_completed":"queue_stage_changed",stage:q.stage,entityType:"queue",entityId:q.id,metadata:{token:q.token,token_date:q.token_date,priority:q.priority||"normal",dispatch_role:role,dispatch:"call_next"}});
+      const labels={waiting:"Waiting",vitals:"Vitals",doctor:"Doctor waiting",in_room:"Doctor consultation",lab:"Lab work",followup:"Follow-up desk",pharmacy:"Pharmacy dispensing",completed:"Visit completed"};
+      await notifyStage({hospitalId:hid,stage:q.stage,title:"Patient moved to "+(labels[q.stage]||q.stage),body:"Token "+(q.token||"—")+" is ready for "+(labels[q.stage]||q.stage)+".",entityType:"queue",entityId:q.id,patientId:q.patient_id,excludeStaffId:ctx.staff.id,doctorId:q.doctor_id});
+      return res.json({...q,dispatch_role:role,dispatch_from:dispatch.from,dispatch_to:dispatch.to});
+    }
+
     const before=await db.query("SELECT stage,patient_id,doctor_id,token FROM queue_entries WHERE id=$1 AND hospital_id=$2",[b.id,hid]);
     const previous=before.rows[0]||null;
     const r=await db.query(

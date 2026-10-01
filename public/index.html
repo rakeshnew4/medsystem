@@ -1497,15 +1497,11 @@ function setQueueStageFilter(stage){const el=document.getElementById('queueStage
 function clearQueueFilters(){const s=document.getElementById('queueSearch'),st=document.getElementById('queueStageFilter'),p=document.getElementById('queuePriorityFilter');if(s)s.value='';if(st)st.value='all';if(p)p.value='all';renderQueue()}
 function filterQueueToMyWork(){const role=state.session?.staff?.role||'admin';const stage={nurse:'vitals',doctor:'doctor',lab:'lab',pharmacy:'pharmacy',receptionist:'waiting'}[role];if(stage)setQueueStageFilter(stage)}
 async function callNextForMyRole(){
-  const role=state.session?.staff?.role||'admin';
-  const from={nurse:'waiting',doctor:'doctor',lab:'lab',pharmacy:'pharmacy',receptionist:'waiting'}[role];
-  const to={nurse:'vitals',doctor:'in_room',lab:'followup',pharmacy:'completed',receptionist:'vitals'}[role];
-  if(!from||!to){alert('Your role does not have a queue dispatch step.');return}
-  const rows=state.queue.filter(x=>x.stage===from).slice().sort((a,b)=>{
-    const rank={urgent:0,high:1,normal:2};return (rank[a.priority]??2)-(rank[b.priority]??2)||Number(a.token_number||999999)-Number(b.token_number||999999)
-  });
-  if(!rows.length){alert('No patient is currently waiting for your role.');return}
-  try{await moveQueue(rows[0].id,to)}catch(e){alert(e.message)}
+  try{
+    const r=await api('/queue',{method:'PUT',body:JSON.stringify({action:'call_next'})});
+    if(r?.error)throw new Error(r.error);
+    await loadAll();
+  }catch(e){alert(e.message)}
 }
 async function moveQueue(id,stage){try{await api('/queue',{method:'PUT',body:JSON.stringify({id:Number(id),stage})});await loadAll()}catch(e){alert(e.message)}}
 function openVitals(qid,pid){openPatientWorkspace(pid,'vitals')}

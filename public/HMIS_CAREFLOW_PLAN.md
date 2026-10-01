@@ -347,14 +347,16 @@ Deferred to the corresponding IPD workflow:
 
 # 04 — Queue / token
 
-**In progress — HMIS-aligned queue dispatch foundation implemented.**
+**In progress — HMIS-aligned queue dispatch foundation implemented and concurrency-hardened.**
 
 HMIS queue/token workflows treat the queue as an operational state machine: patients move through the appropriate work queue, staff act on the next eligible patient, and priority/arrival ordering matters.
 
 Implemented this run:
 - Queue Board/API ordering now respects urgent → high → normal priority before token/arrival order.
 - Added a role-aware Call next action to the Queue Board for receptionist, nurse, doctor, lab and pharmacy workflows.
-- Call-next uses the existing protected queue transition endpoint, so the normal encounter/workflow event path remains in force.
+- Call-next now uses an atomic server-side claim with FOR UPDATE SKIP LOCKED, so concurrent staff cannot claim the same patient.
+- The server derives the dispatch transition from the authenticated staff role; the browser no longer selects the patient locally before claiming it.
+- Queue Board ordering now groups workflow stages and then applies urgent → high → normal priority, token order and arrival order.
 - Role dispatch targets:
   - receptionist: waiting → vitals
   - nurse: waiting → vitals
@@ -375,7 +377,7 @@ Verification:
 
 Remaining queue/token work:
 - Authenticated end-to-end testing of Call next for each role.
-- Add stronger concurrency-safe dispatch semantics at the database transaction level.
+- Verify token numbering/reset rules across hospital-local dates and doctors.
 - Verify token numbering/reset rules across hospital-local dates and doctors.
 - Verify display/queue-board synchronization and patient token tracking after every stage transition.
 - Reconcile cancellation/no-show/expired-token behavior with appointment status transitions.
