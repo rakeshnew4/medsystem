@@ -510,7 +510,30 @@ Completion gate:
 
 # 09 — IPD / admission / beds / transfers / discharge
 
-Not started.
+**In progress — existing IPD foundation is present; admission safety hardening started in v241.**
+
+Implemented foundation already present in CareFlow:
+- Hospital-scoped bed inventory with available/occupied/maintenance/blocked states.
+- IPD admission records with admission number, admission type, expected discharge date and notes.
+- Canonical IPD care encounter creation on admission.
+- Bed assignment history and bed transfer workflow.
+- Discharge checklist with clinical, report, medication, billing and payment gates.
+- Discharge releases the bed and completes the IPD encounter.
+- Patient workspace exposes current admission, transfer and discharge actions.
+
+Implemented now:
+- Added a database uniqueness constraint preventing more than one active admission for the same patient in the same hospital.
+- Added `HMIS_CAREFLOW_IPD_TEST_CASES.md` with 15 IPD test cases and an explicit authenticated E2E completion gate.
+- Anonymous `/api/beds`, `/api/ipd` and `/api/discharge` access remains blocked by the user/staff authorization layer.
+
+Remaining IPD work:
+- Harden admission, transfer and discharge mutations as fully atomic state transitions under concurrent requests.
+- Run authenticated nurse/admin/receptionist/doctor role-boundary tests.
+- Verify occupied-bed race, transfer race, discharge checklist enforcement and encounter continuity with synthetic fixtures.
+- Verify full OPD → IPD → transfer → discharge journey in browser E2E.
+
+Completion gate:
+- IPD remains **In progress** until authenticated E2E, concurrent-state safety, role boundaries, discharge checklist enforcement, encounter continuity and workflow audit events pass.
 
 # 10 — Billing / charges / payments
 

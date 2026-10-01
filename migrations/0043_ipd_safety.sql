@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS uq_active_patient_admission ON admissions(hospital_id,patient_id) WHERE discharged_at IS NULL;
