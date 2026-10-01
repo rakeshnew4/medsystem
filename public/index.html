@@ -106,7 +106,7 @@
   <div class="reception-kiosk">
     <div class="reception-kiosk-head">
       <div class="reception-brand"><span class="reception-brand-mark">+</span><div><strong>CareFlow</strong><span>Reception</span></div></div>
-      <div class="reception-kiosk-status"><span id="receptionClock">--:--</span><span id="receptionUserLabel">Reception desk</span><button type="button" class="reception-fullscreen" onclick="toggleReceptionFullscreen()">⛶ Full screen</button></div>
+      <div class="reception-kiosk-status"><button type="button" id="receptionMinimalBack" class="reception-back" onclick="exitReceptionMinimal()" style="display:none">← Patient</button><span id="receptionClock">--:--</span><span id="receptionUserLabel">Reception desk</span><button type="button" class="reception-fullscreen" onclick="toggleReceptionFullscreen()">⛶ Full screen</button></div>
     </div>
     <div id="receptionStage" class="reception-stage">
       <div class="reception-idle"><div class="reception-idle-mark">+</div><h2>Ready</h2><p>Select an action below.</p></div>
@@ -339,6 +339,29 @@ function resumeWorkingContext(){const c=readWorkingContext();if(!c)return;if(c.s
 function restoreWorkingContext(){const c=readWorkingContext();if(!c)return false;if(!VALID_SECTIONS.includes(c.section)||!canSection(c.section))return false;resumeWorkingContext();return true}
 function roleDefaultSection(){return ROLE_DEFAULT_SECTIONS[state.session?.staff?.role]||'dashboard'}
 function setReceptionMode(mode){openReceptionPanel(mode==='appointment'?'appointment':'walkin')}
+async function openReceptionMinimal(pid){
+  const id=Number(pid);
+  if(!id)return;
+  const p=(state.patients||[]).find(x=>Number(x.id)===id)||state.activePatientRecord?.patient||null;
+  state.receptionMinimalPatientId=id;
+  saveWorkingContext({section:'patients',patientId:id,action:'reception-minimal',patientName:p?.name||'Patient'});
+  await showSection('reception-desk',false);
+  const back=document.getElementById('receptionMinimalBack');
+  if(back)back.style.display='inline-flex';
+  const label=document.getElementById('receptionUserLabel');
+  if(label)label.textContent=p?.name?'Reception · '+p.name:'Reception desk';
+  closeReceptionPanel();
+}
+async function exitReceptionMinimal(){
+  const id=Number(state.receptionMinimalPatientId||0);
+  state.receptionMinimalPatientId=null;
+  const back=document.getElementById('receptionMinimalBack');
+  if(back)back.style.display='none';
+  const label=document.getElementById('receptionUserLabel');
+  if(label)label.textContent='Reception desk';
+  await showSection('patients',false);
+  if(id)await openPatientWorkspace(id);
+}
 function receptionEscapeHtml(v){return esc(v)}
 function updateReceptionClock(){
   const el=document.getElementById('receptionClock');if(!el)return;
@@ -1612,6 +1635,7 @@ function patientCareTeamActions(p,s){
   };
   const sections=[
     section('01','receptionist','Reception','Registration, OPD check-in and front-desk work.',[
+      {label:'Minimal view',onclick:'openReceptionMinimal('+id+')'},
       {label:'Register / OPD',onclick:'workspaceOpenOpd('+id+')'},
       {label:'Appointments',onclick:'patientWorkspaceAppointments('+id+')'},
       {label:'Queue',onclick:"showSection('queue')"},
