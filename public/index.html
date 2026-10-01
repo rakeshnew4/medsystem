@@ -107,7 +107,7 @@
   <div class="reception-kiosk">
     <div class="reception-kiosk-head">
       <div class="reception-brand"><span class="reception-brand-mark">+</span><div><strong>CareFlow</strong><span>Reception</span></div></div>
-      <div class="reception-kiosk-status"><button type="button" id="receptionMinimalBack" class="reception-back" onclick="exitReceptionMinimal()" style="display:none">← Patient</button><span id="receptionClock">--:--</span><span id="receptionUserLabel">Reception desk</span><button type="button" class="reception-fullscreen" onclick="toggleReceptionFullscreen()">⛶ Full screen</button></div>
+      <div class="reception-kiosk-status"><button type="button" class="reception-back" onclick="exitReceptionToPortal()">← Portal Home</button><button type="button" id="receptionMinimalBack" class="reception-back" onclick="exitReceptionMinimal()" style="display:none">← Patient</button><span id="receptionClock">--:--</span><span id="receptionUserLabel">Reception desk</span><button type="button" class="reception-fullscreen" onclick="toggleReceptionFullscreen()">⛶ Full screen</button></div>
     </div>
     <div id="receptionStage" class="reception-stage">
       <div class="reception-idle"><div class="reception-idle-mark">+</div><h2>Ready</h2><p>Select an action below.</p></div>
@@ -353,6 +353,14 @@ async function openReceptionMinimal(pid){
   const label=document.getElementById('receptionUserLabel');
   if(label)label.textContent=p?.name?'Reception · '+p.name:'Reception desk';
   closeReceptionPanel();
+}
+async function exitReceptionToPortal(){
+  try{if(document.fullscreenElement)await document.exitFullscreen?.()}catch(e){}
+  state.receptionMinimalPatientId=null;
+  const back=document.getElementById('receptionMinimalBack');if(back)back.style.display='none';
+  const label=document.getElementById('receptionUserLabel');if(label)label.textContent='Reception desk';
+  closeReceptionPanel();
+  await showSection('dashboard');
 }
 async function exitReceptionMinimal(){
   const id=Number(state.receptionMinimalPatientId||0);
