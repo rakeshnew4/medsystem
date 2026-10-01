@@ -619,7 +619,7 @@ Remaining:
 - Current increment: room availability is rechecked inside the same transaction that acquires the room overlap lock, closing the validation-to-insert room-state race.
 - Current increment: owner-only Theatre validation now audits admission/patient/hospital continuity and active admission/encounter continuity.
 - v301: Theatre ward return is now explicitly restricted to admission-linked procedures with a linked current IPD encounter; the production ward-return invariant also flags completed returns missing either linkage.
-- Current HMIS-aligned increment: production Theatre validation now flags completed procedures that still have unlinked Theatre charges, providing a financial-closure safety check analogous to HMIS surgery-level bill review without copying HMIS's Bill model.
+- v303: HMIS-aligned production Theatre validation now flags completed procedures that still have unlinked Theatre charges, providing a financial-closure safety check analogous to HMIS surgery-level bill review without copying HMIS's Bill model; post-deploy validator passed 18/18 with zero violations.
 - Remaining: authenticated doctor/nurse/billing E2E with role boundaries, invalid-transition execution, concurrent overlap execution, source-charge retry/double-counting execution, and billing/payment continuity.
 
 Theatre remains **In progress** until the authenticated workflow is tested end-to-end.
