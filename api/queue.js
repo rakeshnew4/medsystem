@@ -79,7 +79,7 @@ export default async function(req,res){
 
   const localDate=await hospitalLocalDate(hid);
   const r=await db.query(
-    "SELECT q.id,q.patient_id,q.appointment_id,q.doctor_id,q.stage,q.priority,q.token,q.token_date,q.token_number,q.public_token,q.reason,q.notes,q.checked_in_at,p.name AS patient_name,p.uhid,p.phone,d.name AS doctor_name FROM queue_entries q JOIN patients p ON p.id=q.patient_id LEFT JOIN doctors d ON d.id=q.doctor_id WHERE q.hospital_id=$1 AND q.completed_at IS NULL AND q.token_date=$2 ORDER BY CASE q.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,q.token_number NULLS LAST,q.checked_in_at",
+    "SELECT q.id,q.patient_id,q.appointment_id,q.doctor_id,q.stage,q.priority,q.token,q.token_date,q.token_number,q.public_token,q.reason,q.notes,q.checked_in_at,p.name AS patient_name,p.uhid,p.phone,d.name AS doctor_name,ce.id AS encounter_id,ce.current_stage AS encounter_stage,ce.status AS encounter_status FROM queue_entries q JOIN patients p ON p.id=q.patient_id LEFT JOIN doctors d ON d.id=q.doctor_id LEFT JOIN LATERAL (SELECT ce.* FROM care_encounters ce WHERE ce.hospital_id=q.hospital_id AND ce.patient_id=q.patient_id AND (q.appointment_id IS NULL OR ce.appointment_id=q.appointment_id) ORDER BY CASE WHEN ce.status='open' THEN 0 ELSE 1 END,ce.started_at DESC,ce.id DESC LIMIT 1) ce ON true WHERE q.hospital_id=$1 AND q.completed_at IS NULL AND q.token_date=$2 ORDER BY CASE q.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,q.token_number NULLS LAST,q.checked_in_at",
     [hid,localDate]
   );
   res.json(r.rows);
