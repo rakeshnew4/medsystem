@@ -34,7 +34,7 @@ Use public/HMIS_CAREFLOW_PLAN.md as the source of truth. Prefer the earliest unf
 
 ## Current continuation target
 
-Theatre / procedures is intentionally parked by user request. The active workflow is now **Inventory / Assets**. The latest pharmacy transfer increment is deployed as v396 with 11/11 production integrity checks passing; authenticated staff E2E is still the only unpassed completion gate. A dedicated HMIS_CAREFLOW_UI_PLAN.md is now the source of truth for the UI redesign workstream. The UI work must proceed module-by-module without weakening backend completion gates. The next-task loop is mandatory:
+Theatre / procedures is intentionally parked by user request. **The active implementation workstream is now the CareFlow UI redesign.** `public/HMIS_CAREFLOW_UI_PLAN.md` is the UI source of truth and `agents/CONTINUE_WORK.md` is the persistent live task/reminder queue. Backend completion gates remain preserved and must not be weakened. The next-task loop is mandatory:
 1. At the beginning of EVERY work turn, re-read this file and public/HMIS_CAREFLOW_PLAN.md.
 2. Before changing any workflow, inspect the relevant hmislk/hmis repository code/design on the development branch and use it as the domain, workflow, UI and data-model reference. Do not invent HMIS-like behavior without checking the repository.
 3. Execute the FIRST unfinished task listed below immediately. Do not stop at a status report when a safe implementation/test task remains.
@@ -45,7 +45,7 @@ Theatre / procedures is intentionally parked by user request. The active workflo
 ### NEXT TASK QUEUE — always keep this current
 UI workstream is now the active implementation focus requested by the user. Execute UI-00 then UI-01 onward from public/HMIS_CAREFLOW_UI_PLAN.md, while preserving the backend safety gates below.
 UI-00 current: module launcher/navigation regrouping and the global patient-context foundation are deployed; remaining global tasks are consistent breadcrumbs/back behavior and legacy visual cleanup.
-UI-01 current: selected-patient identity/context bar and Actions vs Reports/History separation are implemented. NEXT: UI-02 Appointments/OPD — inspect HMIS OPD appointment/token/queue screens and redesign the appointment worklist/calendar, doctor/session filters, booking, check-in/token, cancellation/no-show states and patient context without changing backend transitions.
+UI-01 current: selected-patient identity/context bar and Actions vs Reports/History separation are implemented and deployed in v399. NEXT: UI-02 Appointments/OPD — inspect HMIS OPD appointment/token/queue screens and redesign the appointment worklist/calendar, doctor/session filters, booking, check-in/token, cancellation/no-show states and patient context without changing backend transitions.
 
 LOOP STATE (mandatory): After each UI increment, mark only verified checklist items complete in public/HMIS_CAREFLOW_UI_PLAN.md, set the FIRST unfinished UI item here, then dry-run/deploy/verify before moving to the next item. Never leave NEXT TASK QUEUE stale or empty.
 1. Inventory / Assets: authenticated staff E2E for asset create/search/transfer, plus concurrent transfer and role-boundary execution tests. **Blocked only by the missing hospital staff session; do not claim completion.**
