@@ -374,5 +374,9 @@ Status: Implemented in v409; authenticated browser verification remains pending.
 Invoice detail submits incremental payment amounts through the existing PUT /api/billing contract; no UI-side total replacement is used.
 Status: Implemented in v409; authenticated billing-staff execution remains pending.
 
+## TC-BILL-031 — Invoice PDF action
+Invoice detail exposes Print / PDF and opens the existing protected invoice PDF route for the selected invoice.
+Status: Implemented in v410; authenticated browser verification remains pending.
+
 ## Billing completion gate
 Billing is marked Complete only after authenticated invoice/payment E2E, role boundaries, invalid financial inputs, invoice continuity and workflow audit events pass.

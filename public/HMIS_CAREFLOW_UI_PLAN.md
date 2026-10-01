@@ -144,7 +144,7 @@ HMIS reference: inpatient search plus central Admission Profile.
 - [x] Payment entry — existing protected incremental-payment transition is exposed through invoice detail
 - [x] Outstanding/paid states — unpaid/partial/paid counts and outstanding amount are visible in the billing worklist
 - [ ] Insurance
-- [ ] PDF/print actions
+- [x] PDF/print actions — invoice detail opens the existing protected /api/invoice-pdf route
 - [ ] Financial audit/history
 
 ### UI-10 — Theatre / Procedures
