@@ -316,7 +316,10 @@ async function api(path,opts={}){
   const show=opts.loading===true;const requestOpts={...opts};delete requestOpts.loading;
   if(show)showCareFlowLoader('Loading…');
   try{
-    const r=await fetch(API+path,{headers:{'Content-Type':'application/json'},...requestOpts});
+    const roleToken=localStorage.getItem('careflowRoleToken')||'';
+    const baseHeaders={'Content-Type':'application/json'};
+    if(roleToken)baseHeaders['X-CareFlow-Role-Token']=roleToken;
+    const r=await fetch(API+path,{headers:{...baseHeaders,...(requestOpts.headers||{})},...requestOpts});
     let j={};try{j=await r.json()}catch{}
     if(!r.ok)throw Object.assign(Error(j.error||'Request failed'),{status:r.status,data:j});
     return j;
@@ -599,7 +602,8 @@ async function submitRoleLogin(e){
   const err=document.getElementById('cfRoleError');
   if(err)err.textContent='';
   try{
-    await api('/role-login',{method:'POST',loading:true,body:JSON.stringify({role,username,code})});
+    const roleSession=await api('/role-login',{method:'POST',loading:true,body:JSON.stringify({role,username,code})});
+    if(roleSession?.token)localStorage.setItem('careflowRoleToken',roleSession.token);
     Object.keys(sectionLoadState).forEach(k=>delete sectionLoadState[k]);
     document.getElementById('cfRoleLogin')?.classList.remove('show');
     document.getElementById('cfRoleLogin')?.setAttribute('aria-hidden','true');
@@ -608,6 +612,7 @@ async function submitRoleLogin(e){
 }
 async function switchRoleLogin(){
   await api('/role-login',{method:'DELETE',loading:false,body:'{}'}).catch(()=>{});
+  localStorage.removeItem('careflowRoleToken');
   Object.keys(sectionLoadState).forEach(k=>delete sectionLoadState[k]);
   document.getElementById('cfRoleLogin')?.classList.add('show');
   document.getElementById('cfRoleLogin')?.setAttribute('aria-hidden','false');

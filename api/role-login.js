@@ -20,7 +20,7 @@ export default async function(req,res){
   const user=await auth.getUser(req);
   if(!user)return res.status(401).json({error:"Sign in with Hatchable first"});
   if(String(user.email||"").toLowerCase()!==PRIMARY_ADMIN_EMAIL)return res.status(403).json({error:"Role test login is available to the primary administrator only"});
-  const token=req.cookies?.careflow_role_session;
+  const token=req.cookies?.careflow_role_session||req.headers?.['x-careflow-role-token']||null;
   if(req.method==="DELETE"){
     if(token)await db.query("DELETE FROM admin_role_preview_sessions WHERE token=$1 AND admin_user_id=$2",[token,String(user.id)]);
     res.cookie("careflow_role_session","",{httpOnly:true,secure:true,sameSite:"lax",path:"/",maxAge:0});
@@ -40,5 +40,5 @@ export default async function(req,res){
   if(token)await db.query("DELETE FROM admin_role_preview_sessions WHERE token=$1 AND admin_user_id=$2",[token,String(user.id)]);
   await db.query("INSERT INTO admin_role_preview_sessions(token,admin_user_id,role) VALUES($1,$2,$3)",[next,String(user.id),role]);
   res.cookie("careflow_role_session",next,{httpOnly:true,secure:true,sameSite:"lax",path:"/",maxAge:8*60*60*1000});
-  return res.json({role});
+  return res.json({role,token:next});
 }
