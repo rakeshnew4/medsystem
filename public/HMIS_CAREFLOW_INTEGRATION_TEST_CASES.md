@@ -13,7 +13,7 @@ Reference: HMIS REST API development guide and HMIS FHIR/REST interoperability d
 - TC-INT-009: Patient resource maps CareFlow UHID, name, telecom, DOB and active state into FHIR Patient.
 - TC-INT-010: Authenticated administrator E2E must verify integration settings and key rotation before the integration gate is complete.
 - TC-INT-011: LIS integration must preserve hospital, patient and encounter identity and support explicit result/status provenance before implementation is marked complete.
-- TC-INT-012: LIS result endpoint rejects missing/invalid Bearer integration keys with 401.
+- TC-INT-012: LIS result endpoint rejects missing/invalid X-CareFlow-Integration-Key values with 401.
 - TC-INT-013: LIS result endpoint rejects writes while REST integration is disabled.
 - TC-INT-014: HMIS-shaped resultsRecords payload maps sampleId to a hospital-scoped CareFlow lab_order and requires sample_collected/processing lifecycle.
 - TC-INT-015: LIS testCode must match the CareFlow ordered test_name before result mutation.

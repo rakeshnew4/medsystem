@@ -2,10 +2,10 @@ import { db } from "../../lib/db.js";
 export const access="public";
 export const methods=["POST"];
 async function hash(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("")}
-function bearer(req){const h=String(req.headers?.authorization||"");return h.toLowerCase().startsWith("bearer ")?h.slice(7).trim():null}
+function integrationKey(req){return String(req.headers?.["x-careflow-integration-key"]||"").trim()||null}
 function fingerprint(sampleId,testCode,resultValue,units,resultId){return resultId?String(resultId):[sampleId,testCode,resultValue,units].map(x=>String(x??"")).join("|")}
 async function integrationHospital(req,res){
-  const k=bearer(req);if(!k)return res.status(401).json({error:"Bearer integration API key required"});
+  const k=integrationKey(req);if(!k)return res.status(401).json({error:"X-CareFlow-Integration-Key header required"});
   const h=await hash(k);
   const settings=await db.query("SELECT hospital_id,setting_key,setting_value FROM hospital_settings WHERE setting_key IN ('integration.api_key_hash','integration.fhir.api_key_hash')");
   const match=settings.rows.find(x=>String(x.setting_value?.hash||"")===h);

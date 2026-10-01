@@ -20,7 +20,7 @@ Administrators control REST and FHIR enablement through the CareFlow integration
 
 POST /api/lis/test-results
 
-The endpoint follows the verified HMIS middleware result shape:
+The endpoint follows the verified HMIS middleware result shape. LIS clients authenticate with the dedicated X-CareFlow-Integration-Key header so platform Authorization/session headers cannot be confused with the hospital integration credential.
 
     {
       "resultsRecords": [
