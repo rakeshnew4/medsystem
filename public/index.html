@@ -224,6 +224,7 @@
         <div class="field full"><button class="btn primary">Register asset</button></div>
       </form>
     </div>
+    <div class="card" style="margin-top:16px;background:var(--surface-soft,#f8faf9)"><div class="panel-head"><div><strong>Asset expiry reports</strong><div style="font-size:12px;color:var(--muted);margin-top:4px">HMIS-style warranty and AMC expiry tracking.</div></div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px"><select id="assetReportKind"><option value="warranty">Warranty expiry</option><option value="amc">AMC expiry</option></select><input id="assetReportFrom" type="date"><span>to</span><input id="assetReportTo" type="date"><button class="btn" onclick="loadAssetReport()">Run report</button></div><div id="assetReportSummary" style="margin-top:10px"></div><div id="assetReportTable" class="table-wrap" style="margin-top:10px"></div></div>
     <div style="display:flex;gap:8px;align-items:center;margin-top:16px;flex-wrap:wrap"><input id="assetSearch" class="input" placeholder="Search code, description or serial" style="min-width:240px;flex:1" onkeydown="if(event.key==='Enter')loadAssets(true)"><button class="btn" onclick="loadAssets(true)">Search</button><span id="assetCount" style="font-size:12px;color:var(--muted)"></span></div>
     <div id="assetsTable" class="table-wrap" style="margin-top:12px"></div>
   </div>
@@ -909,6 +910,17 @@ async function loadAssets(force=false){
       state.assets.map(a=>'<tr><td><strong>'+esc(a.asset_code)+'</strong><div style="font-size:11px;color:var(--muted)">'+esc(a.description)+(a.serial_number?' · '+esc(a.serial_number):'')+'</div></td><td>'+esc(a.category)+'</td><td>₹ '+Number(a.current_value??a.purchase_price??0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td><td>'+esc(a.location||'—')+'</td><td><span class="role-pill">'+esc(a.status)+'</span></td><td><div style="font-size:11px">W: '+esc(fmtDate(a.warranty_expiry)||'—')+'</div><div style="font-size:11px">AMC: '+esc(fmtDate(a.amc_expiry)||'—')+'</div></td><td><button class="btn" onclick="viewAsset('+Number(a.id)+')">History</button> <button class="btn" onclick="transferAsset('+Number(a.id)+')">Transfer</button></td></tr>').join('')+
       '</tbody></table>';
   }catch(e){if(e.status!==403)alert(e.message||'Could not load assets')}
+}
+async function loadAssetReport(){
+  try{
+    const kind=document.getElementById('assetReportKind')?.value||'warranty';
+    const from=document.getElementById('assetReportFrom')?.value||'';
+    const to=document.getElementById('assetReportTo')?.value||'';
+    const r=await api('/fixed-assets-report?kind='+encodeURIComponent(kind)+'&from='+encodeURIComponent(from)+'&to='+encodeURIComponent(to));
+    const s=document.getElementById('assetReportSummary');if(s)s.innerHTML='<span class="role-pill">'+r.total+' assets</span> <span style="font-size:12px;color:var(--muted);margin-left:6px">'+r.expired+' expired · '+r.upcoming+' upcoming</span>';
+    const h=document.getElementById('assetReportTable');if(!h)return;
+    h.innerHTML=r.assets.length?'<table><thead><tr><th>Asset</th><th>Category</th><th>Location</th><th>Expiry</th><th>Status</th></tr></thead><tbody>'+r.assets.map(a=>'<tr><td><strong>'+esc(a.asset_code)+'</strong><div style="font-size:11px;color:var(--muted)">'+esc(a.description)+'</div></td><td>'+esc(a.category)+'</td><td>'+esc(a.location||'—')+'</td><td>'+esc(fmtDate(a.expiry_date))+'</td><td>'+esc(a.status)+'</td></tr>').join('')+'</tbody></table>':'<div class="empty">No assets match this expiry range.</div>';
+  }catch(e){if(e.status!==403)alert(e.message||'Could not run asset report')}
 }
 async function viewAsset(id){
   try{
