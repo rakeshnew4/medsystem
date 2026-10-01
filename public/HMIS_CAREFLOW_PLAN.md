@@ -480,11 +480,11 @@ Completion gate:
 
 # 08 — Pharmacy / dispensing / stock
 
-**In progress — stock foundation and atomic dispensing implemented in v238; authenticated pharmacist E2E remains the completion gate.**
+**In progress — stock foundation and atomic dispensing implemented through v240; authenticated pharmacist E2E remains the completion gate.**
 
 HMIS treats pharmacy as an operational module connected to prescriptions, dispensing and inventory; the reference repository lists Pharmacy & Laboratory Information Management and Inventory & Asset Management as core hospital capabilities.
 
-Implemented in CareFlow v236–v238:
+Implemented in CareFlow v236–v240:
 - Added hospital-scoped pharmacy stock batches with medicine name, batch number, expiry date, quantity, reorder level and unit.
 - Added pharmacy stock transaction audit records for stock receipts and dispensing adjustments.
 - Added protected /api/pharmacy-stock for pharmacist/admin stock receiving and stock visibility.
@@ -496,7 +496,7 @@ Implemented in CareFlow v236–v238:
 - Workflow audit metadata records the consumed batches, remaining quantities and completed queue ID.
 - Insufficient stock returns HTTP 409 before mutation; a concurrent stock change is also handled by the atomic SQL path.
 - Public access to pharmacy and stock routes remains blocked with HTTP 401.
-- Deployment v238 completed with no blocking dry-run errors.
+- Deployment v240 completed with no blocking dry-run errors; terminal pharmacy completion also closes the canonical encounter when linked.
 
 Remaining completion-gate work:
 - Authenticated pharmacist E2E remains pending because the available function runner is not signed into the hospital staff role-preview session.
@@ -568,3 +568,4 @@ Not started.
 - Implemented atomic pharmacy dispensing and deployed CareFlow v238: prescription validation, duplicate-dispense protection, non-expired FIFO batch consumption, multi-batch deduction, stock transaction audit, pharmacy queue completion and workflow-event metadata.
 - Automated post-deploy checks confirmed /api/pharmacy and /api/pharmacy-stock reject anonymous and unsigned app-user access with HTTP 401; no live stock existed in the database, so no real medication was mutated during testing.
 - Updated pharmacy test cases TC-PHARM-009 through TC-PHARM-011 to reflect the v238 implementation; authenticated pharmacist E2E remains the explicit completion gate.
+- Finalized Pharmacy v240 by closing the canonical encounter when successful dispensing completes the linked pharmacy queue item; authenticated pharmacist E2E remains the only required workflow completion gate before moving to IPD.
