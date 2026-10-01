@@ -62,8 +62,8 @@ dispense AS (
  RETURNING id,patient_id,medication_id,encounter_id,quantity,dispensed_by,status,dispensed_at
 ),
 stock_txn AS (
- INSERT INTO pharmacy_stock_transactions(hospital_id,stock_id,transaction_type,quantity,medication_id,patient_id,encounter_id,performed_by,notes)
- SELECT $1,d.id,'dispense',a.take_qty,$5,$4,$6,$7,$8 FROM deducted d JOIN allocation_plan a ON a.id=d.id
+ INSERT INTO pharmacy_stock_transactions(hospital_id,stock_id,transaction_type,quantity,quantity_before,quantity_after,medication_id,patient_id,encounter_id,performed_by,notes)
+ SELECT $1,d.id,'dispense',a.take_qty,d.quantity+a.take_qty,d.quantity,$5,$4,$6,$7,$8 FROM deducted d JOIN allocation_plan a ON a.id=d.id
  RETURNING id
 ),
 queue_candidate AS (

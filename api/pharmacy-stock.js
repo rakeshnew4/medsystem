@@ -12,7 +12,14 @@ export default async function(req,res){
  if(b.action!=="receive")return res.status(400).json({error:"Unsupported stock action"});
  const name=String(b.medicine_name||"").trim(), batch=String(b.batch_no||"").trim(), qty=Number(b.quantity);
  if(!name||!batch||!Number.isFinite(qty)||qty<=0)return res.status(400).json({error:"medicine_name, batch_no and positive quantity are required"});
- const r=await db.query("INSERT INTO pharmacy_stock(hospital_id,medicine_name,batch_no,expiry_date,quantity,reorder_level,unit) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(hospital_id,medicine_name,batch_no) DO UPDATE SET quantity=pharmacy_stock.quantity+EXCLUDED.quantity,expiry_date=EXCLUDED.expiry_date,reorder_level=EXCLUDED.reorder_level,unit=EXCLUDED.unit,updated_at=CURRENT_TIMESTAMP RETURNING *",[ctx.hospitalId,name,batch,b.expiry_date||null,qty,Number(b.reorder_level||0),String(b.unit||"unit")]);
- await db.query("INSERT INTO pharmacy_stock_transactions(hospital_id,stock_id,transaction_type,quantity,performed_by,notes) VALUES($1,$2,'receipt',$3,$4,$5)",[ctx.hospitalId,r.rows[0].id,qty,ctx.user.email,b.notes||null]);
+ const r=await db.query(`WITH upsert AS (
+   INSERT INTO pharmacy_stock(hospital_id,medicine_name,batch_no,expiry_date,quantity,reorder_level,unit)
+   VALUES($1,$2,$3,$4,$5,$6,$7)
+   ON CONFLICT(hospital_id,medicine_name,batch_no) DO UPDATE SET quantity=pharmacy_stock.quantity+EXCLUDED.quantity,expiry_date=EXCLUDED.expiry_date,reorder_level=EXCLUDED.reorder_level,unit=EXCLUDED.unit,updated_at=CURRENT_TIMESTAMP
+   RETURNING *
+ ), ledger AS (
+   INSERT INTO pharmacy_stock_transactions(hospital_id,stock_id,transaction_type,quantity,quantity_before,quantity_after,performed_by,notes)
+   SELECT $1,id,'receipt',$5,quantity-$5,quantity,$8,$9 FROM upsert RETURNING id
+ ) SELECT * FROM upsert`,[ctx.hospitalId,name,batch,b.expiry_date||null,qty,Number(b.reorder_level||0),String(b.unit||"unit"),ctx.user.email,b.notes||null]);
  return res.json(r.rows[0]);
 }
