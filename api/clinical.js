@@ -11,7 +11,18 @@ export default async function(req,res){
    const r=await db.query("UPDATE doctor_visits SET clinical_notes=$1,visit_status=$2,ended_at=CASE WHEN $2='completed' THEN COALESCE(ended_at,now()) ELSE ended_at END,encounter_id=COALESCE($3::bigint,encounter_id) WHERE id=$4 AND hospital_id=$5 AND (doctor_id=$6 OR $6 IS NULL) RETURNING *",[b.clinical_notes||null,b.visit_status||"open",b.encounter_id||null,b.id,ctx.hospitalId,ctx.staff.doctor_id||null]);
    if(!r.rows[0])return res.json({error:"Visit not found"});
    const visit=r.rows[0];
+   if(b.visit_status==="completed" && !String(b.clinical_notes||"").trim())return res.status(400).json({error:"Consultation note is required before completing the visit"});
    if(visit.encounter_id){await db.query("UPDATE care_encounters SET current_stage=$1,status=$2,ended_at=CASE WHEN $2='completed' THEN COALESCE(ended_at,now()) ELSE ended_at END,updated_at=now() WHERE id=$3 AND hospital_id=$4",[b.visit_status==="completed"?"completed":"doctor",b.visit_status==="completed"?"completed":"open",visit.encounter_id,ctx.hospitalId]);}
+   if(b.visit_status==="completed"){
+    if(b.queue_entry_id){
+     const q=await db.query("SELECT id,patient_id,doctor_id,stage FROM queue_entries WHERE id=$1 AND hospital_id=$2 AND patient_id=$3",[Number(b.queue_entry_id),ctx.hospitalId,visit.patient_id]);
+     if(!q.rows[0])return res.status(404).json({error:"Queue entry not found"});
+     if(q.rows[0].stage!=="in_room")return res.status(409).json({error:"Queue entry is not in the doctor consultation room"});
+     if(ctx.staff.role!=="admin" && Number(q.rows[0].doctor_id)!==Number(ctx.staff.doctor_id))return res.status(403).json({error:"This patient is not assigned to you"});
+     await db.query("UPDATE queue_entries SET stage='completed',completed_at=now(),updated_at=now() WHERE id=$1 AND hospital_id=$2 AND stage='in_room'",[Number(b.queue_entry_id),ctx.hospitalId]);
+    }
+    if(b.appointment_id)await db.query("UPDATE appointments SET status='completed' WHERE id=$1 AND hospital_id=$2",[Number(b.appointment_id),ctx.hospitalId]);
+   }
    await logWorkflowEvent(ctx,{patientId:visit.patient_id,encounterId:visit.encounter_id,eventType:b.visit_status==="completed"?"consultation_completed":"consultation_saved",stage:b.visit_status==="completed"?"completed":"doctor",entityType:"doctor_visit",entityId:visit.id,metadata:{status:b.visit_status||"open"}});
    return res.json(visit)}
    const n=await db.query("SELECT COALESCE(MAX(visit_number),0)+1 AS n FROM doctor_visits WHERE hospital_id=$1 AND patient_id=$2",[ctx.hospitalId,b.patient_id]);
@@ -37,8 +48,15 @@ export default async function(req,res){
   }
   if(b.type==="medicine"){
    if(req.method==="PUT"){const r=await db.query("UPDATE medications SET medicine_name=$1,dose=$2,frequency=$3,duration=$4,instructions=$5,encounter_id=COALESCE($6::bigint,encounter_id) WHERE id=$7 AND hospital_id=$8 RETURNING *",[b.medicine_name,b.dose||null,b.frequency||null,b.duration||null,b.instructions||null,b.encounter_id||null,b.id,ctx.hospitalId]);return res.json(r.rows[0]||{error:"Prescription not found"})}
-   let encounterId=b.encounter_id||null;if(!encounterId){const e=await findOpenEncounter(ctx,b.patient_id,{});encounterId=e?.id||null}
-   const r=await db.query("INSERT INTO medications(hospital_id,patient_id,doctor_id,visit_id,encounter_id,medicine_name,dose,frequency,duration,instructions) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *",[ctx.hospitalId,b.patient_id,b.doctor_id||ctx.staff.doctor_id||null,b.visit_id||null,encounterId,b.medicine_name,b.dose||null,b.frequency||null,b.duration||null,b.instructions||null]);
+   if(!["doctor","admin"].includes(String(ctx.staff.role||"")))return res.status(403).json({error:"Only doctors can prescribe medicines"});
+   if(!b.visit_id)return res.status(400).json({error:"An active consultation visit is required for a prescription"});
+   const vr=await db.query("SELECT id,patient_id,doctor_id,visit_status,encounter_id FROM doctor_visits WHERE id=$1 AND hospital_id=$2",[Number(b.visit_id),ctx.hospitalId]);
+   if(!vr.rows[0])return res.status(404).json({error:"Consultation visit not found"});
+   if(Number(vr.rows[0].patient_id)!==Number(b.patient_id))return res.status(409).json({error:"Prescription patient does not match the consultation"});
+   if(vr.rows[0].visit_status!=="open")return res.status(409).json({error:"Prescription requires an open consultation"});
+   if(ctx.staff.role!=="admin" && Number(vr.rows[0].doctor_id)!==Number(ctx.staff.doctor_id))return res.status(403).json({error:"This consultation is not assigned to you"});
+   const encounterId=vr.rows[0].encounter_id||b.encounter_id||null;
+   const r=await db.query("INSERT INTO medications(hospital_id,patient_id,doctor_id,visit_id,encounter_id,medicine_name,dose,frequency,duration,instructions) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *",[ctx.hospitalId,b.patient_id,b.doctor_id||ctx.staff.doctor_id||null,b.visit_id,encounterId,b.medicine_name,b.dose||null,b.frequency||null,b.duration||null,b.instructions||null]);
    await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId,eventType:"medicine_prescribed",stage:"pharmacy",entityType:"medication",entityId:r.rows[0].id,metadata:{medicine_name:b.medicine_name}});
    await notifyRoles({hospitalId:ctx.hospitalId,roles:["pharmacy"],title:"Prescription ready",body:"A new prescription is waiting for dispensing.",kind:"workflow",entityType:"medication",entityId:r.rows[0].id,patientId:b.patient_id,excludeStaffId:ctx.staff.id});return res.json(r.rows[0]);
   }

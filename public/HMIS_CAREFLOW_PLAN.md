@@ -413,22 +413,25 @@ Remaining Nursing/Triage work:
 **In progress — doctor-room consultation lifecycle hardened and server-owned.**
 
 Implemented:
-- Existing Doctor Room provides assigned-doctor queue, today's appointments, patient history, vitals, AI documentation assistance, consultation notes, prescriptions and follow-ups.
-- Doctor entry into the consultation room is now server-validated: only an assigned doctor (or admin) can move a queue item from **doctor waiting → in_room**.
+- Existing Doctor Room provides assigned-doctor queue, today's appointments, patient history, vitals, nursing triage context, AI documentation assistance, consultation notes, prescriptions and follow-ups.
+- Doctor entry into the consultation room is server-validated: only an assigned doctor (or admin) can move a queue item from **doctor waiting → in_room**.
 - Generic queue transitions can no longer be used by non-doctors to enter a doctor's consultation room.
 - Consultation documentation is restricted server-side to doctor/admin staff.
 - A new consultation cannot be documented unless its linked queue item is actually **in_room** and assigned to that doctor.
-- Consultation completion is now owned by the clinical workflow: completing the visit closes the linked queue item and linked appointment rather than relying on separate browser calls.
-- Completion requires a non-empty consultation note in the Doctor Room UI.
-- Encounter stage/status and workflow events continue to be updated as part of consultation documentation.
-- Deployed **v231**; dry-run completed with no blocking errors.
+- Consultation completion is owned by the clinical workflow: completing the visit closes the linked queue item and linked appointment instead of relying on separate browser calls.
+- Existing open-visit completion now performs the same queue/appointment closure checks as a newly created visit.
+- Completion requires a non-empty consultation note server-side and in the Doctor Room UI.
+- The Doctor Room no longer exposes a separate generic “Complete queue item” action that could bypass clinical documentation.
+- Prescriptions from Doctor Room are now bound to the active open consultation visit; server-side validation rejects prescriptions without an active assigned consultation.
+- Canonical encounter stage/status and workflow events continue to be updated as part of consultation documentation.
+- Patient Workspace already surfaces the latest nursing triage assessment to doctors before consultation.
+- Deployed **v232**; dry-run completed with no blocking errors.
 - Public access tests correctly return HTTP 401 for the protected doctor/clinical routes.
 
 Remaining Doctor Consultation work:
 - Add explicit structured consultation fields beyond the current free-text note where supported by the hospital's clinical protocol (without inventing diagnoses or treatment rules).
-- Ensure doctor workspace clearly shows nursing triage and the complete pre-consultation context.
 - Add a server-side consultation-start event/visit record so room entry and visit start cannot drift apart.
-- Validate prescription/lab/follow-up records are always attached to the active encounter/visit.
+- Validate lab orders and follow-ups are always attached to the active encounter/visit.
 - Run authenticated doctor test: doctor queue → enter room → document → prescribe/order → complete consultation.
 - After authenticated testing, mark Doctor Consultation complete and move to Laboratory.
 
