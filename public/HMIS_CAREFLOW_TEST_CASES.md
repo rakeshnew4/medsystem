@@ -204,6 +204,15 @@ Route: /api/theatre-validate; Method: POST; Actor: doctor/admin with Theatre man
 Expected: only a completed, unvalidated procedure can be validated; every Theatre charge must already have both invoice_id and invoice_item_id; validation records validated_at/validated_by and creates a theatre_procedure_validated workflow event.
 Status: Implemented in v310; anonymous access returns HTTP 401. Authenticated execution pending.
 
+## TC-THEATRE-032 — Validated procedure is immutable for team/billing additions
+After Surgery Validation succeeds, adding/removing surgical team members and creating/linking Theatre billing changes must be rejected.
+Expected: HTTP 409 with no mutation.
+Status: Server-side lockout implemented in v312; authenticated execution pending.
+
+## TC-THEATRE-033 — Validated procedure remains clinically closed
+A validated completed procedure remains terminal and cannot re-enter an earlier lifecycle state.
+Status: Existing lifecycle state machine enforces terminal completion; authenticated execution pending.
+
 ## Theatre completion gate
 Do not mark Theatre Complete until authenticated happy-path E2E, role boundaries, invalid transitions, overlap protection, encounter continuity, workflow events and billing continuity pass. HMIS-aligned Surgery Validation is now an additional financial-closure gate.
 

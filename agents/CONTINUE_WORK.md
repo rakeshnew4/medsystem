@@ -44,7 +44,7 @@ The current workflow is **Theatre / procedures**. The next-task loop is mandator
 
 ### NEXT TASK QUEUE — always keep this current
 1. Theatre authenticated E2E gate: doctor/nurse/billing schedule → start → complete → surgical team → ward return → Theatre charge → invoice → payment → Surgery Validation.
-1a. Theatre HMIS-aligned validation: authenticated completion/financial-closure execution, plus verify validated procedures reject further clinical/billing/team additions.
+1a. Theatre HMIS-aligned validation: authenticated completion/financial-closure execution, plus verify validated procedures reject further clinical/billing/team additions. v312 server-side lockouts are implemented; authenticated execution remains the next gate.
 2. Theatre authenticated safety tests: role boundaries, invalid transitions, concurrent room overlap, source-charge retry/double-counting, surgical-team mutation, hospital isolation.
 3. Theatre HMIS gap review: inspect the corresponding HMIS surgery/theatre/inpatient code again and implement the next concrete CareFlow gap found; do not mark Theatre Complete until the full completion gate passes.
 4. After Theatre completion: begin Inventory / Assets, starting with HMIS repository review of inventory/asset entities, controllers/services, UI pages and persistence behavior.
