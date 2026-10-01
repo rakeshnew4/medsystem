@@ -14,5 +14,7 @@ Reference: HMIS `Privileges.java` and `UserPrivilageController.java` on the deve
 - TC-STAFF-010: Inactive staff cannot access staff workflows.
 - TC-STAFF-011: Production staff/permission validator reports zero violations across role values, activation state, doctor/department links, user overrides and permission keys.
 - TC-STAFF-012: Authenticated staff E2E must verify role boundary and department-specific permission behavior before Staff/Roles is complete.
+- TC-STAFF-013: Admin UI loads hospital staff and department scopes and renders Inherit / Allow / Deny state from the server response.
+- TC-STAFF-014: Admin UI save and clear operations persist the selected global or department-scoped override and refresh the displayed state.
 
 Current implementation gate: external PostgreSQL staff/permission schema verified and department-scoped permission columns/indexes applied. Authenticated staff execution remains pending because the available runner has no hospital staff session.
