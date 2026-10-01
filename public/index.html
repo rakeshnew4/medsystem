@@ -59,6 +59,7 @@
         <button data-section="doctors">Doctors</button>
         <button data-section="lab">Lab</button>
         <button data-section="pharmacy">Pharmacy</button>
+        <button data-section="theatre">Theatre / Procedures</button>
       </div>
     </div>
 
@@ -198,6 +199,7 @@
 <section id="billing" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Billing & payments</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Simple invoice, paid/partial/unpaid tracking and outstanding dues.</div></div><button class="btn primary" onclick="openModal('billingModal')">+ New invoice</button></div><div id="billingTable" class="table-wrap"></div></div></section>
 <section id="analytics" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Admin insights</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Hospital-level operational dashboard. Find bottlenecks, affected patients and actions.</div></div><button class="btn" onclick="loadAnalytics()">Refresh</button></div><div id="analyticsContent" style="margin-top:16px"></div></div><div class="card panel" style="margin-top:16px"><div class="panel-head"><div><h2 class="panel-title">Operations action queue</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Turn a bottleneck into an assigned action and measure whether it is resolved.</div></div><button class="btn primary" onclick="createOpsTask()">+ Assign action</button></div><div id="opsTasks" class="table-wrap"></div></div></section>
 <section id="lab" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Lab investigations</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Order → payment → sample → processing → verification → doctor review.</div></div><button class="btn" onclick="loadLab()">Refresh</button></div><div id="labTable" class="table-wrap" style="margin-top:12px"></div></div></section>
+<section id="theatre" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Operation Theatre / Procedures</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Schedule, start and complete clinical procedures linked to inpatient admissions.</div></div><button class="btn" onclick="loadTheatre()">Refresh</button></div><div id="theatreSummary" class="grid stats" style="margin-top:12px"></div><div id="theatreTable" class="table-wrap" style="margin-top:12px"></div></div></section>
 <section id="pharmacy" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Pharmacy</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Prescription → stock check → dispensing → patient exit.</div></div><div style="display:flex;gap:8px"><button class="btn" onclick="openModal('pharmacyStockModal')">+ Receive stock</button><button class="btn" onclick="loadPharmacy()">Refresh</button></div></div><div id="pharmacyStockSummary" class="grid stats" style="margin-top:12px"></div><div id="pharmacyTable" class="table-wrap" style="margin-top:12px"></div></div></section>
 <section id="display" class="section">
   <div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Displays & advertising</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Turn waiting-room TVs into live token boards plus hospital or paid local advertising.</div></div><button class="btn" onclick="loadDisplayAdmin()">Refresh</button></div>
@@ -273,7 +275,7 @@
 <script src="/analytics.js"></script>
 <script>
 const API='/api';
-let state={dashboardRange:{preset:'today',from:'',to:''},dashboard:null,patients:[],doctors:[],appointments:[],followups:[],queue:[],beds:[],billing:[],lab:[],pharmacy:[],pharmacyStock:[],opsTasks:[],staff:[],permissionCatalog:[],rolePermissions:[],queueView:'kanban',queueTimer:null,session:null,doctorRoom:null,doctorRoomTab:'waiting',doctorRoomPatient:null,hospitalConfig:null,displayAdmin:{devices:[],campaigns:[],summary:{}},communication:null,activeConversation:null,callPeer:null,callId:null,callTimer:null};
+let state={dashboardRange:{preset:'today',from:'',to:''},dashboard:null,patients:[],doctors:[],appointments:[],followups:[],queue:[],beds:[],billing:[],lab:[],theatre:{procedures:[],rooms:[]},pharmacy:[],pharmacyStock:[],opsTasks:[],staff:[],permissionCatalog:[],rolePermissions:[],queueView:'kanban',queueTimer:null,session:null,doctorRoom:null,doctorRoomTab:'waiting',doctorRoomPatient:null,hospitalConfig:null,displayAdmin:{devices:[],campaigns:[],summary:{}},communication:null,activeConversation:null,callPeer:null,callId:null,callTimer:null};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtTime=t=>t?String(t).slice(0,5):'';
 const fmtDate=d=>d?new Date(String(d).slice(0,10)+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
@@ -327,10 +329,10 @@ async function api(path,opts={}){
     return j;
   }finally{if(show)hideCareFlowLoader()}
 }
-const VALID_SECTIONS=['dashboard','reception-desk','queue','doctor-room','appointments','patients','doctors','beds','followups','billing','lab','pharmacy','display','analytics','staff','communication','setup'];
+const VALID_SECTIONS=['dashboard','reception-desk','queue','doctor-room','appointments','patients','doctors','beds','followups','billing','lab','theatre','pharmacy','display','analytics','staff','communication','setup'];
 const ROLE_DEFAULT_SECTIONS={admin:'dashboard',doctor:'doctor-room',nurse:'beds',receptionist:'reception-desk',lab:'lab',pharmacy:'pharmacy',billing:'billing',pending:'dashboard'};
-const SECTION_TITLES={dashboard:'Hospital overview','reception-desk':'OPD Desk',queue:'Patient queue','doctor-room':'Doctor Room',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',lab:'Lab investigations',pharmacy:'Pharmacy',display:'Displays & ads',analytics:'Admin insights',staff:'Staff',communication:'Staff communication',setup:'Hospital setup'};
-const SECTION_PERMISSIONS={dashboard:'page.dashboard','reception-desk':'action.patient.create',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',pharmacy:'action.pharmacy.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup'};
+const SECTION_TITLES={dashboard:'Hospital overview','reception-desk':'OPD Desk',queue:'Patient queue','doctor-room':'Doctor Room',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',lab:'Lab investigations',theatre:'Operation Theatre / Procedures',pharmacy:'Pharmacy',display:'Displays & ads',analytics:'Admin insights',staff:'Staff',communication:'Staff communication',setup:'Hospital setup'};
+const SECTION_PERMISSIONS={dashboard:'page.dashboard','reception-desk':'action.patient.create',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',theatre:'action.theatre.manage',pharmacy:'action.pharmacy.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup'};
 function staffStorageKey(kind){return 'careflow:'+kind+':'+encodeURIComponent(state.session?.user?.email||'default')}
 function saveWorkingContext(ctx){const value={...ctx,updatedAt:Date.now()};try{localStorage.setItem(staffStorageKey('workingContext'),JSON.stringify(value))}catch(e){}try{sessionStorage.setItem(staffStorageKey('workingContext'),JSON.stringify(value))}catch(e){}renderResumeBar()}
 function readWorkingContext(){try{const raw=sessionStorage.getItem(staffStorageKey('workingContext'))||localStorage.getItem(staffStorageKey('workingContext'));if(!raw)return null;const v=JSON.parse(raw);if(!v||!v.section)return null;if(v.updatedAt&&Date.now()-Number(v.updatedAt)>24*60*60*1000){clearWorkingContext();return null}return v}catch(e){return null}}
@@ -566,8 +568,8 @@ function renderRoleWorkspace(){
   const role=state.session?.staff?.role||'admin';
   const configs={
     admin:{title:'',sub:'',actions:[]},
-    doctor:{title:'Doctor Workspace',sub:'Consultation queue, patient records and clinical workflow',actions:[['doctor-room','My Queue'],['patients','Patients'],['followups','Follow-ups'],['appointments','Appointments']]},
-    nurse:{title:'Nursing Station',sub:'Ward patients, beds and the next nursing action',actions:[['beds','Ward & Beds'],['queue','OPD Queue'],['patients','Patients'],['lab','Investigations']]},
+    doctor:{title:'Doctor Workspace',sub:'Consultation queue, patient records and clinical workflow',actions:[['doctor-room','My Queue'],['patients','Patients'],['theatre','Theatre'],['followups','Follow-ups'],['appointments','Appointments']]},
+    nurse:{title:'Nursing Station',sub:'Ward patients, beds and the next nursing action',actions:[['beds','Ward & Beds'],['queue','OPD Queue'],['patients','Patients'],['theatre','Theatre'],['lab','Investigations']]},
     receptionist:{title:'OPD Desk',sub:'Registration, appointments, queue and patient flow',actions:[['queue','Queue'],['appointments','Appointments'],['patients','Patients'],['billing','Billing']]},
     lab:{title:'Lab Workbench',sub:'Samples, processing, verification and patient context',actions:[['lab','Lab Queue'],['patients','Patients'],['queue','OPD Queue'],['billing','Billing']]},
     pharmacy:{title:'Pharmacy Desk',sub:'Prescriptions, dispensing and patient context',actions:[['pharmacy','Dispensing'],['patients','Patients'],['billing','Billing'],['queue','OPD Queue']]},
@@ -717,7 +719,7 @@ async function checkSession(){
 }
 function can(p){return !!(state.session?.permissions?.[p])}
 function applyPermissions(){
-  const pageMap={dashboard:'page.dashboard',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',pharmacy:'action.pharmacy.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup'};
+  const pageMap={dashboard:'page.dashboard',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',theatre:'action.theatre.manage',pharmacy:'action.pharmacy.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup'};
   document.querySelectorAll('.nav button').forEach(b=>{const p=pageMap[b.dataset.section];b.style.display=can(p)?'':'none'});
   const aiBall=document.getElementById('aiAssistantBall');if(aiBall)aiBall.style.display=can('action.ai.use')?'flex':'none';
   document.querySelectorAll('button').forEach(b=>{
@@ -809,6 +811,7 @@ async function loadSectionData(id,force=false){
     followups:async()=>{if(!p['page.followups'])return;state.followups=await api('/followups');renderAll()},
     billing:async()=>{if(!p['page.billing'])return;state.billing=await api('/billing');renderAll()},
     lab:async()=>{if(!p['action.clinical.view'])return;await loadLab();renderAll()},
+    theatre:async()=>{if(!p['action.theatre.manage'])return;await loadTheatre();renderAll()},
     pharmacy:async()=>{if(!p['action.pharmacy.manage'])return;await loadPharmacy();renderAll()},
     display:async()=>{if(!p['page.setup'])return;await loadDisplayAdmin()},
     analytics:async()=>{if(!p['page.admin_insights'])return;await loadAnalytics();if(p['page.admin_insights']){state.opsTasks=await api('/ops-tasks').catch(()=>[]);renderOpsTasks()}},
@@ -1569,7 +1572,39 @@ async function callNextForMyRole(){
 async function moveQueue(id,stage){try{await api('/queue',{method:'PUT',body:JSON.stringify({id:Number(id),stage})});await loadAll()}catch(e){alert(e.message)}}
 function openVitals(qid,pid){openPatientWorkspace(pid,'vitals')}
 
-function renderBeds(){
+async function loadTheatre(){
+ try{
+  const r=await api('/theatre');
+  state.theatre=r||{procedures:[],rooms:[]};
+  renderTheatre();
+ }catch(e){if(e.status!==403)alert(e.message)}
+}
+function renderTheatre(){
+ const rows=state.theatre?.procedures||[], rooms=state.theatre?.rooms||[];
+ const counts={scheduled:0,in_progress:0,completed:0,cancelled:0};rows.forEach(x=>counts[x.status]=(counts[x.status]||0)+1);
+ const summary=document.getElementById('theatreSummary');
+ if(summary)summary.innerHTML=[['Scheduled',counts.scheduled],['In progress',counts.in_progress],['Completed',counts.completed],['Rooms',rooms.length]].map(x=>'<div class="card stat"><div class="stat-label">'+x[0]+'</div><div class="stat-value">'+x[1]+'</div><div class="stat-note">Theatre workflow</div></div>').join('');
+ const el=document.getElementById('theatreTable');if(!el)return;
+ el.innerHTML=rows.length?'<table><thead><tr><th>Scheduled</th><th>Patient</th><th>Procedure</th><th>Doctor</th><th>Room</th><th>Status</th><th>Action</th></tr></thead><tbody>'+rows.map(x=>{
+   const next=x.status==='scheduled'?'in_progress':x.status==='in_progress'?'completed':null;
+   const action=next?'<button class="mini primary" onclick="advanceTheatre('+x.id+',\''+next+'\')">'+(next==='in_progress'?'Start':'Complete')+'</button>':'';
+   const cancel=x.status==='scheduled'?'<button class="mini" onclick="advanceTheatre('+x.id+',\'cancelled\')">Cancel</button>':'';
+   return '<tr><td>'+(x.scheduled_start?fmtDate(x.scheduled_start)+' '+fmtTime(x.scheduled_start):'—')+'</td><td><button class="record-link" onclick="openPatientWorkspace('+x.patient_id+')"><strong>'+esc(x.patient_name||'Patient')+'</strong></button><div style="font-size:11px;color:var(--muted)">'+esc(x.uhid||'')+'</div></td><td>'+esc(x.procedure_name)+'</td><td>'+esc(x.doctor_name||'—')+'</td><td>'+esc(x.theatre_room_name||'—')+'</td><td>'+status(x.status)+'</td><td><div style="display:flex;gap:4px;flex-wrap:wrap">'+action+cancel+'</div></td></tr>';
+ }).join('')+'</tbody></table>':'<div class="empty">No theatre procedures scheduled yet. Open a patient workspace to schedule one against an active IPD admission.</div>';
+}
+async function advanceTheatre(id,next){
+ try{
+  const body={id:Number(id),status:next};
+  if(next==='completed'){
+    const outcome=prompt('Document procedure outcome before completion:');
+    if(outcome===null)return;
+    body.outcome=outcome;
+  }
+  await api('/theatre',{method:'PUT',body:JSON.stringify(body)});
+  await loadTheatre();
+ }catch(e){alert(e.message)}
+}
+  function renderBeds(){
   if(!state.beds.length){document.getElementById('bedsGrid').innerHTML='<div class="empty">No beds configured yet.</div>';return}
   document.getElementById('bedsGrid').innerHTML=state.beds.map(b=>{
     const occupied=b.status==='occupied';
