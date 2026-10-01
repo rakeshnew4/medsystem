@@ -52,7 +52,13 @@ export default async function(req,res){
   }
   const price=Number(b.purchase_price||0), rate=Number(b.depreciation_rate||0);
   if(!Number.isFinite(price)||price<0||!Number.isFinite(rate)||rate<0||rate>100)return res.status(400).json({error:"Invalid purchase price or depreciation rate"});
-  const r=await db.query("INSERT INTO fixed_assets(hospital_id,asset_code,description,category,serial_number,purchase_date,purchase_price,depreciation_method,depreciation_rate,useful_life_years,current_value,location,custodian_staff_id,status,warranty_expiry,amc_expiry,notes,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *",[ctx.hospitalId,code,desc,category,String(b.serial_number||"").trim()||null,b.purchase_date||null,price,b.depreciation_method||"straight_line",rate,b.useful_life_years?Number(b.useful_life_years):null,b.current_value==null?price:Number(b.current_value),String(b.location||"").trim()||null,initialCustodian,status,b.warranty_expiry||null,b.amc_expiry||null,String(b.notes||"").trim()||null,ctx.user.email]);
+  let r;
+  try {
+   r=await db.query("INSERT INTO fixed_assets(hospital_id,asset_code,description,category,serial_number,purchase_date,purchase_price,depreciation_method,depreciation_rate,useful_life_years,current_value,location,custodian_staff_id,status,warranty_expiry,amc_expiry,notes,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *",[ctx.hospitalId,code,desc,category,String(b.serial_number||"").trim()||null,b.purchase_date||null,price,b.depreciation_method||"straight_line",rate,b.useful_life_years?Number(b.useful_life_years):null,b.current_value==null?price:Number(b.current_value),String(b.location||"").trim()||null,initialCustodian,status,b.warranty_expiry||null,b.amc_expiry||null,String(b.notes||"").trim()||null,ctx.user.email]);
+  } catch (e) {
+   if(String(e?.message||e).toLowerCase().includes("fixed_assets_hospital_id_asset_code_key")) return res.status(409).json({error:"Asset code already exists in this hospital"});
+   throw e;
+  }
   await logWorkflowEvent(ctx,{eventType:"fixed_asset_created",stage:"assets",entityType:"fixed_asset",entityId:r.rows[0].id,metadata:{asset_code:code,category}});
   return res.status(201).json(r.rows[0]);
  }

@@ -52,4 +52,8 @@ Production validation: `/api/pharmacy-stock-validation` returned 0 violations ac
 
 TC-ASSET-025 No-op transfer rejection: transferring an active asset to the exact same location and custodian is rejected with HTTP 409 and creates no transfer-history row or workflow event. The check is performed inside the transfer transaction so a concurrent update cannot turn a real transfer into a false success.
 
+TC-ASSET-026 Duplicate asset-code safety: creating an asset with an existing asset_code in the same hospital returns HTTP 409 rather than a database 500; the hospital-scoped unique constraint remains the final concurrency-safe guard and no duplicate asset is created.
+
+TC-ASSET-027 Production transfer-history safety: the owner-only validator must report zero no-op transfer rows and zero transfer rows attached to inactive/disposed/retired assets.
+
 Current validation status (2026-10-01): `/api/fixed-assets` anonymous access returns 401 and an app-user without a hospital staff identity is rejected with 401; `/api/fixed-assets-validation` reports 0 production violations. Authenticated asset create/search/transfer and concurrent transfer execution remain open because no real hospital staff browser/session is available.
