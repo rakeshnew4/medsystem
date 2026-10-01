@@ -93,6 +93,7 @@
       <div class="nav-sub">
         <button data-section="staff">Staff & access</button>
         <button data-section="setup">Hospital setup</button>
+        <button data-section="integrations">Integrations</button>
       </div>
     </div>
   </nav>
@@ -346,6 +347,19 @@
     <div id="hospitalConfigValidation" class="u12-validation-grid"><div class="empty">Run validation to inspect configuration integrity.</div></div>
   </div>
 </section>
+
+<section id="integrations" class="section">
+  <div class="card panel">
+    <div class="panel-head"><div><div class="kicker">ADMINISTRATION · INTEGRATIONS</div><h2 class="panel-title">Integration workbench</h2><div class="muted">HMIS-aligned REST/FHIR discovery and LIS middleware readiness. Result-ingestion mutation endpoints remain gated until the external adapter/session path is verified.</div></div><button class="btn" onclick="loadIntegrationWorkbench()">Refresh</button></div>
+    <div id="integrationSummary" class="grid stats" style="margin-top:14px"></div>
+    <div class="grid two-col" style="margin-top:16px">
+      <div class="card" style="padding:16px"><div class="panel-head"><div><h3 class="panel-title">Capabilities</h3><div class="muted">Published non-secret integration contract.</div></div></div><div id="integrationCapabilities" class="table-wrap" style="margin-top:10px"></div></div>
+      <div class="card" style="padding:16px"><div class="panel-head"><div><h3 class="panel-title">Connection status</h3><div class="muted">Configuration state only; no secrets are displayed.</div></div></div><div id="integrationConnectionStatus" style="margin-top:10px"></div></div>
+    </div>
+    <div class="card" style="margin-top:16px;padding:16px"><div class="panel-head"><div><h3 class="panel-title">REST / FHIR settings</h3><div class="muted">Enablement flags use the existing hospital-scoped configuration contract.</div></div><div style="display:flex;gap:8px"><button class="btn" onclick="saveIntegrationSettings()">Save</button><button class="btn" onclick="rotateIntegrationKey()">Rotate API key</button></div></div><div class="form-grid" style="margin-top:12px"><label class="permission-row"><input id="integrationRestEnabled" type="checkbox"><span><strong>REST integration enabled</strong><small>Hospital-scoped integration flag</small></span></label><label class="permission-row"><input id="integrationFhirEnabled" type="checkbox"><span><strong>FHIR integration enabled</strong><small>FHIR Patient boundary uses the configured integration key</small></span></label></div><div id="integrationKeyNotice" class="record-section-note" style="margin-top:10px"></div></div>
+    <div class="card" style="margin-top:16px;padding:16px"><div class="panel-head"><div><h3 class="panel-title">LIS / analyzer diagnostics</h3><div class="muted">HMIS references `/api/lims`, `/api/middleware` and `/api/limsmw`. CareFlow does not send result mutations from this screen.</div></div><button class="btn" onclick="runIntegrationDiagnostics()">Run diagnostics</button></div><div id="integrationDiagnostics" style="margin-top:10px"><div class="empty">Run diagnostics to inspect the currently exposed boundary.</div></div></div>
+  </div>
+</section>
 </main>
 </div>
 
@@ -431,10 +445,10 @@ async function api(path,opts={}){
     return j;
   }finally{if(show)hideCareFlowLoader()}
 }
-const VALID_SECTIONS=['dashboard','reception-desk','queue','doctor-room','appointments','patients','doctors','beds','followups','billing','lab','theatre','pharmacy','assets','display','analytics','staff','communication','setup'];
+const VALID_SECTIONS=['dashboard','reception-desk','queue','doctor-room','appointments','patients','doctors','beds','followups','billing','lab','theatre','pharmacy','assets','display','analytics','staff','communication','setup','integrations'];
 const ROLE_DEFAULT_SECTIONS={admin:'dashboard',doctor:'doctor-room',nurse:'beds',receptionist:'dashboard',lab:'lab',pharmacy:'pharmacy',billing:'billing',store:'assets',pending:'dashboard'};
-const SECTION_TITLES={dashboard:'Hospital overview','reception-desk':'OPD Desk',queue:'Patient queue','doctor-room':'Doctor Room',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',lab:'Lab investigations',theatre:'Operation Theatre / Procedures',pharmacy:'Pharmacy',assets:'Inventory / fixed assets',display:'Displays & ads',analytics:'Admin insights',staff:'Staff',communication:'Staff communication',setup:'Hospital setup'};
-const SECTION_PERMISSIONS={dashboard:'page.dashboard','reception-desk':'action.patient.create',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',theatre:'action.theatre.manage',pharmacy:'action.pharmacy.manage',assets:'action.assets.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup'};
+const SECTION_TITLES={dashboard:'Hospital overview','reception-desk':'OPD Desk',queue:'Patient queue','doctor-room':'Doctor Room',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',lab:'Lab investigations',theatre:'Operation Theatre / Procedures',pharmacy:'Pharmacy',assets:'Inventory / fixed assets',display:'Displays & ads',analytics:'Admin insights',staff:'Staff',communication:'Staff communication',setup:'Hospital setup',integrations:'Integrations'};
+const SECTION_PERMISSIONS={dashboard:'page.dashboard','reception-desk':'action.patient.create',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',theatre:'action.theatre.manage',pharmacy:'action.pharmacy.manage',assets:'action.assets.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup',integrations:'page.setup'};
 function staffStorageKey(kind){return 'careflow:'+kind+':'+encodeURIComponent(state.session?.user?.email||'default')}
 function saveWorkingContext(ctx){const value={...ctx,updatedAt:Date.now()};try{localStorage.setItem(staffStorageKey('workingContext'),JSON.stringify(value))}catch(e){}try{sessionStorage.setItem(staffStorageKey('workingContext'),JSON.stringify(value))}catch(e){}renderResumeBar()}
 function readWorkingContext(){try{const raw=sessionStorage.getItem(staffStorageKey('workingContext'))||localStorage.getItem(staffStorageKey('workingContext'));if(!raw)return null;const v=JSON.parse(raw);if(!v||!v.section)return null;if(v.updatedAt&&Date.now()-Number(v.updatedAt)>24*60*60*1000){clearWorkingContext();return null}return v}catch(e){return null}}
@@ -824,7 +838,7 @@ async function checkSession(){
 }
 function can(p){return !!(state.session?.permissions?.[p])}
 function applyPermissions(){
-  const pageMap={dashboard:'page.dashboard',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',theatre:'action.theatre.manage',pharmacy:'action.pharmacy.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup'};
+  const pageMap={dashboard:'page.dashboard',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',theatre:'action.theatre.manage',pharmacy:'action.pharmacy.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup',integrations:'page.setup'};
   document.querySelectorAll('.nav button').forEach(b=>{const p=pageMap[b.dataset.section];b.style.display=can(p)?'':'none'});
   const aiBall=document.getElementById('aiAssistantBall');if(aiBall)aiBall.style.display=can('action.ai.use')?'flex':'none';
   document.querySelectorAll('button').forEach(b=>{
@@ -923,7 +937,8 @@ async function loadSectionData(id,force=false){
     analytics:async()=>{if(!p['page.admin_insights'])return;await loadAnalytics();if(p['page.admin_insights']){state.opsTasks=await api('/ops-tasks').catch(()=>[]);renderOpsTasks()}},
     staff:async()=>{if(state.session.staff?.role!=='admin')return;state.staff=await api('/team');const [pm,deps]=await Promise.all([api('/permissions'),api('/departments')]);state.departments=deps;state.permissionCatalog=pm.permissions;state.rolePermissions=pm.roles;state.permissionOverrides=pm.overrides||[];renderPermissionMatrix();populatePermissionAdmin();renderUserPermissionMatrix();renderStaff();renderStaffDepartmentContext();renderStaffRoleCatalogue()},
     communication:async()=>{if(!p['action.communication.use'])return;await loadCommunication();await loadAvailability()},
-    setup:async()=>{if(!p['action.setup.manage'])return;await loadHospitalConfig();await loadAdminAvailability()}
+    setup:async()=>{if(!p['action.setup.manage'])return;await loadHospitalConfig();await loadAdminAvailability()},
+    integrations:async()=>{if(!p['action.setup.manage'])return;await loadIntegrationWorkbench()}
   };
   const loader=loaders[id];if(!loader)return;
   // The receptionist kiosk is an interactive control surface. Never place
@@ -2411,6 +2426,48 @@ function renderHospitalConfig(){const c=state.hospitalConfig;if(!c)return;
  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];document.getElementById('hospitalHours').innerHTML='<div class="table-wrap"><table><thead><tr><th>Day</th><th>Open</th><th>Start</th><th>End</th><th>Slot</th><th></th></tr></thead><tbody>'+days.map((d,i)=>{const h=c.working_hours.find(x=>Number(x.day_of_week)===i)||{};return '<tr><td>'+d+'</td><td><input type="checkbox" id="whopen'+i+'" '+(h.is_open!==false?'checked':'')+'></td><td><input type="time" id="whstart'+i+'" value="'+esc(String(h.start_time||'').slice(0,5))+'"></td><td><input type="time" id="whend'+i+'" value="'+esc(String(h.end_time||'').slice(0,5))+'"></td><td><input type="number" id="whslot'+i+'" value="'+esc(h.slot_duration_minutes??15)+'" style="width:80px"></td><td><button class="mini" onclick="saveWorkingHour('+i+')">Save</button></td></tr>'}).join('')+'</tbody></table></div>';
 }
 async function loadHospitalConfig(){try{state.hospitalConfig=await api('/hospital-config');renderHospitalConfig();await loadDepartmentConfig()}catch(e){if(e.status!==403)console.warn(e)}}
+async function loadIntegrationWorkbench(){
+  if(!can('page.setup'))return;
+  try{
+    const [cap,settings]=await Promise.all([api('/integration-capabilities'),api('/integration-settings')]);
+    state.integration={capabilities:cap,settings};
+    document.getElementById('integrationSummary').innerHTML=[
+      ['REST',settings.rest_enabled?'Enabled':'Disabled'],
+      ['FHIR',settings.fhir_enabled?'Enabled':'Disabled'],
+      ['API key',settings.api_key_configured?'Configured':'Not configured'],
+      ['LIS writes','Gated']
+    ].map(x=>'<div class="card stat"><div class="stat-label">'+esc(x[0])+'</div><div class="stat-value" style="font-size:17px">'+esc(x[1])+'</div><div class="stat-note">Integration boundary</div></div>').join('');
+    document.getElementById('integrationRestEnabled').checked=!!settings.rest_enabled;
+    document.getElementById('integrationFhirEnabled').checked=!!settings.fhir_enabled;
+    document.getElementById('integrationCapabilities').innerHTML='<table><thead><tr><th>Resource</th><th>Mode</th><th>Contract</th></tr></thead><tbody><tr><td>FHIR Patient</td><td>Server</td><td>Read + search-type</td></tr><tr><td>LIS analyzer results</td><td>Planned / gated</td><td>sampleId + testCode + result value/units</td></tr></tbody></table>';
+    document.getElementById('integrationConnectionStatus').innerHTML='<div class="compact-record"><div><strong>Capability document</strong><span>'+esc(cap.status||'unknown')+' · '+esc(cap.kind||'instance')+'</span></div><span class="status active">Available</span></div><div class="compact-record"><div><strong>Credential state</strong><span>Only hashed key state is reported by the server.</span></div><span class="status '+(settings.api_key_configured?'active':'pending')+'">'+(settings.api_key_configured?'Configured':'Not configured')+'</span></div>';
+    document.getElementById('integrationKeyNotice').textContent=settings.api_key_configured?'An integration key is configured. The plaintext value is never returned by GET. Rotation reveals a replacement once; store it securely.':'No integration key is configured yet.';
+  }catch(e){if(e.status!==403)console.warn(e)}
+}
+async function saveIntegrationSettings(){
+  try{
+    await api('/integration-settings',{method:'PUT',body:JSON.stringify({rest_enabled:document.getElementById('integrationRestEnabled').checked,fhir_enabled:document.getElementById('integrationFhirEnabled').checked})});
+    await loadIntegrationWorkbench();
+  }catch(e){alert(e.message)}
+}
+async function rotateIntegrationKey(){
+  if(!confirm('Rotate the hospital integration key? The replacement is shown once and the previous key stops being valid.'))return;
+  try{
+    const r=await api('/integration-settings',{method:'PUT',body:JSON.stringify({rotate_integration_key:true})});
+    const notice=document.getElementById('integrationKeyNotice');
+    if(notice)notice.innerHTML='<strong>New key:</strong> <code>'+esc(r.integration_api_key||'')+'</code><br><span>Store it securely. It will not be returned again.</span>';
+    await loadIntegrationWorkbench();
+  }catch(e){alert(e.message)}
+}
+async function runIntegrationDiagnostics(){
+  const el=document.getElementById('integrationDiagnostics');if(!el)return;
+  el.innerHTML='<div class="empty">Running read-only boundary checks…</div>';
+  const checks=[];
+  try{const r=await api('/integration-capabilities');checks.push(['Capability document',r?.status==='active','GET /api/integration-capabilities']);}catch(e){checks.push(['Capability document',false,e.message])}
+  try{const r=await api('/integration-settings');checks.push(['Hospital integration settings',typeof r?.rest_enabled==='boolean'&&typeof r?.fhir_enabled==='boolean','GET /api/integration-settings']);}catch(e){checks.push(['Hospital integration settings',false,e.message])}
+  checks.push(['LIS result mutation',false,'Intentionally gated until authenticated adapter/session verification']);
+  el.innerHTML=checks.map(x=>'<div class="compact-record"><div><strong>'+esc(x[0])+'</strong><span>'+esc(x[2])+'</span></div><span class="status '+(x[1]?'active':'pending')+'">'+(x[1]?'Pass':'Gated')+'</span></div>').join('');
+}
 function renderAdminAvailability(){
   const box=document.getElementById('adminAvailabilityTable'); if(!box)return;
   const q=String(document.getElementById('adminAvailabilitySearch')?.value||'').trim().toLowerCase();
