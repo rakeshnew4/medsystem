@@ -39,6 +39,6 @@ The current workflow is **Theatre / procedures**. Continue in this order unless 
 2. Run authenticated Theatre role-boundary, invalid-transition, concurrent room-overlap, source-charge retry/double-counting and hospital-isolation tests.
 3. If all Theatre completion gates pass, mark Theatre Complete; otherwise fix the first failing gate. Only then advance to Inventory / Assets.
 
-After each completed increment, update this section to the next concrete target before responding.
+Before future workflow implementation, verify the relevant CareFlow schema exists in the external PostgreSQL adapter database; Hatchable migrations do not automatically migrate that external database. After each completed increment, update this section to the next concrete target before responding.
 
 This is a project-level continuation reminder. It does not itself create a scheduled task or execute code after a chat response.

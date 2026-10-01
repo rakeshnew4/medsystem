@@ -101,7 +101,7 @@ Status: Implemented.
 
 ## TC-THEATRE-006 — Theatre room overlap
 Overlapping scheduled/in-progress procedures in the same hospital theatre room are rejected.
-Status: Implemented in v275 with transaction-scoped advisory locking and atomic conflict recheck; production currently has 0 active overlaps. Concurrent authenticated execution remains pending.
+Status: Implemented in v275 with transaction-scoped advisory locking and atomic conflict recheck; external PostgreSQL schema is now applied and validator reports 0 active overlaps. Concurrent authenticated execution remains pending.
 
 ## TC-THEATRE-007 — Lifecycle
 Only scheduled → in_progress → completed and scheduled → cancelled are accepted.

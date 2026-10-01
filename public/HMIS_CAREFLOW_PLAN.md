@@ -604,6 +604,7 @@ Remaining:
 - Automated database checks verified no duplicate source charges, no duplicate invoice-item links, and no linked Theatre charge missing its invoice line.
 - v275 hardened Theatre concurrency: room overlap scheduling now takes a transaction-scoped advisory lock and rechecks conflicts atomically; lifecycle transitions require the expected prior status; ward return is idempotent under retry.
 - v275 production invariant check: invalid procedure statuses = 0, invalid ward-return states = 0, invoice-item links without invoices = 0; anonymous Theatre and Theatre-charge access both return 401.
+- v281: applied Theatre migrations 0046–0051 to the actual external `medsystem` PostgreSQL database used by CareFlow; the owner-only Theatre validator now passes 8/8 integrity/isolation checks, including active-room overlap and billing-link invariants.
 - Remaining: authenticated doctor/nurse/billing E2E with role boundaries, invalid-transition execution, concurrent overlap execution, source-charge retry/double-counting execution, and billing/payment continuity.
 
 Theatre remains **In progress** until the authenticated workflow is tested end-to-end.
