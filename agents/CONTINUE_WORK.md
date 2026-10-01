@@ -36,6 +36,7 @@ Use public/HMIS_CAREFLOW_PLAN.md as the source of truth. Prefer the earliest unf
 
 The current workflow is **Theatre / procedures**. Continue in this order unless the plan changes:
 1. Obtain/use a real authenticated hospital staff session and run Theatre E2E as doctor, nurse and billing: schedule → start → complete → ward return → charge creation → invoice linkage → payment continuity.
+   - If the session is unavailable in the current execution environment, do not claim E2E completion; continue with safe production invariant checks and documentation, and keep the gate explicitly open.
 2. Run authenticated Theatre role-boundary, invalid-transition, concurrent room-overlap, source-charge retry/double-counting and hospital-isolation tests; production validator now also audits the v287 source/lifecycle invariants.
 3. If all Theatre completion gates pass, mark Theatre Complete; otherwise fix the first failing gate. Only then advance to Inventory / Assets.
 

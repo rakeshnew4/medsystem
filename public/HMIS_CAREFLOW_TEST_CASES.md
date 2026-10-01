@@ -257,5 +257,9 @@ Status: Endpoint exists; authenticated browser/PDF verification pending.
 Pre-ledger invoices with a positive `invoices.paid` balance must be reconciled into `invoice_payments` without changing the authoritative invoice total/paid balance or creating duplicate payment rows.
 Status: Production audit found 946 legacy invoices requiring reconciliation; mutation/backfill is intentionally not claimed complete. New invoice creation is now atomic: invoice + line items + initial payment ledger entry commit together, so newly created invoices cannot create a ledger gap through a partial write.
 
+## TC-BILL-018 — Hospital staff session gate
+The automated end-to-end harness must establish a real CareFlow hospital staff session before executing billing mutations; an app-user session that is rejected by `requireStaff()` does not count as authenticated hospital-staff E2E.
+Status: Open. The current automated runner cannot establish the hospital staff auth/role session; no authenticated billing completion is claimed.
+
 ## Billing completion gate
 Billing is marked Complete only after authenticated invoice/payment E2E, role boundaries, invalid financial inputs, invoice continuity and workflow audit events pass.
