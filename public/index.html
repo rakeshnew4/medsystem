@@ -839,11 +839,19 @@ async function workspaceSaveDispense(medication_id,pid,quantity){
 function patientWorkspacePanel(title,body){
  return '<div class="workspace-card patient-action-panel"><div class="panel-head"><h3 class="panel-title">'+esc(title)+'</h3><button class="btn" type="button" onclick="this.closest(\'.patient-action-panel\').remove()">Cancel</button></div>'+body+'</div>';
 }
-function workspaceActionPanel(html,pid){
+function workspaceActionPanel(html,pid,anchorRole){
  const area=document.getElementById('patientWorkspaceActionArea');
  if(!area)return;
- area.insertAdjacentHTML('beforeend',patientWorkspacePanel(html.title,html.body));
- setTimeout(()=>area.lastElementChild?.scrollIntoView({behavior:'smooth',block:'center'}),30);
+ const panel=patientWorkspacePanel(html.title,html.body);
+ const anchor=anchorRole?area.parentElement?.querySelector('.care-team-group[data-care-role="'+anchorRole+'"]'):null;
+ if(anchor){
+   anchor.insertAdjacentHTML('afterend',panel);
+   const next=anchor.nextElementSibling;
+   setTimeout(()=>next?.scrollIntoView({behavior:'smooth',block:'center'}),30);
+ }else{
+   area.insertAdjacentHTML('beforeend',panel);
+   setTimeout(()=>area.lastElementChild?.scrollIntoView({behavior:'smooth',block:'center'}),30);
+ }
 }
 function workspaceOpenOpd(pid){openOpdRegistration(pid)}
 function workspaceOpenDoctor(pid){
@@ -917,7 +925,7 @@ async function workspaceSaveInvoice(e,pid){
 async function patientWorkspaceAppointments(pid){
  const s=state.activePatientRecord;const rows=s?.appointments||[];
  const html=rows.length?rows.slice(0,10).map(a=>'<div class="compact-record"><div><strong>'+fmtDate(a.appointment_date)+' · '+fmtTime(a.appointment_time)+'</strong><span>'+esc(a.doctor_name||'Doctor')+' · '+esc(a.reason||'General visit')+'</span></div><div>'+status(a.status)+'<button class="mini" onclick="workspaceCheckIn('+a.id+','+pid+')">Check in</button></div></div>').join(''):'<div class="empty">No appointments.</div>';
- workspaceActionPanel({title:'Appointments & check-in',body:'<div>'+html+'</div>'},pid);
+ workspaceActionPanel({title:'Appointments & check-in',body:'<div>'+html+'</div>'},pid,'receptionist');
 }
 async function workspaceCheckIn(aid,pid){
  try{const r=await api('/appointments',{method:'PUT',body:JSON.stringify({id:aid,action:'checkin',stage:'waiting'})});alert('OPD token issued: '+(r.queue?.token||'assigned'));await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
@@ -1397,7 +1405,7 @@ function patientCareTeamActions(p,s){
   const section=(num,roleKey,label,desc,actions)=>{
     const mine=active(roleKey);
     const buttons=actions.map(a=>'<button type="button" class="mini '+(mine?'primary':'')+'" '+(mine?'onclick="'+a.onclick+'"':'disabled')+'>'+escq(a.label)+'</button>').join('');
-    return '<div class="care-team-group '+(mine?'current-role':'')+'"><div class="care-team-group-head"><div><span class="care-team-step">'+num+'</span><strong>'+escq(label)+'</strong></div><span>'+(mine?'YOUR WORK':'CARE TEAM')+'</span></div><div class="care-team-role-desc">'+escq(desc)+'</div><div class="care-team-buttons">'+buttons+'</div></div>';
+    return '<div class="care-team-group '+(mine?'current-role':'')+'" data-care-role="'+roleKey+'"><div class="care-team-group-head"><div><span class="care-team-step">'+num+'</span><strong>'+escq(label)+'</strong></div><span>'+(mine?'YOUR WORK':'CARE TEAM')+'</span></div><div class="care-team-role-desc">'+escq(desc)+'</div><div class="care-team-buttons">'+buttons+'</div></div>';
   };
   const sections=[
     section('01','receptionist','Reception','Registration, OPD check-in and front-desk work.',[
