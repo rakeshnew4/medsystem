@@ -37,8 +37,8 @@ export default async function(req,res){
 
   let guardPresent=false;
   try{
-    await db.query("EXPLAIN INSERT INTO pharmacy_dispenses(hospital_id,medication_id,status) SELECT $1,$2,'dispensed' WHERE false ON CONFLICT (hospital_id,medication_id) WHERE status='dispensed' DO NOTHING",[hospitalId,0]);
-    guardPresent=true;
+    const probe=await db.query("INSERT INTO pharmacy_dispenses(hospital_id,medication_id,status) SELECT $1,$2,'dispensed' WHERE false ON CONFLICT (hospital_id,medication_id) WHERE status='dispensed' DO NOTHING RETURNING id",[hospitalId,0]);
+    guardPresent=Array.isArray(probe.rows);
   }catch(e){
     guardPresent=false;
   }
