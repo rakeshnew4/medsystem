@@ -120,13 +120,12 @@
       </div>
     </div>
     <div class="reception-control-dock" aria-label="Reception operations">
-      <button type="button" class="reception-control active" onclick="openReceptionPanel('patient')"><b>1</b><span>PATIENT</span></button>
+      <button type="button" class="reception-control active" onclick="openReceptionPanel('register')"><b>1</b><span>REGISTER</span></button>
       <button type="button" class="reception-control" onclick="openReceptionPanel('walkin')"><b>2</b><span>OPD</span></button>
-      <button type="button" class="reception-control" onclick="openReceptionPanel('appointment')"><b>3</b><span>APPOINTMENT</span></button>
-      <button type="button" class="reception-control" onclick="openReceptionPanel('queue')"><b>4</b><span>QUEUE</span></button>
-      <button type="button" class="reception-control" onclick="openReceptionPanel('billing')"><b>5</b><span>BILLING</span></button>
-      <button type="button" class="reception-control" onclick="openReceptionPanel('followup')"><b>6</b><span>FOLLOW-UP</span></button>
-      <button type="button" class="reception-control" onclick="openReceptionPanel('admission')"><b>7</b><span>ADMISSION</span></button>
+      <button type="button" class="reception-control" onclick="openReceptionPanel('queue')"><b>3</b><span>QUEUE</span></button>
+      <button type="button" class="reception-control" onclick="openReceptionPanel('billing')"><b>4</b><span>BILLING</span></button>
+      <button type="button" class="reception-control" onclick="openReceptionPanel('followup')"><b>5</b><span>FOLLOW-UP</span></button>
+      <button type="button" class="reception-control" onclick="openReceptionPanel('admission')"><b>6</b><span>ADMISSION</span></button>
     </div>
   </div>
 </section>
@@ -432,16 +431,14 @@ async function openReceptionPanel(mode){
   const ov=document.getElementById('receptionOverlay'),body=document.getElementById('receptionOverlayBody'),title=document.getElementById('receptionOverlayTitle'),kicker=document.getElementById('receptionOverlayKicker');
   if(!ov||!body)return;
   document.querySelectorAll('.reception-control').forEach(x=>x.classList.toggle('selected',x.getAttribute('onclick')?.includes("'"+mode+"'")));
-  const titles={patient:'Patients · Search / Register',walkin:'OPD · Walk-in registration',appointment:'Appointments · Book / Check-in',queue:'Queue · Today',billing:'Billing · Patient account',followup:'Follow-up · Schedule',admission:'Admission · Start IPD',search:'Search patient',edit:'Edit patient'};
+  const titles={register:'Register · Patient + Appointment',walkin:'OPD · Walk-in registration',queue:'Queue · Today',billing:'Billing · Patient account',followup:'Follow-up · Schedule',admission:'Admission · Start IPD',search:'Search patient',edit:'Edit patient'};
   kicker.textContent='RECEPTION';title.textContent=titles[mode]||'Reception';
-  if(mode==='patient'){
-    body.innerHTML=renderReceptionSearch('patient')+'<button type="button" class="reception-submit reception-secondary-action" onclick="closeReceptionPanel();openModal(\'patientRegisterModal\')">+ REGISTER NEW PATIENT</button>';
+  if(mode==='register'){
+    body.innerHTML='<form id="receptionRegisterForm" class="reception-form kiosk-form"><div class="reception-form-grid"><div class="field full"><label>Patient name</label><input id="receptionRegPatient" required placeholder="Search existing patient or enter new name" autofocus></div><div class="field"><label>Phone</label><input id="receptionRegPhone" type="tel" placeholder="+91 98765 43210"></div><div class="field"><label>Date of birth</label><input id="receptionRegDob" type="date"></div><div class="field"><label>Doctor</label><select id="receptionRegDoctor" required></select></div><div class="field"><label>Date</label><input id="receptionRegDate" type="date" required></div><div class="field"><label>Time</label><input id="receptionRegTime" type="time" required></div><div class="field"><label>Type</label><select id="receptionRegType"><option value="in_person">In-person</option><option value="online">Online</option></select></div><div class="field full"><label>Reason</label><input id="receptionRegReason" placeholder="Consultation, follow-up, review"></div></div><button class="reception-submit" type="submit">REGISTER APPOINTMENT → PAYMENT QR</button></form>';
+    renderReceptionDesk();document.getElementById('receptionRegisterForm').addEventListener('submit',e=>submitReceptionRegistration(e).catch(x=>alert(x.message)));
   }else if(mode==='walkin'){
     body.innerHTML='<form id="receptionWalkinForm" class="reception-form kiosk-form"><div class="reception-form-grid"><div class="field full"><label>Patient</label><input id="receptionPatientSearch" required placeholder="Name, phone or UHID" autofocus></div><div class="field"><label>Phone</label><input id="receptionPatientPhone" type="tel" placeholder="+91 98765 43210"></div><div class="field"><label>Date of birth</label><input id="receptionPatientDob" type="date"></div><div class="field"><label>Doctor</label><select id="receptionDoctor" required></select></div><div class="field"><label>Priority</label><select id="receptionPriority"><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option></select></div><div class="field full"><label>Reason</label><input id="receptionReason" placeholder="General consultation"></div></div><button class="reception-submit" type="submit">ISSUE TOKEN → WAITING</button></form>';
     renderReceptionDesk();document.getElementById('receptionWalkinForm').addEventListener('submit',e=>submitReceptionWalkin(e).catch(x=>alert(x.message)));
-  }else if(mode==='appointment'){
-    body.innerHTML='<form id="receptionAppointmentForm" class="reception-form kiosk-form"><div class="reception-form-grid"><div class="field full"><label>Patient</label><input id="receptionApptPatient" required placeholder="Name or phone" autofocus></div><div class="field"><label>Phone</label><input id="receptionApptPhone" type="tel" required placeholder="+91 98765 43210"></div><div class="field"><label>Doctor</label><select id="receptionApptDoctor" required></select></div><div class="field"><label>Date</label><input id="receptionApptDate" type="date" required></div><div class="field"><label>Time</label><input id="receptionApptTime" type="time" required></div><div class="field"><label>Type</label><select id="receptionApptType"><option value="in_person">In-person</option><option value="online">Online</option></select></div><div class="field full"><label>Reason</label><input id="receptionApptReason" placeholder="Consultation, follow-up, review"></div></div><button class="reception-submit" type="submit">BOOK APPOINTMENT</button></form>';
-    renderReceptionDesk();document.getElementById('receptionAppointmentForm').addEventListener('submit',e=>submitReceptionAppointment(e).catch(x=>alert(x.message)));
   }else if(mode==='search'||mode==='edit'){
     body.innerHTML=renderReceptionSearch(mode);
   }else if(mode==='queue'){
@@ -464,9 +461,9 @@ async function openReceptionPanel(mode){
 function renderReceptionDesk(){
   const doctors=state.doctors||[];
   const options='<option value="">Select doctor</option>'+doctors.filter(d=>d.active!==false).map(d=>'<option value="'+Number(d.id)+'">'+esc(d.name)+(d.specialty?' · '+esc(d.specialty):'')+'</option>').join('');
-  const d1=document.getElementById('receptionDoctor'),d2=document.getElementById('receptionApptDoctor');
+  const d1=document.getElementById('receptionDoctor'),d2=document.getElementById('receptionRegDoctor');
   if(d1)d1.innerHTML=options;if(d2)d2.innerHTML=options;
-  const date=document.getElementById('receptionApptDate');if(date&&!date.value)date.value=new Date().toISOString().slice(0,10);
+  const date=document.getElementById('receptionRegDate');if(date&&!date.value)date.value=new Date().toISOString().slice(0,10);
 }
 async function receptionFindOrCreatePatient(name,phone,dob){
   const value=String(name||'').trim(), phoneValue=String(phone||'').trim();
@@ -486,13 +483,14 @@ async function submitReceptionWalkin(e){
   const box=document.getElementById('receptionDeskResult');box.innerHTML='<strong>Token '+esc(q.token?.token||q.token||'—')+'</strong><span>'+esc(r.name||name)+' · '+esc(r.uhid||'')+' · Waiting for vitals</span>';
   e.target.reset();document.getElementById('receptionDoctor').value='';closeReceptionPanel();setTimeout(()=>box.innerHTML='',5000);
 }
-async function submitReceptionAppointment(e){
+async function submitReceptionRegistration(e){
   e.preventDefault();
-  const name=document.getElementById('receptionApptPatient').value.trim(),phone=document.getElementById('receptionApptPhone').value.trim(),doctor=document.getElementById('receptionApptDoctor').value,date=document.getElementById('receptionApptDate').value,time=document.getElementById('receptionApptTime').value,type=document.getElementById('receptionApptType').value,reason=document.getElementById('receptionApptReason').value.trim();
-  if(!name||!phone||!doctor||!date||!time)return;
-  const r=await api('/appointments',{method:'POST',body:JSON.stringify({patient_name:name,patient_phone:phone,doctor_id:Number(doctor),appointment_date:date,appointment_time:time,reason:reason||null,consultation_type:type,source:'reception'})});
-  const box=document.getElementById('receptionDeskResult');box.innerHTML='<strong>Appointment booked</strong><span>'+esc(r.patient?.name||name)+' · '+esc(date)+' · '+esc(time)+'</span>';
-  e.target.reset();document.getElementById('receptionApptDate').value=new Date().toISOString().slice(0,10);closeReceptionPanel();setTimeout(()=>box.innerHTML='',5000);
+  const name=document.getElementById('receptionRegPatient').value.trim(),phone=document.getElementById('receptionRegPhone').value.trim(),dob=document.getElementById('receptionRegDob').value,doctor=document.getElementById('receptionRegDoctor').value,date=document.getElementById('receptionRegDate').value,time=document.getElementById('receptionRegTime').value,type=document.getElementById('receptionRegType').value,reason=document.getElementById('receptionRegReason').value.trim();
+  if(!name||!doctor||!date||!time)return;
+  const r=await api('/appointments',{method:'POST',body:JSON.stringify({patient_name:name,patient_phone:phone||null,doctor_id:Number(doctor),appointment_date:date,appointment_time:time,reason:reason||null,consultation_type:type,source:'reception'})});
+  await showAppointmentPaymentQr(r);
+  const box=document.getElementById('receptionDeskResult');box.innerHTML='<strong>Appointment registered</strong><span>'+esc(r.patient?.name||name)+' · '+esc(date)+' · '+esc(time)+'</span>';
+  e.target.reset();document.getElementById('receptionRegDate').value=new Date().toISOString().slice(0,10);closeReceptionPanel();setTimeout(()=>box.innerHTML='',5000);
 }
 function renderRoleWorkspace(){
   const el=document.getElementById('roleWorkspaceBar');if(!el)return;
