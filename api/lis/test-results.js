@@ -7,12 +7,12 @@ function fingerprint(sampleId,testCode,resultValue,units,resultId){return result
 async function integrationHospital(req,res){
   const k=bearer(req);if(!k)return res.status(401).json({error:"Bearer integration API key required"});
   const h=await hash(k);
-  let r=await db.query("SELECT hospital_id FROM hospital_settings WHERE setting_key='integration.api_key_hash' AND setting_value->>'hash'=$1 LIMIT 1",[h]);
-  if(!r.rows[0])r=await db.query("SELECT hospital_id FROM hospital_settings WHERE setting_key='integration.fhir.api_key_hash' AND setting_value->>'hash'=$1 LIMIT 1",[h]);
-  if(!r.rows[0])return res.status(401).json({error:"Invalid integration API key"});
-  const enabled=await db.query("SELECT setting_value FROM hospital_settings WHERE hospital_id=$1 AND setting_key='integration.rest.enabled' LIMIT 1",[r.rows[0].hospital_id]);
+  const settings=await db.query("SELECT hospital_id,setting_key,setting_value FROM hospital_settings WHERE setting_key IN ('integration.api_key_hash','integration.fhir.api_key_hash')");
+  const match=settings.rows.find(x=>String(x.setting_value?.hash||"")===h);
+  if(!match)return res.status(401).json({error:"Invalid integration API key"});
+  const enabled=await db.query("SELECT setting_value FROM hospital_settings WHERE hospital_id=$1 AND setting_key='integration.rest.enabled' LIMIT 1",[match.hospital_id]);
   if(enabled.rows[0]?.setting_value?.enabled!==true)return res.status(403).json({error:"REST integration is disabled"});
-  return Number(r.rows[0].hospital_id);
+  return Number(match.hospital_id);
 }
 function parseRecords(body){
   if(Array.isArray(body?.resultsRecords))return body.resultsRecords;
