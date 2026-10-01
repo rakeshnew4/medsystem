@@ -119,7 +119,7 @@ For every U12 increment, inspect the relevant HMIS staff/privilege/configuration
 1. [x] Global responsive shell and AI assistant positioning hardening.
 2. [x] Frontend JavaScript syntax regression repair and live parse verification.
 3. [x] Continuation/UI-plan synchronization for the v470 baseline.
-4. [x] Production 5xx hygiene pass — reviewed recent failures, confirmed the key Patient Workspace failure surface is authenticated-only, and hardened optional Patient Workspace reads in v471 so a secondary section failure no longer aborts the whole workspace; core patient identity lookup remains strict.
+4. [x] Production 5xx hygiene pass — reviewed recent failures, confirmed the key Patient Workspace failure surface is authenticated-only, and hardened optional Patient Workspace reads in v471/v472 so a secondary section failure no longer aborts the whole workspace; core patient identity lookup remains strict.
 5. [ ] Safe integration boundary hardening: keep the unverified LIS result-write route disabled until the verified authenticated adapter/session path exists; continue capability/contract documentation and non-mutating access checks.
 6. [ ] Financial reconciliation review: legacy payment-ledger gap remains open until source-backed historical payment rows are available; never synthesize ledger entries from invoice totals alone.
 7. [ ] Authenticated hospital-staff E2E gates — execute only when a genuine staff session is available.
