@@ -58,6 +58,19 @@ TC-ASSET-027 Production transfer-history safety: the owner-only validator must r
 
 TC-ASSET-028 Asset-event continuity boundary: fixed-asset transfers are operational asset events, not patient/encounter events. The authoritative continuity record is the hospital-scoped `fixed_asset_transfers` row created in the same transfer transaction. CareFlow must not claim a patient `workflow_events` row for an asset transfer because the current workflow-event schema requires a patient identity. Authenticated asset E2E must verify the transfer row and actor/timestamp continuity instead.
 
+## UI-11 workbench cases
+TC-ASSET-037 Inventory worklist: fixed-asset search matches asset code, description, serial, category, location and custodian text; status/category filters narrow the same hospital-scoped result set.
+TC-ASSET-038 Inventory summary: asset totals, active/maintenance counts, register value and 30-day warranty/AMC expiry watch are derived from the loaded hospital asset set and do not mutate data.
+TC-ASSET-039 Asset detail context: selecting an asset exposes code, description, serial, purchase/depreciation/value, location, custodian, lifecycle and transfer history through the existing protected detail contract.
+TC-ASSET-040 Stock catalogue: Inventory stock view uses the existing /api/pharmacy-stock contract, supports medicine/batch/department search and low/active/inactive filters, and does not create a second stock master.
+TC-ASSET-041 Transfer issue UI: Issue Stock submits action=issue, source_stock_id, destination_department_id, positive quantity and notes; server creates the in_transit transfer and transfer_out ledger atomically.
+TC-ASSET-042 Transfer receive/cancel UI: only in_transit rows expose Receive/Cancel actions; the UI sends the existing action/transfer_id contract and refreshes stock plus transfer history after success.
+TC-ASSET-043 Transfer role boundary: source/destination department authorization remains server-side; UI must not imply that merely seeing a transfer grants receive/cancel rights.
+TC-ASSET-044 Transfer terminal-state safety: received/cancelled rows expose no terminal mutation controls and server-side 409 protections remain authoritative.
+TC-ASSET-045 Inventory reports: existing warranty/AMC, transfer and depreciation/register reports remain available from the same workspace and preserve read-only semantics.
+TC-ASSET-046 Responsive inventory: worklist/search/filter/transfer controls remain usable on narrow screens without losing hospital, department or status context.
+TC-ASSET-047 Existing transfer contract regression: issue no longer requires a pre-existing transfer_id; receive/cancel continue to require transfer_id. Anonymous /api/pharmacy-stock-transfers remains 401.
+
 Current validation status (2026-10-01): `/api/fixed-assets` anonymous access returns 401 and an app-user without a hospital staff identity is rejected with 401; `/api/fixed-assets-validation` reports 0 production violations. Pharmacy stock/transfer validation now returns 11/11 checks passing with 0 violations. The protected transfer route returns 401 without authentication and the available signed-in app-user path is rejected by `requireStaff()` with 401. Authenticated asset create/search/transfer and pharmacy stock mutation/dispensing/transfer execution remain open because no real hospital staff browser/session is available.
 
 TC-ASSET-029 Pharmacy transfer issue: an authorized source-department staff member can issue positive available stock to a different hospital department atomically; source quantity decreases once, transfer becomes in_transit, and exactly one transfer_out ledger row records before/after balances.

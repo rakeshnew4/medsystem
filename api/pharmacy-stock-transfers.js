@@ -28,7 +28,7 @@ export default async function(req,res){
   const action=String(b.action||"").trim().toLowerCase();
   const id=Number(b.transfer_id);
   if(!["issue","receive","cancel"].includes(action)) return res.status(400).json({error:"action must be issue, receive or cancel"});
-  if(!Number.isInteger(id)||id<=0) return res.status(400).json({error:"transfer_id is required for this action"});
+  if(action!=="issue" && (!Number.isInteger(id)||id<=0)) return res.status(400).json({error:"transfer_id is required for receive or cancel"});
 
   if(action==="issue"){
     const sourceId=Number(b.source_stock_id), destinationId=Number(b.destination_department_id), qty=Number(b.quantity);

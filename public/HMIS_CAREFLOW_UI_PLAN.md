@@ -160,13 +160,21 @@ HMIS references: surgery pages, surgery clinical details, admission profile.
 - [x] Clinical/financial closure presentation — selected procedure combines lifecycle, outcome, charges, validation and ward-return state in one closure view.
 
 ### UI-11 — Inventory / Assets
-- [ ] Asset register
-- [ ] Asset detail
-- [ ] Location/custodian
-- [ ] Transfer history
-- [ ] Warranty/AMC
-- [ ] Depreciation/register reports
-- [ ] Pharmacy stock transfer UI integration
+HMIS references: Store inventory/asset registry, fixed-asset reports, stock history/bin-card and pharmacy stock transfer/receive workflows. CareFlow keeps fixed assets and consumable pharmacy/store stock distinct while presenting them in one operational inventory workspace.
+- [x] Inventory worklist — searchable/filterable hospital-scoped fixed-asset register with status/category/location context and responsive actions.
+- [x] Asset/item detail — asset code, description, serial, value, location, custodian, lifecycle and warranty/AMC context exposed through the existing detail/history contract.
+- [x] Inventory catalogue — category filters and pharmacy/store stock catalogue are surfaced without creating a duplicate stock master.
+- [x] Stock movement history — existing pharmacy stock history, bin-card and closing-stock reports remain reachable and are complemented by the inventory stock view.
+- [x] Asset transfer workflow — existing atomic fixed-asset transfer contract is exposed with location/custodian continuity.
+- [x] Pharmacy stock transfer workflow — existing issue → in_transit → receive/cancel contract is surfaced with source/destination department controls; no new stock mutation semantics invented.
+- [x] Assignment/location context — current custodian and department/location are visible; reassignment uses the existing protected transfer contract.
+- [x] Maintenance/service state — existing asset lifecycle status and warranty/AMC fields are presented; no unsupported maintenance mutation is invented.
+- [x] Inventory validation boundary — server-side fixed-asset and pharmacy-stock validators remain authoritative; UI does not claim local validation as an integrity guarantee.
+- [x] Asset history/audit — transfer history, actor/date and report views are available through existing protected/read-only contracts.
+- [x] Operational inventory dashboard — asset totals, active/maintenance counts, register value and expiry watch are surfaced alongside stock and transfer worklists.
+- [x] Role/authorization UX — Inventory uses the existing action.assets.manage and pharmacy permission boundaries; transfer receive/cancel remains server-authorized by department.
+- [x] Mobile/responsive workflow — search/filter/action controls use the existing responsive queue/worklist patterns and compact transfer controls.
+- [ ] Authenticated E2E closure — real hospital-staff execution of asset create/search/transfer and pharmacy issue/receive/cancel remains open because the available runner has no genuine staff session.
 
 ### UI-12 — Staff / Roles / Permissions / Hospital Setup
 - [ ] Staff directory
@@ -224,6 +232,7 @@ A module is UI-complete only when the UI reflects the verified HMIS workflow, al
 - These patterns will be adapted to CareFlow's modern web architecture rather than copying HMIS source code.
 
 ## Change tracking
+- 2026-10-01: UI-11 one-pass increment prepared against HMIS Store inventory/asset registry, fixed-asset reports, stock history/bin-card and pharmacy transfer/receive references. CareFlow Inventory now has a unified operational worklist, asset detail/history presentation, category/status/location filters, inventory dashboard, pharmacy/store stock catalogue, and stock transfer workbench using the existing protected contracts. A real defect in the existing pharmacy transfer issue boundary was corrected so issue creates a new transfer without requiring a pre-existing transfer_id; receive/cancel still require transfer_id. Authenticated hospital-staff E2E remains the only UI-11 completion gate.
 - 2026-10-01: UI master plan created. Execution starts with UI-00 Global shell, then UI-01 Patient Registration/Search.
 - 2026-10-01: UI-00 increment deployed to the working tree: HMIS-style module launcher added to Hospital Home; primary navigation regrouped around OPD, Clinical/Diagnostics, Inpatient, Finance, Operations and Administration; responsive module cards added.
 - 2026-10-01: UI-01 increment started: Patient Lookup redesigned as a lookup-first workspace with prominent New Patient action, search/filter toolbar and clearer patient-record selection hierarchy. Existing backend/API behavior preserved.
