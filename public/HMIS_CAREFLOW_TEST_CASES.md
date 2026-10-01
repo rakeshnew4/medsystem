@@ -3,7 +3,7 @@
 ## TC-QUEUE-021 — Invalid queue transition is rejected
 Route: /api/queue; Method: PUT; Actor: authenticated non-admin staff.
 Expected: generic queue edits may only follow the HMIS-aligned forward state machine (waiting → vitals → doctor → in_room → downstream completion stages). Backward/sideways jumps return HTTP 409 and create no queue, encounter or workflow-event mutation.
-Status: Implemented in current draft; authenticated execution pending.
+Status: Implemented in v379; authenticated execution pending.
 
 ## TC-QUEUE-022 — Completed queue is terminal
 Route: /api/queue; Method: PUT; Actor: authenticated non-admin staff.
