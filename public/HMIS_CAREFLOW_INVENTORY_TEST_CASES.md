@@ -56,4 +56,8 @@ TC-ASSET-026 Duplicate asset-code safety: creating an asset with an existing ass
 
 TC-ASSET-027 Production transfer-history safety: the owner-only validator must report zero no-op transfer rows and zero transfer rows attached to inactive/disposed/retired assets.
 
-Current validation status (2026-10-01): `/api/fixed-assets` anonymous access returns 401 and an app-user without a hospital staff identity is rejected with 401; `/api/fixed-assets-validation` reports 0 production violations. Authenticated asset create/search/transfer and concurrent transfer execution remain open because no real hospital staff browser/session is available.
+TC-ASSET-028 Asset-event continuity boundary: fixed-asset transfers are operational asset events, not patient/encounter events. The authoritative continuity record is the hospital-scoped `fixed_asset_transfers` row created in the same transfer transaction. CareFlow must not claim a patient `workflow_events` row for an asset transfer because the current workflow-event schema requires a patient identity. Authenticated asset E2E must verify the transfer row and actor/timestamp continuity instead.
+
+Current validation status (2026-10-01): `/api/fixed-assets` anonymous access returns 401 and an app-user without a hospital staff identity is rejected with 401; `/api/fixed-assets-validation` reports 0 production violations. Pharmacy stock ledger validation also returns 0 violations across all 8 current checks. Authenticated asset create/search/transfer and pharmacy stock mutation/dispensing execution remain open because no real hospital staff browser/session is available.
+
+Next inventory gate: preserve the existing fixed-asset controls, then add a separately audited pharmacy stock adjustment/transfer workflow only after its HMIS Store/Pharmacy state transitions and receiving semantics are verified. Do not treat the current receipt/dispense ledger as a substitute for an explicit transfer/receive state.
