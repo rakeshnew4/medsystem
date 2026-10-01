@@ -248,6 +248,16 @@ A module is UI-complete only when the UI reflects the verified HMIS workflow, al
 13. UI-12 Staff/Setup
 14. UI-13 Integrations
 15. UI-14 Reporting/Analytics
+16. UI-15 Global Responsive Shell Hardening
+
+## Current release gates
+- Live baseline: v470.
+- Frontend main-script syntax parsing passes after the v469 interaction-regression repair.
+- Physical-device mobile verification remains open.
+- Authenticated hospital-staff E2E remains open for each module that explicitly lists it; role-preview and owner-level validators do not satisfy that gate.
+- Invoice editor and diagnosis mutation remain intentionally unimplemented until verified server-side mutation contracts exist.
+- LIS result-write mutation remains disabled until a verified authenticated adapter/session path can be exercised safely.
+- Billing legacy payment-ledger reconciliation remains open; no historical payment rows may be synthesized from invoice totals.
 
 ## HMIS UI findings driving this plan
 - HMIS uses a normal hospital home with module navigation and direct module entry points.
