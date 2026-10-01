@@ -66,7 +66,7 @@ LOOP STATE (mandatory): After each UI increment, mark only verified checklist it
 15. [ ] Authenticated hospital-staff E2E — asset create/search/transfer and pharmacy issue/receive/cancel, role boundaries and concurrency remain the final UI-11 gate; the available runner still has no genuine hospital staff session.
 
 Inventory backend safety was already verified before this UI pass: fixed-asset validator 0 violations; pharmacy transfer validator 11/11 checks with 0 violations.
-4. Staff / Roles / Permissions / Hospital Configuration: department-scoped privilege foundation, administrator override UI, staff/permission integrity validator, and HMIS-based hospital-configuration review are implemented. HMIS references: `Privileges.java`, `UserPrivilageController.java`, `ConfigOption.java`, `ConfigOptionController.java`, `AuditEventController.java`, and `all_audit_events.xhtml`. v346 staff validation returned 0 violations across 7 checks. v350 added the owner-only `/api/hospital-config-validation`; it has now been executed successfully with **7/7 checks and 0 violations**, while anonymous access returns 401. v357 adds HMIS-aligned staff lifecycle/permission audit writes and protected administrator-only `/api/staff-audit`; external `audit_logs` was verified in `medsystem` before deployment. **NEXT:** authenticated staff E2E for lifecycle/permission audit continuity, then move to Integrations/REST/FHIR/LIS when authenticated E2E remains the only open Staff gate. Authenticated staff E2E remains open.
+4. Staff / Roles / Permissions / Hospital Configuration: the verified backend foundation and an earlier basic admin UI already exist. U12 is now the active UI redesign workstream. HMIS references: `Privileges.java`, `UserPrivilageController.java`, `ConfigOption.java`, `ConfigOptionController.java`, `AuditEventController.java`, and `all_audit_events.xhtml`. v346 staff validation returned 0 violations across 7 checks. v350 added the owner-only `/api/hospital-config-validation`; it has been executed successfully with **7/7 checks and 0 violations**, while anonymous access returns 401. v357 adds HMIS-aligned staff lifecycle/permission audit writes and protected administrator-only `/api/staff-audit`; external `audit_logs` was verified in `medsystem`. **U12 queue:** U12-01 through U12-23 in `public/HMIS_CAREFLOW_UI_PLAN.md), with U12-23 authenticated administrator/staff E2E intentionally deferred for later.
 5. Integrations/REST/FHIR/LIS is active. HMIS REST API and LIMS middleware references were reviewed. v361-v369 establishes the shared hashed integration-key model and documents the HMIS-compatible LIS result contract, but the new public LIS route repeatedly hit a database-adapter 500 in the available execution harness before its intended auth guard, so the unverified LIS route was removed rather than shipped with a known 500. NEXT: authenticated integration E2E and a safe reimplementation of the LIS JSON boundary using the verified session/adapter path, then HL7/ASTM adapter boundaries before Reporting/Analytics. v371 adds the non-secret `/api/integration-capabilities` discovery document; capability documentation gate is now implemented. Staff authenticated E2E remains open and must never be claimed.
 
 ### Current Theatre status
@@ -86,7 +86,33 @@ Inventory backend safety was already verified before this UI pass: fixed-asset v
 - **LOOP RULE:** For every item: inspect relevant HMIS surgery/theatre/inpatient reference; inspect current CareFlow contract; implement the smallest safe UI increment; dry-run; deploy; perform access-boundary checks where possible; update the UI plan and test cases; mark only verified items complete; then set the next unfinished item here. Never leave the queue stale or empty.
 - Authenticated hospital-staff E2E remains open because the available execution environment has not established a real staff session.
 
+### UI-12 LOOP QUEUE — execute in order; authenticated E2E is deliberately last/deferred
+1. [ ] U12-01 Staff directory worklist.
+2. [ ] U12-02 Staff identity/detail.
+3. [ ] U12-03 Staff lifecycle controls.
+4. [ ] U12-04 Staff registration flow.
+5. [ ] U12-05 Department context.
+6. [ ] U12-06 Role catalogue.
+7. [ ] U12-07 Role permission matrix.
+8. [ ] U12-08 User permission overrides.
+9. [ ] U12-09 Inherit / Allow / Deny UX.
+10. [ ] U12-10 Effective permission view.
+11. [ ] U12-11 Permission safety/authorization feedback.
+12. [ ] U12-12 Staff audit/history.
+13. [ ] U12-13 Staff availability.
+14. [ ] U12-14 Hospital profile/configuration.
+15. [ ] U12-15 Hospital modules/features/settings.
+16. [ ] U12-16 Department configuration.
+17. [ ] U12-17 Services/working hours/labels.
+18. [ ] U12-18 Configuration validation.
+19. [ ] U12-19 Responsive/mobile administration.
+20. [ ] U12-20 HMIS comparison pass.
+21. [ ] U12-21 Documentation/test pass.
+22. [ ] U12-22 Automated access/contract verification.
+23. [ ] U12-23 Authenticated administrator/staff E2E — intentionally deferred until a genuine staff session is available.
+NEXT concrete implementation target: U12-01 Staff directory worklist.
+
 ### HMIS reference rule
-For every Theatre increment, inspect at minimum the relevant HMIS surgery/theatre/inpatient pages/controllers/services and persistence model; current references include surgery_add.xhtml, surgery_edit.xhtml, SurgeryBillController, surgery_clinical_details.xhtml, patient_surgery.xhtml, and the inpatient Theatre workflow. For future domains, replace these with that domain's actual HMIS repository code before implementation.
+For every U12 increment, inspect the relevant HMIS staff/privilege/configuration/audit code before implementation. Current references include `Privileges.java`, `UserPrivilageController.java`, `ConfigOption.java`, `ConfigOptionController.java`, `AuditEventController.java`, and `all_audit_events.xhtml`. Do not invent privilege categories, configuration semantics or audit behavior without checking the repository.
 
 This file is the persistent next-task/reminder loop. It must never be left with an empty or stale NEXT TASK QUEUE.

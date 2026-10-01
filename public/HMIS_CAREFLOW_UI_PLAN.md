@@ -177,13 +177,31 @@ HMIS references: Store inventory/asset registry, fixed-asset reports, stock hist
 - [ ] Authenticated E2E closure — real hospital-staff execution of asset create/search/transfer and pharmacy issue/receive/cancel remains open because the available runner has no genuine staff session.
 
 ### UI-12 — Staff / Roles / Permissions / Hospital Setup
-- [ ] Staff directory
-- [ ] Staff detail
-- [ ] Department scope
-- [ ] Permission matrix
-- [ ] Inherit/Allow/Deny controls
-- [ ] Audit history
-- [ ] Hospital configuration
+HMIS references: `Privileges.java`, `UserPrivilageController.java`, `ConfigOption.java`, `ConfigOptionController.java`, `AuditEventController.java`, and `all_audit_events.xhtml`. CareFlow already has protected staff, permission, department, availability, hospital-configuration and staff-audit contracts; U12 is the UI/operational redesign of those verified contracts.
+
+- [ ] U12-01 Staff directory worklist — searchable/filterable staff register with name/email/role/department/status filters, counts and clear empty/loading/error states.
+- [ ] U12-02 Staff identity/detail — selected staff profile with email, display name, role, doctor link, department, active state and hospital scope.
+- [ ] U12-03 Staff lifecycle controls — activate/deactivate, role assignment, doctor association and department assignment using the existing `/team` contract.
+- [ ] U12-04 Staff registration flow — guided registration with validation, pending/active distinction and duplicate-safe feedback.
+- [ ] U12-05 Department context — hospital-scoped department selector/filter and visible operational ownership on staff records.
+- [ ] U12-06 Role catalogue — clear presentation of supported roles and role responsibilities without inventing unsupported roles.
+- [ ] U12-07 Role permission matrix — searchable/grouped permissions with role baseline state and safe admin-only mutation controls.
+- [ ] U12-08 User permission overrides — global user override and department-scoped override presented together with explicit scope.
+- [ ] U12-09 Inherit / Allow / Deny UX — make effective-vs-override state explicit; Inherit clears the user override rather than writing a fake third backend value.
+- [ ] U12-10 Effective permission view — show effective permission result alongside role baseline and user/dept override sources.
+- [ ] U12-11 Permission safety/authorization feedback — admin-only controls, server-authoritative errors, cross-hospital rejection and clear destructive-action confirmation.
+- [ ] U12-12 Staff audit/history — searchable read-only lifecycle/permission audit history with actor, action, target, timestamp and before/after details.
+- [ ] U12-13 Staff availability — work status, schedule, exceptions and doctor availability context using the existing availability contract.
+- [ ] U12-14 Hospital profile/configuration — hospital identity, contact, timezone and core setup grouped as administrator configuration.
+- [ ] U12-15 Hospital modules/features/settings — module enablement, feature flags and operational defaults presented with safe save/feedback states.
+- [ ] U12-16 Department configuration — department-level overrides with explicit inherited/overridden state and safe reset-to-inherit behavior.
+- [ ] U12-17 Services/working hours/labels — existing hospital service catalogue, working hours and labels presented as configuration worklists/forms.
+- [ ] U12-18 Configuration validation — surface the existing hospital/staff/permission validators as administrator health checks without replacing server validation.
+- [ ] U12-19 Responsive/mobile administration — staff tables, permission matrix and configuration forms usable on narrow screens without horizontal overflow.
+- [ ] U12-20 HMIS comparison pass — verify navigation, privilege grouping, admin workflow and configuration semantics against the referenced HMIS implementation.
+- [ ] U12-21 Documentation/test pass — update HMIS UI plan, staff test cases and persistent continuation queue after each verified increment.
+- [ ] U12-22 Automated access/contract verification — protected routes, validator results, hospital isolation and no-regression checks.
+- [ ] U12-23 Authenticated administrator/staff E2E — real staff session coverage for staff lifecycle, permissions, audit and configuration; this remains a separate final gate and can be completed later as requested.
 
 ### UI-13 — Integrations / REST / FHIR / LIS
 - [ ] Integration capabilities

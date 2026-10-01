@@ -25,5 +25,26 @@ Reference: HMIS `Privileges.java` and `UserPrivilageController.java` on the deve
 - TC-STAFF-019: Staff create/update/activation changes write hospital-scoped audit entries containing actor, action, entity identity and before/after state.
 - TC-STAFF-020: Role/global/department permission changes and clearing an override write auditable staff lifecycle entries.
 - TC-STAFF-021: Staff audit history is hospital-scoped and restricted to administrators; anonymous access remains HTTP 401.
+- TC-STAFF-022: Staff directory supports search/filter by name/email/role/department/active state and shows hospital-scoped results.
+- TC-STAFF-023: Staff detail preserves email, display name, role, doctor link, department and active state.
+- TC-STAFF-024: Staff lifecycle actions use the existing /team contract and never allow cross-hospital mutation.
+- TC-STAFF-025: Staff registration clearly distinguishes pending vs active accounts and handles duplicate-safe feedback.
+- TC-STAFF-026: Role catalogue reflects only supported CareFlow roles and does not invent HMIS privilege categories.
+- TC-STAFF-027: Role permission matrix groups/searches permissions and shows the role baseline.
+- TC-STAFF-028: Global and department-scoped user overrides are clearly distinguished.
+- TC-STAFF-029: Inherit clears the user override; Allow/Deny persist boolean overrides; effective state remains server-authoritative.
+- TC-STAFF-030: Effective permission view identifies role baseline, user override and department override sources.
+- TC-STAFF-031: Non-admin users cannot mutate role/user permission controls; protected API remains authoritative.
+- TC-STAFF-032: Staff audit view shows actor/action/target/timestamp/before-after details and is administrator-only.
+- TC-STAFF-033: Staff availability UI presents presence, schedule, exceptions and doctor availability using the existing contract.
+- TC-STAFF-034: Hospital profile/configuration exposes existing identity/contact/timezone fields only.
+- TC-STAFF-035: Module/feature/settings configuration preserves existing keys and save feedback.
+- TC-STAFF-036: Department configuration explicitly shows inherited vs overridden values and reset-to-inherit.
+- TC-STAFF-037: Hospital services, working hours and labels use existing configuration contracts and validation.
+- TC-STAFF-038: Staff/permission and hospital-config validators are surfaced as health checks without replacing server validation.
+- TC-STAFF-039: Staff administration remains usable on mobile without horizontal overflow.
+- TC-STAFF-040: HMIS comparison confirms privilege grouping, administrator workflow and configuration semantics against the referenced development branch.
+- TC-STAFF-041: Automated protected-route checks remain HTTP 401 anonymously; validators retain zero violations.
+- TC-STAFF-042: Authenticated administrator/staff E2E covers lifecycle, permission precedence, audit and configuration; intentionally deferred until a genuine staff session is available.
 
-Current implementation gate: external PostgreSQL staff/permission schema and `hospital_department_settings` schema are verified. External `audit_logs` is also verified in the adapter's `medsystem` schema. Hospital-configuration validator passes 7/7 with 0 violations. Staff lifecycle and permission audit writes plus an administrator-only history endpoint are implemented. Authenticated staff execution remains pending because the available runner has no hospital staff session.
+Current implementation gate: external PostgreSQL staff/permission schema and `hospital_department_settings` schema are verified. External `audit_logs` is also verified in the adapter's `medsystem` schema. Hospital-configuration validator passes 7/7 with 0 violations. Staff lifecycle and permission audit writes plus an administrator-only history endpoint are implemented. U12 UI redesign is queued U12-01 through U12-23; authenticated E2E is intentionally deferred.
