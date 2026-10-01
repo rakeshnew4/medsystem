@@ -563,6 +563,7 @@ Not started.
 
 ### 2026-09-30
 
+- Started IPD workflow hardening and deployed CareFlow v242: added the active-admission uniqueness constraint and the dedicated 15-case IPD test matrix; anonymous bed access remains correctly blocked with HTTP 401. Existing IPD mutation endpoints still require authenticated staff E2E and further atomic concurrency hardening before completion.
 - Created the HMIS → CareFlow implementation plan.
 - Completed initial HMIS architecture reconnaissance.
 - Started Patient Registration.
