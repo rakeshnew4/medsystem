@@ -26,7 +26,7 @@
 /* Keep the patient workspace register action compact and aligned with the panel typography. */
 .patient-directory > .panel-head > .btn.primary{width:auto;min-width:0;min-height:44px;height:44px;padding:9px 18px;white-space:nowrap;line-height:1.1;font-size:14px;border-radius:10px;flex:0 0 auto}
 @media(max-width:700px){.ai-assistant-ball{right:18px;bottom:18px;width:58px;height:58px}.ai-chat-modal{right:12px;bottom:88px;width:calc(100vw - 24px);height:calc(100vh - 120px);border-radius:16px}}
-.care-team-flow{display:flex;flex-direction:column;gap:10px}.care-team-group{border:1px solid var(--border);border-radius:12px;padding:14px 16px;background:var(--surface-soft,#f8faf9);position:relative}.care-team-group.current-role{border-color:var(--primary);box-shadow:0 0 0 1px rgba(25,135,113,.12)}.care-team-group.current-role:before{content:'';position:absolute;left:-1px;top:0;bottom:0;width:4px;background:var(--primary);border-radius:12px 0 0 12px}.care-team-group-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}.care-team-group-head>div{display:flex;align-items:center;gap:9px}.care-team-group-head>span{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.05em}.care-team-step{display:inline-flex!important;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--border);font-size:10px!important;color:var(--muted)!important}.care-team-group.current-role .care-team-step{background:var(--primary);color:#fff!important}.care-team-group-head strong{font-size:16px}.care-team-action{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 0;border-top:1px solid var(--border)}.care-team-action>div{min-width:0}.care-team-action strong{display:block;font-size:13px}.care-team-action span{display:block;font-size:11px;color:var(--muted);margin-top:3px}.care-team-action.action-ready{background:rgba(25,135,113,.04);margin:0 -8px;padding:11px 8px;border-radius:8px}.care-team-action .mini{flex:0 0 auto;min-width:72px}.care-team-hint{white-space:nowrap;font-size:10px!important;color:var(--muted)!important}.care-team-action.current-role strong{font-weight:700}@media(max-width:700px){.care-team-action{align-items:flex-start}.care-team-action .mini{flex:0 0 auto}}</style>
+.care-team-flow{display:flex;flex-direction:column;gap:10px}.patient-workspace-action-area{display:flex;flex-direction:column;gap:12px;margin:12px 0}.care-team-group{border:1px solid var(--border);border-radius:12px;padding:14px 16px;background:var(--surface-soft,#f8faf9);position:relative}.care-team-group.current-role{border-color:var(--primary);box-shadow:0 0 0 1px rgba(25,135,113,.12)}.care-team-group.current-role:before{content:'';position:absolute;left:-1px;top:0;bottom:0;width:4px;background:var(--primary);border-radius:12px 0 0 12px}.care-team-group-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}.care-team-group-head>div{display:flex;align-items:center;gap:9px}.care-team-group-head>span{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.05em}.care-team-step{display:inline-flex!important;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--border);font-size:10px!important;color:var(--muted)!important}.care-team-group.current-role .care-team-step{background:var(--primary);color:#fff!important}.care-team-group-head strong{font-size:16px}.care-team-action{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 0;border-top:1px solid var(--border)}.care-team-action>div{min-width:0}.care-team-action strong{display:block;font-size:13px}.care-team-action span{display:block;font-size:11px;color:var(--muted);margin-top:3px}.care-team-action.action-ready{background:rgba(25,135,113,.04);margin:0 -8px;padding:11px 8px;border-radius:8px}.care-team-action .mini{flex:0 0 auto;min-width:72px}.care-team-hint{white-space:nowrap;font-size:10px!important;color:var(--muted)!important}.care-team-action.current-role strong{font-weight:700}.care-team-role-desc{font-size:11px;color:var(--muted);margin:0 0 9px 33px}.care-team-buttons{display:flex;flex-wrap:wrap;gap:7px;margin-left:33px}.care-team-buttons .mini{min-height:34px}.care-team-buttons .mini:disabled{opacity:.48;cursor:not-allowed}.role-pill{font-size:11px;font-weight:800;text-transform:capitalize;padding:5px 9px;border-radius:999px;background:var(--surface-soft,#f3f7f5);color:var(--primary)}@media(max-width:700px){.care-team-action{align-items:flex-start}.care-team-action .mini{flex:0 0 auto}.care-team-role-desc{margin-left:0}.care-team-buttons{margin-left:0}.care-team-buttons .mini{flex:1 1 calc(50% - 7px);min-width:120px}}</style>
 </head>
 <body>
 <div class="mobile-backdrop" id="mobileBackdrop" onclick="closeMobileNav()"></div>
@@ -752,9 +752,10 @@ function patientWorkspacePanel(title,body){
  return '<div class="workspace-card patient-action-panel"><div class="panel-head"><h3 class="panel-title">'+esc(title)+'</h3><button class="btn" type="button" onclick="this.closest(\'.patient-action-panel\').remove()">Cancel</button></div>'+body+'</div>';
 }
 function workspaceActionPanel(html,pid){
- const body=document.getElementById('patientWorkspaceBody');if(!body)return;
- body.insertAdjacentHTML('afterbegin',patientWorkspacePanel(html.title,html.body));
- body.scrollIntoView({behavior:'smooth',block:'start'});
+ const area=document.getElementById('patientWorkspaceActionArea');
+ if(!area)return;
+ area.insertAdjacentHTML('beforeend',patientWorkspacePanel(html.title,html.body));
+ setTimeout(()=>area.lastElementChild?.scrollIntoView({behavior:'smooth',block:'center'}),30);
 }
 function workspaceOpenOpd(pid){openOpdRegistration(pid)}
 function workspaceOpenDoctor(pid){
@@ -847,6 +848,7 @@ function renderPatientWorkspace(){
  body.innerHTML='<div class="patient-workspace-header"><div><div class="kicker">'+esc(p.uhid||'Patient record')+'</div><h2 class="patient-workspace-name">'+esc(p.name)+'</h2><div class="patient-workspace-meta">'+(patientAge(p.date_of_birth)?patientAge(p.date_of_birth)+' · ':'')+esc(p.phone||'No phone')+(p.email?' · '+esc(p.email):'')+'</div></div><div>'+patientWorkspaceActionButtons(p)+'</div></div>'+
  patientNextActions(p,s)+
  patientCareTeamActions(p,s)+
+ '<div id="patientWorkspaceActionArea" class="patient-workspace-action-area"></div>'+
  '<div class="patient-summary-strip"><div><span>Current care</span><strong>'+esc(activeAdm?'IPD':'OPD')+'</strong></div><div><span>Current step</span><strong>'+esc(currentStep)+'</strong></div><div><span>Visits</span><strong>'+((c?.visits||[]).length)+'</strong></div><div><span>Open follow-ups</span><strong>'+fu.filter(x=>x.status!=='completed').length+'</strong></div><div><span>Outstanding</span><strong>₹'+outstanding.toFixed(2)+'</strong></div></div>'+
  '<div class="patient-workspace-grid"><div class="patient-workspace-column">'+
  '<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Today / current care</h3><div class="record-section-note">What staff need to know before taking the next action.</div></div></div>'+patientCurrentCare(p,activeAdm,latestVitals,lastVisit,s)+'</div>'+
@@ -1216,7 +1218,7 @@ async function pollNotifications(){
     state.notifications=notes;
   }catch(e){}
   clearTimeout(notificationPollTimer);
-  notificationPollTimer=setTimeout(pollNotifications,5000);
+  notificationPollTimer=setTimeout(pollNotifications,30000);
 }
 function showWorkflowToast(n){
   const host=document.getElementById('workflowToastHost');if(!host)return;
@@ -1292,6 +1294,57 @@ async function exitRolePreview(){
   }catch(e){alert(e.message||'Could not exit role test')}
 }
 async function signOut(){await hatchable.auth.signOut();location.replace('/login')}
+
+// Patient workspace care-team UI: every department gets its own section.
+// The active role gets actionable buttons; admins can operate every section.
+function patientCareTeamActions(p,s){
+  const role=String(s?.role||'').toLowerCase();
+  const admin=role==='admin';
+  const canClinical=!!s?.permissions?.clinical;
+  const canBilling=!!s?.permissions?.billing;
+  const canPharmacy=!!s?.permissions?.pharmacy;
+  const active=r=>admin||role===r;
+  const escq=v=>esc(v);
+  const id=Number(p.id);
+  const section=(num,roleKey,label,desc,actions)=>{
+    const mine=active(roleKey);
+    const buttons=actions.map(a=>'<button type="button" class="mini '+(mine?'primary':'')+'" '+(mine?'onclick="'+a.onclick+'"':'disabled')+'>'+escq(a.label)+'</button>').join('');
+    return '<div class="care-team-group '+(mine?'current-role':'')+'"><div class="care-team-group-head"><div><span class="care-team-step">'+num+'</span><strong>'+escq(label)+'</strong></div><span>'+(mine?'YOUR WORK':'CARE TEAM')+'</span></div><div class="care-team-role-desc">'+escq(desc)+'</div><div class="care-team-buttons">'+buttons+'</div></div>';
+  };
+  const sections=[
+    section('01','receptionist','Reception','Registration, OPD check-in and front-desk work.',[
+      {label:'Register / OPD',onclick:'workspaceOpenOpd('+id+')'},
+      {label:'Appointments',onclick:'patientWorkspaceAppointments('+id+')'},
+      {label:'Queue',onclick:"showSection('queue')"},
+      {label:'Billing',onclick:'workspaceInvoice('+id+')'}
+    ]),
+    section('02','nurse','Nurse','Vitals, triage and patient movement.',[
+      {label:'Record vitals',onclick:'workspaceVitals('+id+')'},
+      {label:'OPD queue',onclick:"showSection('queue')"},
+      {label:'Ward / IPD',onclick:"showSection('beds')"}
+    ]),
+    section('03','doctor','Doctor','Consultation, clinical documentation and treatment.',[
+      {label:'Open consultation',onclick:'workspaceOpenDoctor('+id+')'},
+      {label:'AI Listen Summary',onclick:"openClinical("+id+",'consultation')"},
+      {label:'Prescription',onclick:'workspacePrescription('+id+')'},
+      {label:'Investigation',onclick:'workspaceLab('+id+')'},
+      {label:'Follow-up',onclick:'workspaceFollowupForm('+id+')'}
+    ]),
+    section('04','lab','Lab','Investigations, sample processing and reports.',[
+      {label:'Open lab',onclick:"showSection('lab')"},
+      {label:'New investigation',onclick:'workspaceLab('+id+')'}
+    ]),
+    section('05','pharmacy','Pharmacy','Prescription dispensing and medicine handover.',[
+      {label:'Open pharmacy',onclick:"showSection('pharmacy')"},
+      {label:'Dispense medicines',onclick:"showSection('pharmacy')"}
+    ]),
+    section('06','billing','Billing','Invoices, payments and financial records.',[
+      {label:'Create bill',onclick:'workspaceInvoice('+id+')'},
+      {label:'Open billing',onclick:"showSection('billing')"}
+    ])
+  ];
+  return '<div class="workspace-card care-team-actions-card"><div class="panel-head"><div><h3 class="panel-title">Care team actions</h3><div class="record-section-note">The same patient file is shared across the clinic. Each role sees its own actions and can open the relevant work screen.</div></div><span class="role-pill">'+escq(role||'staff')+'</span></div><div class="care-team-flow">'+sections.join('')+'</div></div>';
+}
 
 // Canonical patient-detail entry point. Older clinical-detail helpers remain for their edit forms,
 // but every staff-facing patient link resolves to the same Patient Workspace.
