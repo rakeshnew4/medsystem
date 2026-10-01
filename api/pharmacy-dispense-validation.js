@@ -35,13 +35,13 @@ export default async function(req,res){
     [patientId,marker]
   );
   const idx=await db.query(
-    "SELECT (to_regclass('public.ux_pharmacy_dispenses_one_active') IS NOT NULL) AS present"
+    "SELECT indexname FROM pg_indexes WHERE schemaname='public' AND tablename='pharmacy_dispenses' AND indexname='ux_pharmacy_dispenses_one_active'"
   );
 
   const checks=[
     {name:"event_failure_is_non_fatal",passed:simulated?.recorded===false&&simulated?.reason==="persistence_failed"},
     {name:"failed_event_does_not_write_marker",passed:Number(before.rows[0]?.count||0)===Number(after.rows[0]?.count||0)},
-    {name:"duplicate_dispense_guard_present",passed:idx.rows[0]?.present===true}
+    {name:"duplicate_dispense_guard_present",passed:idx.rows.length===1}
   ];
   return res.json({ok:checks.every(x=>x.passed),checks});
 }
