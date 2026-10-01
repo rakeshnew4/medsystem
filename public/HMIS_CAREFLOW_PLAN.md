@@ -510,7 +510,7 @@ Completion gate:
 
 # 09 — IPD / admission / beds / transfers / discharge
 
-**In progress — existing IPD foundation is present; admission concurrency hardening is now deployed in v245.**
+**In progress — admission, transfer and discharge state transitions are transactionally hardened; authenticated E2E is still pending.**
 
 Implemented foundation already present in CareFlow:
 - Hospital-scoped bed inventory with available/occupied/maintenance/blocked states.
@@ -528,8 +528,9 @@ Implemented now:
 
 Remaining IPD work:
 - Hardened the admission mutation in v245: selected bed is row-locked and admission + IPD encounter + bed assignment + occupancy update commit together.
-- Bed transfer is now transactionally hardened: both beds are locked deterministically and source release, admission update, new assignment and destination occupancy are gated and committed together.
-- Remaining: harden discharge mutation as a fully atomic state transition under concurrent requests.
+- Bed transfer hardened in v247: both beds are locked deterministically and source release, admission update, new assignment and destination occupancy are gated and committed together.
+- Discharge hardened in v248: admission, checklist, current bed, encounter completion, assignment release, bed release and ipd_discharged workflow event commit atomically; incomplete discharge gates cannot change inpatient state.
+- Discharge checklist API now validates insurance/payment states and rejects checklist edits after discharge.
 - Run authenticated nurse/admin/receptionist/doctor role-boundary tests.
 - Verify occupied-bed race, transfer race, discharge checklist enforcement and encounter continuity with synthetic fixtures.
 - Verify full OPD → IPD → transfer → discharge journey in browser E2E.

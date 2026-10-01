@@ -51,20 +51,31 @@ Status: Requires authenticated staff session.
 
 ## TC-IPD-012 — Successful discharge releases bed
 Expected: admission becomes discharged, IPD encounter completes, active bed assignment is released, bed becomes available, discharge event is recorded.
-Status: Requires authenticated staff session.
+Status: Requires authenticated staff session. Discharge state transition is now atomic and inserts the discharge workflow event in the same transaction.
 
-## TC-IPD-013 — Discharged patient can be admitted again
+## TC-IPD-013 — Discharge cannot bypass checklist
+Scenario: active admission with an incomplete/missing discharge checklist.
+Expected: HTTP 409; admission remains active, encounter remains open, assignment remains active and bed remains occupied.
+Status: Server-side gate implemented; authenticated execution pending.
+
+## TC-IPD-014 — Discharged patient can be admitted again
 Expected: a new admission/encounter can be created after the previous admission has discharged; history remains intact.
 Status: Requires authenticated staff session.
 
-## TC-IPD-014 — Encounter continuity
+## TC-IPD-015 — Encounter continuity
 Expected: admission → IPD encounter → bed assignment/transfer → discharge retain the same canonical admission/encounter relationship.
 Status: Requires authenticated E2E.
 
-## TC-IPD-015 — Full OPD to IPD journey
+## TC-IPD-016 — Full OPD to IPD journey
 Scenario: registration → OPD assessment → admission decision → bed allocation → IPD care → bed transfer → discharge checklist → payment clearance → discharge.
 Expected: no orphan admission, encounter, bed assignment or bed occupancy state.
 Status: Full authenticated E2E gate.
 
 ## IPD completion gate
 IPD remains In progress until authenticated admission/transfer/discharge E2E, role boundaries, concurrent-bed safety, discharge checklist enforcement, encounter continuity and workflow events are verified.
+
+### Automated protection now implemented
+- `/api/beds`, `/api/ipd`, and `/api/discharge` reject anonymous access with HTTP 401.
+- Discharge now locks the active admission, checklist and current bed in one transaction.
+- Discharge requires clinical clearance, reports ready, medication reconciliation, billing clearance and either final payment (`paid`) or explicit insurance approval (`approved` + `insurance_status=approved`).
+- Admission, encounter completion, assignment release, bed release and `ipd_discharged` workflow event commit together; a failed readiness gate leaves the inpatient state unchanged.
