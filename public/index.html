@@ -1514,14 +1514,16 @@ async function startRolePreview(){
   try{
     await api('/admin-role-preview',{method:'POST',body:JSON.stringify({role})});
     closeMobileNav();
-    location.reload();
+    Object.keys(sectionLoadState).forEach(k=>delete sectionLoadState[k]);
+    await loadAllWithLoader();
   }catch(e){alert(e.message||'Could not start role test')}
 }
 async function exitRolePreview(){
   try{
     await api('/admin-role-preview',{method:'DELETE',body:'{}'});
     closeMobileNav();
-    location.reload();
+    Object.keys(sectionLoadState).forEach(k=>delete sectionLoadState[k]);
+    await loadAllWithLoader();
   }catch(e){alert(e.message||'Could not exit role test')}
 }
 async function signOut(){await hatchable.auth.signOut();location.replace('/login')}
