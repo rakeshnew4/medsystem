@@ -199,7 +199,7 @@ HMIS references: `Privileges.java`, `UserPrivilageController.java`, `ConfigOptio
 - [x] U12-18 Configuration validation — v431: administrator health-check panel calls the existing server-side validator and reports all seven check families without replacing server validation.
 - [x] U12-19 Responsive/mobile administration — v431: availability and validation surfaces collapse cleanly on narrow screens; existing staff/permission/setup controls retain the responsive worklist/form patterns.
 - [x] U12-20 HMIS comparison pass — v431: administration flow was checked against the available HMIS staff/privilege/configuration/audit reference set; CareFlow preserves hospital-home/module navigation, staff worklist/detail, privilege grouping, read-only audit history, and configuration/department override separation without copying HMIS source or inventing unsupported backend semantics.
-- [ ] U12-21 Documentation/test pass — update HMIS UI plan, staff test cases and persistent continuation queue after each verified increment.
+- [x] U12-21 Documentation/test pass — v434: HMIS UI plan, staff test cases and persistent continuation queue updated with the U12 state, explicit deferred authenticated-staff gate, and current hospital-configuration validator result (7/7 checks, 0 violations). Protected staff/permission/setup routes remain server-gated; no completion claim is made for authenticated staff E2E.
 - [ ] U12-22 Automated access/contract verification — protected routes, validator results, hospital isolation and no-regression checks.
 - [ ] U12-23 Authenticated administrator/staff E2E — real staff session coverage for staff lifecycle, permissions, audit and configuration; this remains a separate final gate and can be completed later as requested.
 

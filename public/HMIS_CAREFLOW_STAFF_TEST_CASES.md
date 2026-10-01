@@ -46,5 +46,6 @@ Reference: HMIS `Privileges.java` and `UserPrivilageController.java` on the deve
 - TC-STAFF-040: HMIS comparison confirms privilege grouping, administrator workflow and configuration semantics against the referenced development branch.
 - TC-STAFF-041: Automated protected-route checks remain HTTP 401 anonymously; validators retain zero violations.
 - TC-STAFF-042: Authenticated administrator/staff E2E covers lifecycle, permission precedence, audit and configuration; intentionally deferred until a genuine staff session is available.
+- TC-STAFF-043: Documentation/test pass records the exact deployed UI increment and separates automated access/validator evidence from authenticated staff E2E. **v434 documentation pass complete; genuine staff E2E remains open.**
 
 Current implementation gate: external PostgreSQL staff/permission schema and `hospital_department_settings` schema are verified. External `audit_logs` is also verified in the adapter's `medsystem` schema. Hospital-configuration validator passes 7/7 with 0 violations. Staff lifecycle and permission audit writes plus an administrator-only history endpoint are implemented. U12 UI redesign is queued U12-01 through U12-23; authenticated E2E is intentionally deferred.
