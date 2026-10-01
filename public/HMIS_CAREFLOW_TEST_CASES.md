@@ -204,6 +204,11 @@ Route: /api/theatre-validate; Method: POST; Actor: billing/admin with Theatre va
 Expected: only a completed, unvalidated procedure can be validated; every Theatre charge must already have both invoice_id and invoice_item_id; validation records validated_at/validated_by and creates a theatre_procedure_validated workflow event.
 Status: Implemented in v310; anonymous access returns HTTP 401. Authenticated execution pending.
 
+## TC-THEATRE-034 — Surgery Validation permission boundary
+Route: /api/theatre-validate; Method: POST; Actor: billing/admin vs doctor/nurse.
+Expected: billing/admin can reach the validation handler; doctor/nurse do not receive validation authority merely from Theatre management. The endpoint remains protected by the hospital staff auth plane.
+Status: Implemented in v314; external production permission verified for admin and billing. Real staff-session execution remains pending.
+
 ## TC-THEATRE-032 — Validated procedure is immutable for team/billing additions
 After Surgery Validation succeeds, adding/removing surgical team members and creating/linking Theatre billing changes must be rejected.
 Expected: HTTP 409 with no mutation.
