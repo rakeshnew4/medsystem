@@ -32,4 +32,16 @@ Before sending a progress response:
 
 Use public/HMIS_CAREFLOW_PLAN.md as the source of truth. Prefer the earliest unfinished workflow and then its earliest concrete remaining item.
 
+## Current continuation target
+
+The current workflow is **Theatre / procedures**. Continue in this order unless the plan changes:
+1. Build the standalone Theatre workbench and admission-profile entry point.
+2. Add theatre-room/procedure master-data administration.
+3. Link procedure, theatre service, professional and pharmacy charges into Billing without double-counting.
+4. Add theatre-to-ward return/handoff state where required.
+5. Run authenticated doctor/nurse E2E, role boundaries, invalid transitions, overlap protection and billing continuity.
+6. Only after those gates pass, mark Theatre Complete and advance to Inventory / Assets.
+
+After each completed increment, update this section to the next concrete target before responding.
+
 This is a project-level continuation reminder. It does not itself create a scheduled task or execute code after a chat response.

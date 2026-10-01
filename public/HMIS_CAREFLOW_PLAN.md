@@ -590,7 +590,7 @@ Implemented:
 - Added `action.theatre.manage` for admin, doctor and nurse roles.
 
 Remaining:
-- Theatre UI/workbench and admission-profile entry point.
+- Patient Workspace Theatre scheduling/history entry point implemented in **v261**; standalone Theatre workbench and admission-profile entry point remain.
 - Procedure master data and theatre-room administration.
 - Link procedure/service/professional/pharmacy charges into Billing without double-counting.
 - Theatre-to-ward handoff/return state where required.

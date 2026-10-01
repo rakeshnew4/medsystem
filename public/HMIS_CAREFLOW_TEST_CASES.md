@@ -127,6 +127,18 @@ Status: Permission implemented; authenticated role test pending.
 Admission → procedure scheduling → theatre start → completion → billing linkage → ward return.
 Status: Full authenticated E2E gate.
 
+## TC-THEATRE-013 — Patient Workspace Theatre context
+Permitted doctor/nurse staff can see Theatre procedures for the selected patient and only active-admission patients can schedule new procedures.
+Status: Implemented in v261; authenticated browser test pending.
+
+## TC-THEATRE-014 — Theatre room/doctor selection
+Scheduling UI loads hospital-scoped theatre rooms and active doctor profiles and sends the selected IDs to the protected API.
+Status: Implemented in v261; authenticated browser test pending.
+
+## TC-THEATRE-015 — Procedure history
+Patient Workspace displays scheduled/completed/cancelled procedure history without exposing another hospital's records.
+Status: Implemented in v261; authenticated browser test pending.
+
 ## Theatre completion gate
 Do not mark Theatre Complete until authenticated happy-path E2E, role boundaries, invalid transitions, overlap protection, encounter continuity, workflow events and billing continuity pass.
 
