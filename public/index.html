@@ -1410,11 +1410,13 @@ function patientCareTeamActions(p,s){
   const queue=p.queue_stage?prettyStatus(p.queue_stage):'Registered';
   const phone=p.phone||'No phone';
   const uhid=p.uhid||'No UHID';
-  const patientDetails='<div class="care-team-patient-details"><div class="care-team-patient-name">'+escq(p.name||'Patient')+'</div><div class="care-team-patient-meta">'+(age?escq(age)+' years · ':'')+escq(phone)+' · '+escq(uhid)+'</div><div class="care-team-patient-tags"><span class="care-team-patient-tag">'+escq(care)+'</span><span class="care-team-patient-tag">'+escq(queue)+'</span>'+(p.ward||p.bed_number?'<span class="care-team-patient-tag">'+escq(p.ward||'Ward')+(p.bed_number?' · '+escq(p.bed_number):'')+'</span>':'')+'</div></div>';
+  const patientDetails='<div class="care-team-patient-details"><div class="care-team-context-label">PATIENT CONTEXT</div><div class="care-team-patient-name">'+escq(p.name||'Patient')+'</div><div class="care-team-patient-meta">'+(age?escq(age)+' years · ':'')+escq(phone)+' · '+escq(uhid)+'</div><div class="care-team-patient-tags"><span class="care-team-patient-tag">'+escq(care)+'</span><span class="care-team-patient-tag">'+escq(queue)+'</span>'+(p.ward||p.bed_number?'<span class="care-team-patient-tag">'+escq(p.ward||'Ward')+(p.bed_number?' · '+escq(p.bed_number):'')+'</span>':'')+'</div></div>';
   const section=(num,roleKey,label,desc,actions)=>{
     const mine=active(roleKey);
-    const buttons=actions.map(a=>'<button type="button" class="mini '+(mine?'primary':'')+'" '+(mine?'onclick="'+a.onclick+'"':'disabled')+'>'+escq(a.label)+'</button>').join('');
-    return '<div class="care-team-group '+(mine?'current-role':'')+'" data-care-role="'+roleKey+'"><div class="care-team-group-head"><div><span class="care-team-step">'+num+'</span><strong>'+escq(label)+'</strong></div><span>'+(mine?'YOUR WORK':'CARE TEAM')+'</span></div><div class="care-team-role-layout">'+patientDetails+'<div class="care-team-actions-side"><div class="care-team-actions-title">'+escq(desc)+'</div><div class="care-team-buttons">'+buttons+'</div></div></div></div>';
+    const stateLabel=admin?'ADMIN ACCESS':(mine?'YOUR WORK':'CARE TEAM');
+    const icon=({receptionist:'R',nurse:'N',doctor:'D',lab:'L',pharmacy:'P',billing:'₹'})[roleKey]||num;
+    const buttons=actions.map((a,i)=>'<button type="button" class="mini '+(mine&&i===0?'primary':'')+'" '+(mine?'onclick="'+a.onclick+'"':'disabled')+'>'+escq(a.label)+'</button>').join('');
+    return '<div class="care-team-group '+(mine?'current-role':'')+'" data-care-role="'+roleKey+'"><div class="care-team-group-head"><div><span class="care-team-step">'+num+'</span><span class="care-team-role-icon" aria-hidden="true">'+icon+'</span><strong>'+escq(label)+'</strong></div><span class="care-team-ownership '+(mine?'mine':'')+'">'+stateLabel+'</span></div><div class="care-team-role-layout">'+patientDetails+'<div class="care-team-actions-side"><div class="care-team-actions-title">'+escq(desc)+'</div><div class="care-team-buttons">'+buttons+'</div></div></div></div>';
   };
   const sections=[
     section('01','receptionist','Reception','Registration, OPD check-in and front-desk work.',[
@@ -1448,7 +1450,7 @@ function patientCareTeamActions(p,s){
       {label:'Open billing',onclick:"showSection('billing')"}
     ])
   ];
-  return '<div class="workspace-card care-team-actions-card"><div class="panel-head"><div><h3 class="panel-title">Care team actions</h3><div class="record-section-note">Each role has the same patient context, with its work actions kept on the right.</div></div><span class="role-pill">'+escq(role||'staff')+'</span></div><div class="care-team-flow">'+sections.join('')+'</div></div>';
+  return '<div class="workspace-card care-team-actions-card"><div class="panel-head"><div><h3 class="panel-title">Care team workflow</h3><div class="record-section-note">Shared patient context · role-specific work stays in one continuous flow.</div></div><span class="role-pill">'+escq(admin?'Admin':(role||'staff'))+'</span></div><div class="care-team-flow">'+sections.join('')+'</div></div>';
 }
 
 // Canonical patient-detail entry point. Older clinical-detail helpers remain for their edit forms,
