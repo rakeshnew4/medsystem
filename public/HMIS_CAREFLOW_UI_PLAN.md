@@ -96,14 +96,15 @@ HMIS reference: EMR OPD visit workspace (emr/opd_visit.xhtml) and patient encoun
 
 ### UI-06 — Laboratory
 HMIS reference: laboratory worklist/result verification/LIS flow.
-- [ ] Lab worklist
-- [ ] Order status timeline
-- [ ] Sample collection
-- [ ] Processing/result entry
-- [ ] Verification
-- [ ] Report/history
-- [ ] Doctor notification state
-- [ ] Patient-context results
+- [x] Lab worklist with search and status filters
+- [x] Order status timeline through visible ordered → sample collected → processing → verified states
+- [x] Sample collection
+- [x] Processing/result entry
+- [x] Verification
+- [x] Report/history via patient workspace and clinical reports
+- [x] Doctor notification state
+- [x] Patient-context results
+- [ ] Authenticated browser E2E for lab sample/result/verification remains open until a real hospital staff session is available
 
 ### UI-07 — Pharmacy / Dispensing / Stock
 HMIS references: pharmacy navigation, transfer request, issue, receive, bin card, reports.
