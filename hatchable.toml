@@ -28,6 +28,7 @@ expose = true
 [[secret]]
 name = "MSG91_AUTH_KEY"
 expose = true
+
 [[secret]]
 name = "LITELLM_URL"
 expose = true
@@ -41,21 +42,24 @@ name = "LITELLM_MODEL"
 expose = true
 
 # Generic PostgreSQL connection string for portable deployments.
-# Server-side only; never expose to browser code.
 [[secret]]
 name = "DATABASE_URL"
 expose = true
 
-# Generic PostgreSQL adapter configuration. Server-side only.
 [[secret]]
 name = "DATABASE_PROVIDER"
 expose = true
 
-# External PostgreSQL adapter. Server-side only.
 [[secret]]
 name = "DB_ADAPTER_URL"
 expose = true
 
 [[secret]]
 name = "DB_ADAPTER_KEY"
+expose = true
+
+# Temporary E2E OTP bridge. Enter the current one-time code in the Hatchable secret console.
+# Remove this secret after the authenticated E2E run is complete.
+[[secret]]
+name = "CARE_FLOW_E2E_OTP"
 expose = true
