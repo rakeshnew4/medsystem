@@ -11,11 +11,25 @@ export default async function(req,res){
   if(req.method==="PUT"){
     const b=req.body||{};
     if(b.action==="update-admission"){
+      const admissionId=Number(b.id);
+      if(!Number.isInteger(admissionId)||admissionId<=0)return res.status(400).json({error:"id is required"});
+      const admissionType=String(b.admission_type||"general").trim().toLowerCase();
+      const allowedTypes=["general","emergency","elective","maternity","surgical","medical"];
+      if(!allowedTypes.includes(admissionType))return res.status(400).json({error:"Unsupported admission_type"});
+      let expected=null;
+      if(b.expected_discharge_date){
+        const raw=String(b.expected_discharge_date).trim();
+        if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(raw))return res.status(400).json({error:"expected_discharge_date must be YYYY-MM-DD"});
+        const d=new Date(raw+"T00:00:00Z");
+        if(Number.isNaN(d.getTime()))return res.status(400).json({error:"Invalid expected_discharge_date"});
+        expected=raw;
+      }
       const r=await db.query(
         "UPDATE admissions SET expected_discharge_date=$1,admission_type=$2,notes=$3,updated_at=now() WHERE id=$4 AND hospital_id=$5 AND discharged_at IS NULL RETURNING *",
-        [b.expected_discharge_date||null,b.admission_type||"general",b.notes||null,b.id,ctx.hospitalId]
+        [expected,admissionType,b.notes==null?null:String(b.notes),admissionId,ctx.hospitalId]
       );
-      return res.json(r.rows[0]||{error:"Active admission not found"});
+      if(!r.rows[0])return res.status(404).json({error:"Active admission not found"});
+      return res.json(r.rows[0]);
     }
     return res.status(400).json({error:"Unknown IPD action"});
   }
