@@ -172,8 +172,8 @@ Billing users can view unbilled Theatre charges, see same-patient recent invoice
 Status: Implemented in current draft; authenticated execution pending. v275 also makes ward return idempotent under concurrent retries.
 
 ## TC-THEATRE-022 — Theatre-to-ward handoff
-Only a completed, not-yet-returned admission-linked procedure can be returned to the ward; the handoff is recorded and the open canonical IPD encounter returns to current_stage=ipd.
-Status: Implemented in current draft; authenticated execution pending.
+Only a completed, not-yet-returned admission-linked procedure with its current open canonical IPD encounter can be returned to the ward; the handoff is recorded and the encounter returns to current_stage=ipd.
+Status: Hardened in v301; non-admission or missing-encounter ward returns are now rejected; authenticated execution pending.
 
 ## TC-THEATRE-026 — Source identity/category integrity
 A Theatre charge may use only a verified source type: theatre_service → theatre_service charge, medicine/pharmacy_dispense → medicine charge. `professional_fee` remains a valid charge category but cannot be presented as a fabricated source identity until a verified professional-fee source entity exists.
@@ -188,7 +188,7 @@ Scheduling rechecks the theatre room's available state inside the same transacti
 Status: Implemented in the current increment; concurrent authenticated execution pending.
 
 ## TC-THEATRE-025 — Production Theatre integrity validation
-Verify Theatre procedure states, completed-outcome requirements, ward-return state, active room overlap, duplicate source-charge protection, duplicate invoice-item linkage, linked-charge invoice-line continuity, room availability, and source-record validity directly against the production database.
+Verify Theatre procedure states, completed-outcome requirements, ward-return state, admission/encounter continuity, active room overlap, duplicate source-charge protection, duplicate invoice-item linkage, linked-charge invoice-line continuity, room availability, and source-record validity directly against the production database.
 Status: Automated production invariant check passed: the original eight integrity/isolation checks returned zero violations; v287 added four additional checks (completed-without-outcome, scheduled-on-unavailable-room, invalid theatre-service source, invalid medicine/pharmacy-dispense source), all zero against the external PostgreSQL database; v288 added invoice-item identity/amount continuity and charge-patient continuity checks, also zero. Admission-linked Theatre scheduling now also requires a validated open IPD encounter; authenticated execution remains pending.
 
 ## Theatre completion gate

@@ -108,6 +108,8 @@ export default async function(req,res){
    if(!cur.rows[0])return res.status(404).json({error:"Procedure not found"});
    if(cur.rows[0].status!=="completed")return res.status(409).json({error:"Only completed procedures can be returned to the ward"});
    if(cur.rows[0].ward_returned_at)return res.status(409).json({error:"Procedure has already been returned to the ward"});
+   if(!cur.rows[0].admission_id)return res.status(409).json({error:"Only admission-linked Theatre procedures can be returned to the ward"});
+   if(!cur.rows[0].encounter_id)return res.status(409).json({error:"Theatre ward return requires the linked IPD encounter"});
    if(cur.rows[0].admission_id){
      const a=await db.query("SELECT id,patient_id,discharged_at FROM admissions WHERE id=$1 AND hospital_id=$2",[cur.rows[0].admission_id,ctx.hospitalId]);
      if(!a.rows[0]||Number(a.rows[0].patient_id)!==Number(cur.rows[0].patient_id))return res.status(409).json({error:"Procedure admission no longer matches its patient"});

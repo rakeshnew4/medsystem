@@ -16,7 +16,7 @@ export default async function(req,res){
   }
 
   await check("invalid_status","SELECT count(*) AS n FROM theatre_procedures WHERE status NOT IN ('scheduled','in_progress','completed','cancelled')",r=>Number(r[0]?.n||0));
-  await check("invalid_ward_return","SELECT count(*) AS n FROM theatre_procedures WHERE ward_returned_at IS NOT NULL AND status <> 'completed'",r=>Number(r[0]?.n||0));
+  await check("invalid_ward_return","SELECT count(*) AS n FROM theatre_procedures WHERE ward_returned_at IS NOT NULL AND (status <> 'completed' OR admission_id IS NULL OR encounter_id IS NULL)",r=>Number(r[0]?.n||0));
   await check("orphan_invoice_item","SELECT count(*) AS n FROM theatre_charges WHERE invoice_item_id IS NOT NULL AND invoice_id IS NULL",r=>Number(r[0]?.n||0));
   await check("duplicate_source_charge","SELECT count(*) AS n FROM (SELECT hospital_id,source_type,source_id FROM theatre_charges WHERE source_type IS NOT NULL GROUP BY hospital_id,source_type,source_id HAVING count(*)>1) x",r=>Number(r[0]?.n||0));
   await check("duplicate_invoice_item","SELECT count(*) AS n FROM (SELECT hospital_id,invoice_item_id FROM theatre_charges WHERE invoice_item_id IS NOT NULL GROUP BY hospital_id,invoice_item_id HAVING count(*)>1) x",r=>Number(r[0]?.n||0));
