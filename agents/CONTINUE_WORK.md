@@ -43,10 +43,10 @@ Theatre / procedures is intentionally parked by user request. The active workflo
 6. Before any new workflow is started, verify its required CareFlow schema exists in the external PostgreSQL adapter database.
 
 ### NEXT TASK QUEUE — always keep this current
-1. Inventory / Assets: authenticated staff E2E for asset create/search/transfer, plus concurrent transfer and role-boundary safety tests.
-1a. Inventory / Assets schema gate is satisfied. Next: authenticated create/search/transfer tests using the real hospital staff session.
-2. Inventory / Assets safety: role boundaries, inactive-asset protection, hospital isolation, concurrent transfer, and transfer-history integrity.
-3. Inventory / Assets HMIS gap review: inspect additional HMIS inventory/store/asset flows and implement the next concrete gap.
+1. Inventory / Assets: authenticated staff E2E for asset create/search/transfer, plus concurrent transfer and role-boundary execution tests. **Blocked only by the missing hospital staff session; do not claim completion.**
+1a. Inventory / Assets schema gate is satisfied; production invariant validator is now live and currently returns 0 violations.
+2. Inventory / Assets safety: continue non-session-safe coverage for inactive-asset protection, hospital isolation, concurrent transfer invariants and transfer-history integrity. Current invariant validator covers lifecycle, financial, custodian, orphan/cross-hospital and latest-transfer continuity; authenticated execution remains open.
+3. Inventory / Assets HMIS gap review: next concrete gap is an HMIS-style asset reporting surface for warranty/AMC expiry and asset/depreciation register views, building on the deployed fixed-asset register UI.
 4. Then Staff/Roles → Integrations/REST/FHIR/LIS → Reporting/Analytics, always using the HMIS repository as the design/code reference.
 
 ### Current Theatre status

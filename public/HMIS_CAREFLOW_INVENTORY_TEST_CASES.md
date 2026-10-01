@@ -18,4 +18,8 @@ TC-ASSET-008 Asset master-data validation: registration/update rejects unsupport
 
 TC-ASSET-009 Transfer audit regression: transfer must not reference an undefined pre-state variable or return success without a corresponding history row.
 
+TC-ASSET-010 Register UI: asset registration, search and transfer controls use the protected `/api/fixed-assets` contract and are hidden by the dedicated asset permission.
+
+TC-ASSET-011 Production invariant validator: owner-only `/api/fixed-assets-validation` returns zero violations for lifecycle values, financial bounds, custodian isolation and transfer continuity.
+
 Authenticated staff E2E remains the final workflow gate; the available test runner currently has no hospital staff session.
