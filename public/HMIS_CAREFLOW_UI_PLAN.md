@@ -227,6 +227,17 @@ HMIS references: `Privileges.java`, `UserPrivilageController.java`, `ConfigOptio
 - [x] Mobile backdrop — full viewport touch-safe backdrop remains behind the drawer and above the workspace.
 - [x] AI floating assistant positioning — removed viewport-sized entrance animation that could make the fixed assistant appear to originate from the middle of a phone/desktop-mode viewport; assistant now stays anchored to the viewport and respects mobile safe-area insets.
 - [x] Desktop-mode-on-phone baseline — fixed AI control no longer depends on a viewport-height animation, and the sidebar keeps normal desktop behavior when the browser deliberately reports a desktop-width viewport.
+
+### UI-16 — Minimal role workspaces / hospital-home-first landing
+- [x] Role landing rule — all supported staff roles now resolve to the normal Hospital overview first instead of auto-opening a role-specific operational screen.
+- [x] Doctor minimal workspace — Dashboard → My Queue / Patients / Follow-ups / Appointments, with Doctor Room as the focused work surface.
+- [x] Nurse minimal workspace — Dashboard → Ward & Beds / OPD Queue / Patients / Investigations, with nursing actions continuing through Patient Workspace.
+- [x] Reception minimal workspace — Dashboard remains the landing page; Reception Desk remains a focused operational screen entered from Patient Workspace/OPD flow rather than forced on login.
+- [x] Lab minimal workspace — Dashboard → Lab Queue / Patients / OPD Queue, preserving the existing protected lab worklist.
+- [x] Pharmacy minimal workspace — Dashboard → Dispensing / Patients / Billing, preserving existing pharmacy permission boundaries.
+- [x] Billing minimal workspace — Dashboard → Billing / Patients / Appointments / Queue, preserving financial authorization boundaries.
+- [x] Admin minimal workspace — Dashboard remains the unrestricted hospital-home entry point with administration modules available through permissions.
+- [ ] Authenticated role-by-role E2E — genuine hospital staff session still required; role preview/admin validation does not count.
 - [ ] Physical-device browser verification — final tap/scroll/rotation verification on an actual phone remains a manual device gate.
 
 ## Per-module completion gate
@@ -251,7 +262,7 @@ A module is UI-complete only when the UI reflects the verified HMIS workflow, al
 16. UI-15 Global Responsive Shell Hardening
 
 ## Current release gates
-- Live baseline: v471.
+- Live baseline: v473 before the current role-landing patch; next deployment will advance this baseline.
 - Frontend main-script syntax parsing passes after the v469 interaction-regression repair.
 - Physical-device mobile verification remains open.
 - Authenticated hospital-staff E2E remains open for each module that explicitly lists it; role-preview and owner-level validators do not satisfy that gate.
