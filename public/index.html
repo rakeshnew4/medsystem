@@ -225,6 +225,7 @@
       </form>
     </div>
     <div class="card" style="margin-top:16px;background:var(--surface-soft,#f8faf9)"><div class="panel-head"><div><strong>Asset expiry reports</strong><div style="font-size:12px;color:var(--muted);margin-top:4px">HMIS-style warranty and AMC expiry tracking.</div></div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px"><select id="assetReportKind"><option value="warranty">Warranty expiry</option><option value="amc">AMC expiry</option></select><input id="assetReportFrom" type="date"><span>to</span><input id="assetReportTo" type="date"><button class="btn" onclick="loadAssetReport()">Run report</button></div><div id="assetReportSummary" style="margin-top:10px"></div><div id="assetReportTable" class="table-wrap" style="margin-top:10px"></div></div>
+    <div class="card" style="margin-top:16px;background:var(--surface-soft,#f8faf9)"><div class="panel-head"><div><strong>Asset reports</strong><div style="font-size:12px;color:var(--muted);margin-top:4px">Transfer history and depreciation/register views.</div></div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px"><select id="assetRegisterReportKind"><option value="transfers">Transfer report</option><option value="depreciation">Depreciation / asset register</option></select><input id="assetRegisterReportFrom" type="date"><span>to / as of</span><input id="assetRegisterReportTo" type="date"><button class="btn" onclick="loadAssetRegisterReport()">Run report</button></div><div id="assetRegisterReportSummary" style="margin-top:10px"></div><div id="assetRegisterReportTable" class="table-wrap" style="margin-top:10px"></div></div>
     <div style="display:flex;gap:8px;align-items:center;margin-top:16px;flex-wrap:wrap"><input id="assetSearch" class="input" placeholder="Search code, description or serial" style="min-width:240px;flex:1" onkeydown="if(event.key==='Enter')loadAssets(true)"><button class="btn" onclick="loadAssets(true)">Search</button><span id="assetCount" style="font-size:12px;color:var(--muted)"></span></div>
     <div id="assetsTable" class="table-wrap" style="margin-top:12px"></div>
   </div>
@@ -910,6 +911,22 @@ async function loadAssets(force=false){
       state.assets.map(a=>'<tr><td><strong>'+esc(a.asset_code)+'</strong><div style="font-size:11px;color:var(--muted)">'+esc(a.description)+(a.serial_number?' · '+esc(a.serial_number):'')+'</div></td><td>'+esc(a.category)+'</td><td>₹ '+Number(a.current_value??a.purchase_price??0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td><td>'+esc(a.location||'—')+'</td><td><span class="role-pill">'+esc(a.status)+'</span></td><td><div style="font-size:11px">W: '+esc(fmtDate(a.warranty_expiry)||'—')+'</div><div style="font-size:11px">AMC: '+esc(fmtDate(a.amc_expiry)||'—')+'</div></td><td><button class="btn" onclick="viewAsset('+Number(a.id)+')">History</button> <button class="btn" onclick="transferAsset('+Number(a.id)+')">Transfer</button></td></tr>').join('')+
       '</tbody></table>';
   }catch(e){if(e.status!==403)alert(e.message||'Could not load assets')}
+}
+async function loadAssetRegisterReport(){
+  try{
+    const kind=document.getElementById('assetRegisterReportKind')?.value||'transfers';
+    const from=document.getElementById('assetRegisterReportFrom')?.value||'';
+    const to=document.getElementById('assetRegisterReportTo')?.value||'';
+    const r=await api('/fixed-assets-reports?kind='+encodeURIComponent(kind)+'&from='+encodeURIComponent(from)+'&to='+encodeURIComponent(to));
+    const s=document.getElementById('assetRegisterReportSummary');
+    if(s)s.innerHTML='<span class="role-pill">'+r.total+' '+(kind==='transfers'?'transfers':'assets')+'</span>'+(kind==='depreciation'?' <span style="font-size:12px;color:var(--muted);margin-left:6px">As of '+esc(r.as_of)+'</span>':'');
+    const h=document.getElementById('assetRegisterReportTable');if(!h)return;
+    if(kind==='transfers'){
+      h.innerHTML=r.transfers.length?'<table><thead><tr><th>Date</th><th>Asset</th><th>From</th><th>To</th><th>Reason</th><th>Transferred by</th></tr></thead><tbody>'+r.transfers.map(x=>'<tr><td>'+esc(fmtDate(x.transferred_at)||x.transferred_at)+'</td><td><strong>'+esc(x.asset_code)+'</strong><div style="font-size:11px;color:var(--muted)">'+esc(x.description)+'</div></td><td>'+esc(x.from_location||'—')+'</td><td>'+esc(x.to_location||'—')+'</td><td>'+esc(x.reason||'—')+'</td><td>'+esc(x.transferred_by||'—')+'</td></tr>').join('')+'</tbody></table>':'<div class="empty">No transfers match this range.</div>';
+    }else{
+      h.innerHTML=r.assets.length?'<table><thead><tr><th>Asset</th><th>Purchase</th><th>Method</th><th>Rate</th><th>Accum. depreciation</th><th>Calculated book value</th><th>Location</th></tr></thead><tbody>'+r.assets.map(x=>'<tr><td><strong>'+esc(x.asset_code)+'</strong><div style="font-size:11px;color:var(--muted)">'+esc(x.description)+'</div></td><td>₹ '+Number(x.purchase_price||0).toLocaleString('en-IN',{maximumFractionDigits:2})+'</td><td>'+esc(x.depreciation_method)+'</td><td>'+esc(x.depreciation_rate)+'%</td><td>₹ '+Number(x.accumulated_depreciation||0).toLocaleString('en-IN',{maximumFractionDigits:2})+'</td><td>₹ '+Number(x.calculated_book_value||0).toLocaleString('en-IN',{maximumFractionDigits:2})+'</td><td>'+esc(x.location||'—')+'</td></tr>').join('')+'</tbody></table>':'<div class="empty">No assets match this register range.</div>';
+    }
+  }catch(e){if(e.status!==403)alert(e.message||'Could not run asset report')}
 }
 async function loadAssetReport(){
   try{
