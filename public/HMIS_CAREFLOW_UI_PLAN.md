@@ -212,14 +212,15 @@ HMIS references: `Privileges.java`, `UserPrivilageController.java`, `ConfigOptio
 - [ ] Authenticated integration E2E — genuine staff/integration-client execution remains open.
 
 ### UI-14 — Reporting / Analytics
-- [ ] Report index
-- [ ] Date/filter controls
-- [ ] Export/print
-- [ ] KPI cards
-- [ ] Operational dashboards
-- [ ] Financial dashboards
-- [ ] Clinical/quality views
-- [ ] Inventory reports
+- [x] Report index — v437: consolidated operational, clinical, financial and inventory report entry points.
+- [x] Date/filter controls — v437: 1/7/30/60-day client-side views over the existing server analytics period.
+- [x] Export/print — v437: CSV export for the current analytics dataset; no new financial mutation or report backend invented.
+- [x] KPI cards — v437: appointments, completed visits, no-shows, collected, outstanding and patient counts.
+- [x] Operational dashboards — v437: daily appointment/visit trend and doctor activity tables.
+- [x] Financial dashboards — v437: billed, collected and outstanding panels using existing invoice analytics.
+- [x] Clinical/quality views — v437: no-show rate, new-patient count and follow-ups due.
+- [x] Inventory reports — v437: existing fixed-asset and pharmacy closing-stock report contracts are surfaced as optional inventory snapshot hooks when the staff permission allows.
+- [ ] Authenticated reporting E2E — genuine hospital-staff execution remains open.
 
 ## Per-module completion gate
 A module is UI-complete only when the UI reflects the verified HMIS workflow, all states have visible feedback, patient/encounter/department context is clear, actions are permission-aware, mutation buttons map to existing server transitions, desktop and mobile layouts work, no console-breaking UI errors are introduced, and authenticated browser E2E is recorded separately when available.

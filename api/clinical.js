@@ -8,10 +8,12 @@ export default async function(req,res){
   if(b.type==="visit"){
    if(req.method==="PUT"){
    if(!["doctor","admin"].includes(String(ctx.staff.role||"")))return res.status(403).json({error:"Only doctors can document a consultation"});
-   const r=await db.query("UPDATE doctor_visits SET clinical_notes=$1,visit_status=$2,ended_at=CASE WHEN $2='completed' THEN COALESCE(ended_at,now()) ELSE ended_at END,encounter_id=COALESCE($3::bigint,encounter_id) WHERE id=$4 AND hospital_id=$5 AND (doctor_id=$6 OR $6 IS NULL) RETURNING *",[b.clinical_notes||null,b.visit_status||"open",b.encounter_id||null,b.id,ctx.hospitalId,ctx.staff.doctor_id||null]);
-   if(!r.rows[0])return res.json({error:"Visit not found"});
+   const requestedStatus=String(b.visit_status||"open");
+   if(!["open","completed"].includes(requestedStatus))return res.status(400).json({error:"Invalid consultation visit status"});
+   if(requestedStatus==="completed" && !String(b.clinical_notes||"").trim())return res.status(400).json({error:"Consultation note is required before completing the visit"});
+   const r=await db.query("UPDATE doctor_visits SET clinical_notes=$1,visit_status=$2,ended_at=CASE WHEN $2='completed' THEN COALESCE(ended_at,now()) ELSE ended_at END,encounter_id=COALESCE($3::bigint,encounter_id) WHERE id=$4 AND hospital_id=$5 AND (doctor_id=$6 OR $6 IS NULL) RETURNING *",[b.clinical_notes||null,requestedStatus,b.encounter_id||null,b.id,ctx.hospitalId,ctx.staff.doctor_id||null]);
+   if(!r.rows[0])return res.status(404).json({error:"Visit not found"});
    const visit=r.rows[0];
-   if(b.visit_status==="completed" && !String(b.clinical_notes||"").trim())return res.status(400).json({error:"Consultation note is required before completing the visit"});
    if(visit.encounter_id){await db.query("UPDATE care_encounters SET current_stage=$1,status=$2,ended_at=CASE WHEN $2='completed' THEN COALESCE(ended_at,now()) ELSE ended_at END,updated_at=now() WHERE id=$3 AND hospital_id=$4",[b.visit_status==="completed"?"completed":"doctor",b.visit_status==="completed"?"completed":"open",visit.encounter_id,ctx.hospitalId]);}
    if(b.visit_status==="completed"){
     if(b.queue_entry_id){
