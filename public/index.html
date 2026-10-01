@@ -1410,7 +1410,7 @@ function patientCareTeamActions(p,s){
   const queue=p.queue_stage?prettyStatus(p.queue_stage):'Registered';
   const phone=p.phone||'No phone';
   const uhid=p.uhid||'No UHID';
-  const patientDetails='<div class="care-team-patient-details"><div class="care-team-context-label">PATIENT CONTEXT</div><div class="care-team-patient-name">'+escq(p.name||'Patient')+'</div><div class="care-team-patient-meta">'+(age?escq(age)+' years · ':'')+escq(phone)+' · '+escq(uhid)+'</div><div class="care-team-patient-tags"><span class="care-team-patient-tag">'+escq(care)+'</span><span class="care-team-patient-tag">'+escq(queue)+'</span>'+(p.ward||p.bed_number?'<span class="care-team-patient-tag">'+escq(p.ward||'Ward')+(p.bed_number?' · '+escq(p.bed_number):'')+'</span>':'')+'</div></div>';
+  const patientDetails='<div class="care-team-patient-details compact"><div class="care-team-context-label">CURRENT PATIENT</div><div class="care-team-patient-tags"><span class="care-team-patient-tag">'+escq(care)+'</span><span class="care-team-patient-tag">'+escq(queue)+'</span>'+(p.ward||p.bed_number?'<span class="care-team-patient-tag">'+escq(p.ward||'Ward')+(p.bed_number?' · '+escq(p.bed_number):'')+'</span>':'')+'</div></div>';
   const section=(num,roleKey,label,desc,actions)=>{
     const mine=active(roleKey);
     const stateLabel=admin?'ADMIN ACCESS':(mine?'YOUR WORK':'CARE TEAM');
