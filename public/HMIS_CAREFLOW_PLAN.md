@@ -658,6 +658,7 @@ Implemented in this increment:
 - Deployed CareFlow v344: completed the admin Department / user overrides panel with staff and department selectors, explicit Inherit / Allow / Deny states, and server-backed save/clear behavior. The UI uses the existing hospital-scoped `/api/permissions` contract and refreshes the exact override state after each change.
 - v344 dry-run passed with no blocking errors. Post-deploy access checks confirmed `/api/permissions`, `/api/team`, and `/api/departments` remain denied to anonymous and unsigned app-user execution; the available runner still cannot establish the hospital staff session required by `requireStaff()`.
 - Added owner-only `/api/staff-permission-validation` to audit production staff/permission integrity: hospital ownership, department isolation, orphan permissions, null permission states, unknown permission keys, and active-pending staff conflicts.
+- Deployed CareFlow v345: modeled the existing `billing` and `store` permission roles in staff administration and Store default workspace routing. Production `/api/staff-permission-validation` now returns **7/7 checks, 0 violations**; anonymous access remains HTTP 401 and unsigned app-user execution remains blocked by the hospital staff session gate.
 
 Remaining Staff/Roles gates:
 - Authenticated staff E2E for role boundaries and department-specific permission precedence.
