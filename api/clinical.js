@@ -60,7 +60,25 @@ export default async function(req,res){
    await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId,eventType:"medicine_prescribed",stage:"pharmacy",entityType:"medication",entityId:r.rows[0].id,metadata:{medicine_name:b.medicine_name}});
    await notifyRoles({hospitalId:ctx.hospitalId,roles:["pharmacy"],title:"Prescription ready",body:"A new prescription is waiting for dispensing.",kind:"workflow",entityType:"medication",entityId:r.rows[0].id,patientId:b.patient_id,excludeStaffId:ctx.staff.id});return res.json(r.rows[0]);
   }
-  if(b.type==="lab"){let encounterId=b.encounter_id||null;if(!encounterId){const e=await findOpenEncounter(ctx,b.patient_id,{});encounterId=e?.id||null}const r=await db.query("INSERT INTO lab_orders(hospital_id,patient_id,doctor_id,visit_id,queue_entry_id,encounter_id,test_name,status,notes) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *",[ctx.hospitalId,b.patient_id,b.doctor_id||ctx.staff.doctor_id||null,b.visit_id||null,b.queue_entry_id||null,encounterId,b.test_name,b.status||"ordered",b.notes||null]);await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId,eventType:"lab_ordered",stage:"lab",entityType:"lab_order",entityId:r.rows[0].id,metadata:{test_name:b.test_name}});await notifyRoles({hospitalId:ctx.hospitalId,roles:["lab"],title:"New lab order",body:"A new investigation is waiting for processing.",kind:"workflow",entityType:"lab_order",entityId:r.rows[0].id,patientId:b.patient_id,excludeStaffId:ctx.staff.id});return res.json(r.rows[0])}
+  if(b.type==="lab"){
+   if(!["doctor","admin"].includes(String(ctx.staff.role||"")))return res.status(403).json({error:"Only doctors can order laboratory investigations"});
+   if(!b.patient_id||!b.test_name)return res.status(400).json({error:"Patient and test name are required"});
+   let encounterId=b.encounter_id||null;
+   if(!encounterId){const e=await findOpenEncounter(ctx,b.patient_id,{});encounterId=e?.id||null}
+   if(!encounterId)return res.status(409).json({error:"An active care encounter is required for a laboratory order"});
+   if(b.visit_id){
+    const vr=await db.query("SELECT id,patient_id,doctor_id,visit_status,encounter_id FROM doctor_visits WHERE id=$1 AND hospital_id=$2",[Number(b.visit_id),ctx.hospitalId]);
+    if(!vr.rows[0])return res.status(404).json({error:"Consultation visit not found"});
+    if(Number(vr.rows[0].patient_id)!==Number(b.patient_id))return res.status(409).json({error:"Lab order patient does not match the consultation"});
+    if(vr.rows[0].visit_status!=="open")return res.status(409).json({error:"Lab order requires an open consultation"});
+    if(ctx.staff.role!=="admin" && Number(vr.rows[0].doctor_id)!==Number(ctx.staff.doctor_id))return res.status(403).json({error:"This consultation is not assigned to you"});
+    encounterId=vr.rows[0].encounter_id||encounterId;
+   }
+   const r=await db.query("INSERT INTO lab_orders(hospital_id,patient_id,doctor_id,visit_id,queue_entry_id,encounter_id,test_name,status,notes) VALUES($1,$2,$3,$4,$5,$6,$7,'ordered',$8) RETURNING *",[ctx.hospitalId,b.patient_id,b.doctor_id||ctx.staff.doctor_id||null,b.visit_id||null,b.queue_entry_id||null,encounterId,b.test_name,b.notes||null]);
+   await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId,eventType:"lab_ordered",stage:"lab",entityType:"lab_order",entityId:r.rows[0].id,metadata:{test_name:b.test_name}});
+   await notifyRoles({hospitalId:ctx.hospitalId,roles:["lab"],title:"New lab order",body:"A new investigation is waiting for processing.",kind:"workflow",entityType:"lab_order",entityId:r.rows[0].id,patientId:b.patient_id,excludeStaffId:ctx.staff.id});
+   return res.json(r.rows[0])
+  }
   if(b.type==="report"){let encounterId=b.encounter_id||null;if(!encounterId){const e=await findOpenEncounter(ctx,b.patient_id,{});encounterId=e?.id||null}const r=await db.query("INSERT INTO clinical_reports(hospital_id,patient_id,visit_id,lab_order_id,encounter_id,report_type,title,report_date,file_url,summary) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *",[ctx.hospitalId,b.patient_id,b.visit_id||null,b.lab_order_id||null,encounterId,b.report_type||"report",b.title,b.report_date||null,b.file_url||null,b.summary||null]);await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId,eventType:"lab_report_ready",stage:"lab",entityType:"clinical_report",entityId:r.rows[0].id});return res.json(r.rows[0])}
   return res.status(400).json({error:"Unknown clinical record type"});
  }

@@ -437,7 +437,46 @@ Remaining Doctor Consultation work:
 
 # 07 — Laboratory
 
-Not started.
+**In progress — laboratory lifecycle implemented and test matrix established.**
+
+HMIS's laboratory capability is treated as a distinct clinical/operational workflow rather than a single result field. The CareFlow design now follows the core specimen/result progression:
+
+**Order → payment/billing linkage → sample collection → processing → result verification → doctor review**
+
+Implemented:
+- Added protected /api/lab endpoint for hospital-scoped laboratory queue/history.
+- Laboratory mutations are restricted to staff with action.lab.manage.
+- Added explicit server-side status state machine:
+  - ordered → sample_collected
+  - sample_collected → processing
+  - processing → verified
+  - cancellation only before processing.
+- Sample collection records sample_collected_at.
+- Processing records processing_started_at.
+- Verification requires a non-empty result.
+- Verification records completed_at, verified_at and verified_by.
+- Verified results create a clinical lab-result report attached to the same patient, visit and canonical encounter.
+- Verified results record doctor_notified_at, create a workflow event and notify doctors.
+- Linked queue entries advance lab → followup after result verification.
+- Lab orders are now restricted to doctor/admin creation and require an active care encounter; when linked to a consultation, the visit must be open and assigned to that doctor.
+- Doctor Room now includes an explicit laboratory investigation order form tied to the active consultation.
+- Laboratory verification UI now collects the result before calling the verification endpoint.
+- Removed the Lab UI's broken report-PDF action until a real PDF endpoint is implemented.
+- Added HMIS_CAREFLOW_TEST_CASES.md with 20 laboratory test cases covering security, lifecycle transitions, payment gating, encounter integrity, notifications and full E2E behavior.
+
+HMIS/reference context:
+- The HMIS project identifies Laboratory Information Management as a core hospital capability and has analyzer/LIS integration paths; its public repository describes laboratory information management alongside EMR, pharmacy and inpatient/outpatient workflows. citeturn0search0turn0search1
+
+Remaining Laboratory work:
+- Run authenticated Lab staff lifecycle test: order → payment → sample collection → processing → verification.
+- Run authenticated doctor test: order from consultation → result appears in clinical workspace → doctor review.
+- Verify billing-role interaction for laboratory invoices without granting lab staff unnecessary billing permissions.
+- Add structured test catalogue/specimen/container/reference-range concepts based on hospital configuration before introducing them as mandatory fields.
+- Add real report PDF generation only when the reporting format is defined.
+- Add analyzer/LIS integration in the later Integrations/LIS phase rather than hard-coding a device protocol now.
+
+Completion gate:
+- Laboratory will remain **In progress** until the authenticated E2E test and role-boundary cases pass.
 
 # 08 — Pharmacy / dispensing / stock
 

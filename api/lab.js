@@ -1,52 +1,80 @@
 import { db } from "../lib/db.js";
 import { requirePermission } from "../lib/authz.js";
-import { logWorkflowEvent, findOpenEncounter } from "../lib/workflow.js";
+import { logWorkflowEvent } from "../lib/workflow.js";
 import { notifyRoles } from "../lib/staff-notifications.js";
+
 export const access="user";
-export const methods=["GET","POST","PUT"];
+export const methods=["GET","PUT"];
+
+const transitions={
+  ordered:"sample_collected",
+  sample_collected:"processing",
+  processing:"verified"
+};
 
 export default async function(req,res){
-  const ctx=await requirePermission(req,res,req.method==="GET"?"action.clinical.view":"action.clinical.write");
-  if(!ctx)return;
-  if(req.method==="GET"){
-    const pid=req.query?.patient_id;
-    const sql=pid
-      ? "SELECT l.*,p.name AS patient_name,d.name AS doctor_name,i.invoice_number,i.total AS invoice_total,i.paid AS invoice_paid,i.status AS invoice_status FROM lab_orders l JOIN patients p ON p.id=l.patient_id LEFT JOIN doctors d ON d.id=l.doctor_id LEFT JOIN invoices i ON i.id=l.invoice_id WHERE l.hospital_id=$1 AND l.patient_id=$2 ORDER BY l.ordered_at DESC LIMIT 100"
-      : "SELECT l.*,p.name AS patient_name,d.name AS doctor_name,i.invoice_number,i.total AS invoice_total,i.paid AS invoice_paid,i.status AS invoice_status FROM lab_orders l JOIN patients p ON p.id=l.patient_id LEFT JOIN doctors d ON d.id=l.doctor_id LEFT JOIN invoices i ON i.id=l.invoice_id WHERE l.hospital_id=$1 ORDER BY l.ordered_at DESC LIMIT 300";
-    const r=await db.query(sql,pid?[ctx.hospitalId,pid]:[ctx.hospitalId]); return res.json(r.rows);
-  }
-  const b=req.body||{};
-  if(req.method==="POST"){
-    if(!b.patient_id||!b.test_name)return res.status(400).json({error:"Patient and test name are required"});
-    let encounterId=b.encounter_id||null;if(!encounterId){const e=await findOpenEncounter(ctx,b.patient_id,{});encounterId=e?.id||null}
-    const r=await db.query("INSERT INTO lab_orders(hospital_id,patient_id,doctor_id,visit_id,queue_entry_id,encounter_id,test_name,status,notes,invoice_id) VALUES($1,$2,$3,$4,$5,$6,$7,'ordered',$8,$9) RETURNING *",[ctx.hospitalId,b.patient_id,b.doctor_id||ctx.staff.doctor_id||null,b.visit_id||null,b.queue_entry_id||null,encounterId,b.test_name,b.notes||null,b.invoice_id||null]);
-    await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId,eventType:"lab_ordered",stage:"lab",entityType:"lab_order",entityId:r.rows[0].id});
-    await notifyRoles({hospitalId:ctx.hospitalId,roles:["lab"],title:"New lab order",body:"A new investigation is waiting for processing.",kind:"workflow",entityType:"lab_order",entityId:r.rows[0].id,patientId:b.patient_id,excludeStaffId:ctx.staff.id});
-    return res.json(r.rows[0]);
-  }
-  if(!b.id)return res.status(400).json({error:"Lab order id is required"});
-  const cur=await db.query("SELECT * FROM lab_orders WHERE id=$1 AND hospital_id=$2",[b.id,ctx.hospitalId]);if(!cur.rows[0])return res.status(404).json({error:"Lab order not found"});
-  const o=cur.rows[0];let status=b.status||o.status;let sets=[];let params=[b.id,ctx.hospitalId];let idx=3;
-  if(b.invoice_id){
-    const link=await db.query("UPDATE lab_orders SET invoice_id=$1 WHERE id=$2 AND hospital_id=$3 RETURNING *",[b.invoice_id,b.id,ctx.hospitalId]);
-    if(!b.status)return res.json(link.rows[0]);
-    o.invoice_id=b.invoice_id;
-  }
-  if(status==="sample_collected" && o.invoice_id){
-    const inv=await db.query("SELECT status FROM invoices WHERE id=$1 AND hospital_id=$2",[o.invoice_id,ctx.hospitalId]);
-    if(!inv.rows[0]||inv.rows[0].status!=="paid")return res.status(409).json({error:"Lab payment is not cleared yet."});
-  }
-  if(status==="sample_collected"){sets.push("status=$3","sample_collected_at=COALESCE(sample_collected_at,now())");params.push(status);idx=4}
-  else if(status==="processing"){sets.push("status=$3","processing_started_at=COALESCE(processing_started_at,now())");params.push(status);idx=4}
-  else if(status==="verified"){sets.push("status=$3","verified_at=COALESCE(verified_at,now())","verified_by=$4","result_summary=$5","completed_at=COALESCE(completed_at,now())");params.push(status,ctx.user.email,b.result_summary||o.result_summary||null);idx=6}
-  else if(status==="cancelled"){sets.push("status=$3");params.push(status);idx=4}
-  else return res.status(400).json({error:"Invalid lab status transition"});
-  const r=await db.query("UPDATE lab_orders SET "+sets.join(",")+" WHERE id=$1 AND hospital_id=$2 RETURNING *",params);
-  const e=await findOpenEncounter(ctx,o.patient_id,{});const enc=e?.id||o.encounter_id||null;
-  if(status==="verified"){
-    await db.query("INSERT INTO notifications(hospital_id,patient_id,appointment_id,kind,scheduled_for,status,channel) VALUES($1,$2,NULL,'lab_result_ready',now(),'pending','staff') ON CONFLICT DO NOTHING",[ctx.hospitalId,o.patient_id]).catch(()=>{});
-  }
-  await logWorkflowEvent(ctx,{patientId:o.patient_id,encounterId:enc,eventType:"lab_"+status,stage:status==="verified"?"doctor_review":"lab",entityType:"lab_order",entityId:o.id,metadata:{status,result_summary:status==="verified"?b.result_summary||null:undefined}});
-  if(status==="verified")await notifyRoles({hospitalId:ctx.hospitalId,roles:["doctor"],doctorId:o.doctor_id,title:"Lab result ready",body:"A lab result has been verified and needs doctor review.",kind:"workflow",entityType:"lab_order",entityId:o.id,patientId:o.patient_id,excludeStaffId:ctx.staff.id});
+ const ctx=await requirePermission(req,res,req.method==="GET"?"action.clinical.view":"action.lab.manage"); if(!ctx)return;
+
+ if(req.method==="GET"){
+  const pid=req.query?.patient_id||null;
+  const r=await db.query(
+   "SELECT l.*,p.name AS patient_name,p.uhid,d.name AS doctor_name,i.invoice_number,i.total AS invoice_total,i.paid AS invoice_paid,i.status AS invoice_status FROM lab_orders l JOIN patients p ON p.id=l.patient_id LEFT JOIN doctors d ON d.id=l.doctor_id LEFT JOIN invoices i ON i.id=l.invoice_id AND i.hospital_id=l.hospital_id WHERE l.hospital_id=$1 AND ($2::bigint IS NULL OR l.patient_id=$2) ORDER BY l.ordered_at DESC LIMIT 500",
+   [ctx.hospitalId,pid]
+  );
+  return res.json(r.rows);
+ }
+
+ const b=req.body||{};
+ if(!b.id)return res.status(400).json({error:"Lab order id is required"});
+ const current=await db.query(
+  "SELECT l.*,i.status AS invoice_status,i.total AS invoice_total,i.paid AS invoice_paid FROM lab_orders l LEFT JOIN invoices i ON i.id=l.invoice_id AND i.hospital_id=l.hospital_id WHERE l.id=$1 AND l.hospital_id=$2",
+  [Number(b.id),ctx.hospitalId]
+ );
+ if(!current.rows[0])return res.status(404).json({error:"Lab order not found"});
+ const order=current.rows[0];
+ const target=String(b.status||"");
+ if(target==="cancelled"){
+  if(!["ordered","sample_collected"].includes(order.status))return res.status(409).json({error:"Only an unprocessed lab order can be cancelled"});
+  const r=await db.query("UPDATE lab_orders SET status='cancelled' WHERE id=$1 AND hospital_id=$2 RETURNING *",[order.id,ctx.hospitalId]);
+  await logWorkflowEvent(ctx,{patientId:order.patient_id,encounterId:order.encounter_id,eventType:"lab_cancelled",stage:"lab",entityType:"lab_order",entityId:order.id});
   return res.json(r.rows[0]);
+ }
+ if(transitions[order.status]!==target)return res.status(409).json({error:"Invalid laboratory status transition",from:order.status,to:target});
+
+ if(target==="sample_collected"){
+  if(order.invoice_id && order.invoice_status!=="paid")return res.status(409).json({error:"Laboratory payment must be settled before sample collection"});
+  const r=await db.query("UPDATE lab_orders SET status='sample_collected',sample_collected_at=COALESCE(sample_collected_at,now()) WHERE id=$1 AND hospital_id=$2 AND status='ordered' RETURNING *",[order.id,ctx.hospitalId]);
+  if(!r.rows[0])return res.status(409).json({error:"Lab order changed; refresh and try again"});
+  await logWorkflowEvent(ctx,{patientId:order.patient_id,encounterId:order.encounter_id,eventType:"lab_sample_collected",stage:"lab",entityType:"lab_order",entityId:order.id});
+  return res.json(r.rows[0]);
+ }
+
+ if(target==="processing"){
+  const r=await db.query("UPDATE lab_orders SET status='processing',processing_started_at=COALESCE(processing_started_at,now()) WHERE id=$1 AND hospital_id=$2 AND status='sample_collected' RETURNING *",[order.id,ctx.hospitalId]);
+  if(!r.rows[0])return res.status(409).json({error:"Lab order changed; refresh and try again"});
+  await logWorkflowEvent(ctx,{patientId:order.patient_id,encounterId:order.encounter_id,eventType:"lab_processing_started",stage:"lab",entityType:"lab_order",entityId:order.id});
+  return res.json(r.rows[0]);
+ }
+
+ if(target==="verified"){
+  const result=String(b.result_summary||"").trim();
+  if(!result)return res.status(400).json({error:"Result is required before verification"});
+  const r=await db.query(
+   "UPDATE lab_orders SET status='verified',result_summary=$1,completed_at=COALESCE(completed_at,now()),verified_at=COALESCE(verified_at,now()),verified_by=$2,doctor_notified_at=now() WHERE id=$3 AND hospital_id=$4 AND status='processing' RETURNING *",
+   [result,ctx.user?.email||String(ctx.staff?.id||""),order.id,ctx.hospitalId]
+  );
+  if(!r.rows[0])return res.status(409).json({error:"Lab order changed; refresh and try again"});
+  const report=await db.query(
+   "INSERT INTO clinical_reports(hospital_id,patient_id,visit_id,lab_order_id,encounter_id,report_type,title,report_date,summary) VALUES($1,$2,$3,$4,$5,'lab_result',$6,current_date,$7) RETURNING id",
+   [ctx.hospitalId,order.patient_id,order.visit_id||null,order.id,order.encounter_id||null,order.test_name,result]
+  );
+  if(order.queue_entry_id){
+   await db.query("UPDATE queue_entries SET stage='followup',updated_at=now() WHERE id=$1 AND hospital_id=$2 AND stage='lab'",[order.queue_entry_id,ctx.hospitalId]);
+  }
+  await logWorkflowEvent(ctx,{patientId:order.patient_id,encounterId:order.encounter_id,eventType:"lab_result_verified",stage:"followup",entityType:"lab_order",entityId:order.id,metadata:{result_report_id:report.rows[0]?.id||null}});
+  await notifyRoles({hospitalId:ctx.hospitalId,roles:["doctor"],title:"Laboratory result verified",body:"A laboratory result is ready for doctor review.",kind:"workflow",entityType:"lab_order",entityId:order.id,patientId:order.patient_id});
+  return res.json(r.rows[0]);
+ }
+
+ return res.status(400).json({error:"Unsupported laboratory action"});
 }
