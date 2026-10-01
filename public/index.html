@@ -1278,6 +1278,16 @@ async function workspaceCheckIn(aid,pid){
 async function refreshPatientWorkspace(pid){
  const r=await api('/patient-workspace?patient_id='+encodeURIComponent(pid));state.activePatientRecord=r;renderPatientWorkspace();
 }
+function patientEncounterPanel(s){
+ const rows=s.encounters||[], active=rows.find(e=>e.status==='open')||rows[0];
+ if(!rows.length)return '<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Care encounter</h3><div class="record-section-note">No encounter has been opened for this patient yet.</div></div></div></div>';
+ const stage=active?.current_stage?prettyStatus(active.current_stage):'Registered';
+ const queue=active?.queue_id?('Token '+(active.token||'—')+' · '+prettyStatus(active.queue_stage||'waiting')):'No active queue';
+ const doctor=active?.doctor_name||'Not assigned';
+ const statusText=active?.status==='open'?'OPEN':prettyStatus(active?.status||'open');
+ const history=rows.slice(0,5).map(e=>'<div class="compact-record"><div><strong>#'+esc(e.id)+' · '+esc((e.encounter_type||'opd').toUpperCase())+'</strong><span>'+esc(prettyStatus(e.current_stage||'registered'))+' · '+fmtDate(e.started_at)+(e.doctor_name?' · '+esc(e.doctor_name):'')+'</span></div><div>'+status(e.status||'open')+(e.queue_id?'<small>Token '+esc(e.token||'—')+'</small>':'')+'</div></div>').join('');
+ return '<div class="workspace-card encounter-context-card"><div class="panel-head"><div><h3 class="panel-title">Current care encounter</h3><div class="record-section-note">The canonical episode connecting registration, token/queue, consultation and downstream clinical work.</div></div><span class="status '+(active?.status==='open'?'active':'')+'">'+esc(statusText)+'</span></div><div class="encounter-context-grid"><div><span>Encounter</span><strong>#'+esc(active.id)+'</strong></div><div><span>Stage</span><strong>'+esc(stage)+'</strong></div><div><span>Queue</span><strong>'+esc(queue)+'</strong></div><div><span>Doctor</span><strong>'+esc(doctor)+'</strong></div></div><div class="record-section-note" style="margin-top:10px">Started '+fmtDate(active.started_at)+(active.ended_at?' · Ended '+fmtDate(active.ended_at):'')+'</div><details style="margin-top:12px"><summary style="cursor:pointer;font-weight:800;color:var(--primary)">Encounter history ('+rows.length+')</summary><div style="margin-top:8px">'+history+'</div></details></div>';
+}
 function renderPatientWorkspace(){
  const s=state.activePatientRecord;if(!s)return;
  const p=s.patient||{}, c=s.clinical, ipd=s.ipd||{}, ap=s.appointments||[], fu=s.followups||[], bills=s.billing||[], events=s.workflow?.events||[];
@@ -1286,7 +1296,7 @@ function renderPatientWorkspace(){
  const outstanding=bills.reduce((n,x)=>n+Math.max(0,Number(x.due||Number(x.total||0)-Number(x.paid||0))),0);
  const currentStep=p.queue_stage?prettyStatus(p.queue_stage):(activeAdm?'Admitted':'Registered');
  const body=document.getElementById('patientWorkspaceBody');
- body.innerHTML='<div class="patient-workspace-header"><div><div class="kicker">'+esc(p.uhid||'PATIENT RECORD')+'</div><h2 class="patient-workspace-name">'+esc(p.name)+'</h2><div class="patient-workspace-meta">'+(patientAge(p.date_of_birth)?patientAge(p.date_of_birth)+' · ':'')+esc(p.phone||'No phone')+(p.email?' · '+esc(p.email):'')+'</div><div class="patient-header-status"><span>'+esc(activeAdm?'IPD':'OPD')+'</span><span>'+esc(currentStep)+'</span><span>'+((c?.visits||[]).length)+' visits</span><span>'+fu.filter(x=>x.status!=='completed').length+' follow-ups</span>'+(outstanding>0?'<span>₹'+outstanding.toFixed(2)+' due</span>':'')+'</div></div><div>'+patientWorkspaceActionButtons(p)+'</div></div>'+
+ body.innerHTML=patientEncounterPanel(s)+'<div class="patient-workspace-header"><div><div class="kicker">'+esc(p.uhid||'PATIENT RECORD')+'</div><h2 class="patient-workspace-name">'+esc(p.name)+'</h2><div class="patient-workspace-meta">'+(patientAge(p.date_of_birth)?patientAge(p.date_of_birth)+' · ':'')+esc(p.phone||'No phone')+(p.email?' · '+esc(p.email):'')+'</div><div class="patient-header-status"><span>'+esc(activeAdm?'IPD':'OPD')+'</span><span>'+esc(currentStep)+'</span><span>'+((c?.visits||[]).length)+' visits</span><span>'+fu.filter(x=>x.status!=='completed').length+' follow-ups</span>'+(outstanding>0?'<span>₹'+outstanding.toFixed(2)+' due</span>':'')+'</div></div><div>'+patientWorkspaceActionButtons(p)+'</div></div>'+
  patientNextActions(p,s)+
  patientCareTeamActions(p,s)+
  '<div id="patientWorkspaceActionArea" class="patient-workspace-action-area"></div>'+

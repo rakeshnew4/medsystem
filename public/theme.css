@@ -396,6 +396,11 @@ button:disabled,.btn:disabled{opacity:.55;cursor:not-allowed}
   .stats{grid-template-columns:1fr}
   .patient-summary-strip{grid-template-columns:1fr}
 }
+.encounter-context-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:4px}
+.encounter-context-grid>div{padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.encounter-context-grid span{display:block;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.encounter-context-grid strong{display:block;margin-top:4px;font-size:12px}
+@media(max-width:760px){.encounter-context-grid{grid-template-columns:1fr 1fr}}
 
 /* CareFlow clinical UX polish — workflow-first, low-noise EHR hierarchy. */
 .care-team-actions-card{padding:18px}.care-team-actions-card>.panel-head{margin-bottom:16px}.care-team-flow{gap:10px}
