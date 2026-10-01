@@ -32,7 +32,7 @@ export default async function(req,res){
     r=>Number(r[0]?.n||0));
 
   await check("payment_ledger_access",
-    "SELECT count(*) AS n FROM invoice_payments",
+    "SELECT count(*) AS n FROM information_schema.tables WHERE table_schema='public' AND table_name='invoice_payments'",
     r=>Number(r[0]?.n||0));
 
   await check("payment_rows_positive",

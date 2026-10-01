@@ -336,7 +336,7 @@ Status: Open. Direct adapter checks are healthy, but the deployed validator curr
 
 ## TC-BILL-022 — Payment-ledger validator adapter compatibility
 The owner-only billing integrity validator must execute every payment-ledger query successfully through CareFlow's configured external PostgreSQL adapter. Adapter-safe aggregate queries must not be treated as financial passes unless the query itself executes; any runtime query error keeps the validator gate failed.
-Status: Implemented for deployment v383; post-deploy validation pending. Authenticated Billing E2E remains required.
+Status: Implemented in v383/v384. Post-deploy validation still fails at the external payment-ledger schema/runtime boundary; this blocks Billing validation. Authenticated Billing E2E remains required.
 
 ## TC-BILL-022 — Payment-ledger validator adapter compatibility
 The owner-only billing integrity validator must execute every payment-ledger query successfully through CareFlow's configured external PostgreSQL adapter. Adapter-safe aggregate queries must not be treated as financial passes unless the query itself executes; any runtime query error keeps the validator gate failed.

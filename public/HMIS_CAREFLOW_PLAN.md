@@ -720,7 +720,7 @@ Added owner-only `/api/billing-validation` to audit production financial invaria
 Current status: direct external PostgreSQL checks are healthy, while the deployed validator has a ledger-query runtime discrepancy; this is recorded in `public/HMIS_BILLING_GATE_STATUS.md` and remains a release blocker.
 
 ## Change log
-- Billing validator runtime-consistency increment — v383 target: replaced correlated payment-ledger subqueries with adapter-safe aggregate checks and added an explicit payment-ledger table-access check. This is a diagnostic/safety correction only; Billing remains incomplete until the deployed validator returns clean structural results and authenticated staff E2E passes. Legacy payment-ledger reconciliation remains open.
+- Billing validator runtime-consistency increment — v383/v384: replaced correlated payment-ledger subqueries with adapter-safe aggregate checks and added an explicit external-schema presence check for `invoice_payments`. Post-deploy validation still shows the external adapter cannot execute the payment-ledger checks; this is now treated as a schema/runtime blocker rather than a financial pass. Billing remains incomplete and no payment-ledger data was fabricated. Authenticated staff E2E remains pending.
 
 - **Billing validator runtime-consistency increment — v383 target:** replaced correlated payment-ledger subqueries with adapter-safe aggregate checks and added an explicit payment-ledger table-access check. This is a diagnostic/safety correction only; Billing remains incomplete until the deployed validator returns clean structural results and authenticated staff E2E passes. Legacy payment-ledger reconciliation remains open.
 
