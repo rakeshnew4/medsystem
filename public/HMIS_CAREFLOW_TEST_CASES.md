@@ -44,18 +44,18 @@ Status: Requires authenticated doctor/pharmacist session.
 
 ## TC-PHARM-009 — Dispensing requires available stock
 Attempt to dispense more than available non-expired stock.
-Expected: HTTP 409 and no dispense record.
-Status: Pending atomic stock-consumption implementation.
+Expected: HTTP 409, no dispense record, and no stock quantity mutation.
+Status: Implemented in v238; authenticated pharmacist execution pending.
 
 ## TC-PHARM-010 — Successful dispensing consumes stock atomically
-Dispense a valid prescription quantity.
-Expected: stock quantity decreases, pharmacy dispense is created, stock transaction is recorded, and linked pharmacy queue item advances to completed.
-Status: Pending atomic stock-consumption implementation.
+Dispense a valid prescription quantity, including a quantity that spans multiple non-expired batches when necessary.
+Expected: stock is deducted atomically in expiry-first order, pharmacy dispense is created once, one stock transaction is recorded per consumed batch, and the linked pharmacy queue item advances to completed.
+Status: Implemented in v238; authenticated pharmacist execution pending.
 
 ## TC-PHARM-011 — Retry/idempotency protection
 Repeat the same dispense action after successful completion.
-Expected: system must not silently double-dispense the same intended prescription quantity; behavior must be explicit and auditable.
-Status: Pending policy implementation.
+Expected: HTTP 409 for an already-dispensed prescription; no second dispense and no second stock deduction.
+Status: Implemented in v238; authenticated pharmacist execution pending.
 
 ## TC-PHARM-012 — Encounter linkage
 Expected: medication, dispense, stock transaction and pharmacy queue retain the same canonical encounter where supplied.

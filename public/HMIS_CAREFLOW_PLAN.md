@@ -480,25 +480,29 @@ Completion gate:
 
 # 08 — Pharmacy / dispensing / stock
 
-**In progress — stock foundation and pharmacist workflow controls implemented in v236.**
+**In progress — stock foundation and atomic dispensing implemented in v238; authenticated pharmacist E2E remains the completion gate.**
 
 HMIS treats pharmacy as an operational module connected to prescriptions, dispensing and inventory; the reference repository lists Pharmacy & Laboratory Information Management and Inventory & Asset Management as core hospital capabilities.
 
-Implemented in CareFlow v236:
+Implemented in CareFlow v236–v238:
 - Added hospital-scoped pharmacy stock batches with medicine name, batch number, expiry date, quantity, reorder level and unit.
-- Added pharmacy stock transaction audit records for stock receipts and future dispensing adjustments.
+- Added pharmacy stock transaction audit records for stock receipts and dispensing adjustments.
 - Added protected /api/pharmacy-stock for pharmacist/admin stock receiving and stock visibility.
-- Pharmacy screen now shows stock-unit, low-stock and expired-batch summaries and provides a Receive stock form.
+- Pharmacy screen shows stock-unit, low-stock and expired-batch summaries and provides a Receive stock form.
 - Existing prescription/dispensing records remain linked to patient, medication and encounter.
-- Public access to the new stock endpoint is correctly blocked with HTTP 401.
-- A signed-in end-user without hospital staff authentication is also correctly blocked with HTTP 401.
-- Deployment v236 completed with no blocking dry-run errors.
+- /api/pharmacy dispensing now validates the prescription, rejects already-dispensed prescriptions, excludes expired stock, and atomically consumes available stock in expiry-first order.
+- A dispensing quantity may span multiple eligible batches; each consumed batch gets its own stock transaction audit row.
+- Successful dispensing creates one pharmacy_dispenses record and advances the latest active pharmacy queue item for that patient to completed.
+- Workflow audit metadata records the consumed batches, remaining quantities and completed queue ID.
+- Insufficient stock returns HTTP 409 before mutation; a concurrent stock change is also handled by the atomic SQL path.
+- Public access to pharmacy and stock routes remains blocked with HTTP 401.
+- Deployment v238 completed with no blocking dry-run errors.
 
-Important completion-gate gap:
-- Existing /api/pharmacy dispensing still records a dispense but has not yet been switched to the new atomic stock-decrement endpoint. The next implementation step is to make dispensing consume non-expired stock atomically, create stock transaction rows, and move the linked pharmacy queue item to completed.
+Remaining completion-gate work:
 - Authenticated pharmacist E2E remains pending because the available function runner is not signed into the hospital staff role-preview session.
-- Need verify prescription → pharmacy queue → stock availability → dispense → queue completion → encounter/event continuity.
-- Need add insufficient-stock, expired-stock, duplicate/retry and hospital-isolation tests.
+- Verify prescription → pharmacy queue → stock availability → dispense → queue completion → encounter/event continuity in a real staff session.
+- Verify expired-only stock, insufficient stock, duplicate/retry and hospital isolation with authenticated fixtures.
+- Verify receptionist/billing cannot mutate pharmacy stock or dispensing.
 - Need later add supplier/purchase receiving and richer medicine catalogue only where the HMIS workflow review shows they are required.
 
 Completion gate:
@@ -561,3 +565,6 @@ Not started.
 - Preserved legacy lab data: current database inspection found 948 lab orders, including 748 historical records with status completed and 200 ordered records; legacy completed rows are treated as historical terminal data rather than rewritten.
 - Deployed Laboratory foundation as CareFlow v234; dry-run passed with no blocking errors.
 - Automated access checks confirmed anonymous /api/lab access is HTTP 401; authenticated staff-plane E2E remains pending because the available function runner is not logged into the hospital staff auth session.
+- Implemented atomic pharmacy dispensing and deployed CareFlow v238: prescription validation, duplicate-dispense protection, non-expired FIFO batch consumption, multi-batch deduction, stock transaction audit, pharmacy queue completion and workflow-event metadata.
+- Automated post-deploy checks confirmed /api/pharmacy and /api/pharmacy-stock reject anonymous and unsigned app-user access with HTTP 401; no live stock existed in the database, so no real medication was mutated during testing.
+- Updated pharmacy test cases TC-PHARM-009 through TC-PHARM-011 to reflect the v238 implementation; authenticated pharmacist E2E remains the explicit completion gate.
