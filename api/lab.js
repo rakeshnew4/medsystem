@@ -59,18 +59,45 @@ export default async function(req,res){
  if(target==="verified"){
   const result=String(b.result_summary||"").trim();
   if(!result)return res.status(400).json({error:"Result is required before verification"});
+  // Keep verification, report creation and queue handoff in one database statement.
+  // A failure in the report insert must not leave the lab order marked verified.
   const r=await db.query(
-   "UPDATE lab_orders SET status='verified',result_summary=$1,completed_at=COALESCE(completed_at,now()),verified_at=COALESCE(verified_at,now()),verified_by=$2,doctor_notified_at=now() WHERE id=$3 AND hospital_id=$4 AND status='processing' RETURNING *",
+   `WITH verified AS (
+      UPDATE lab_orders
+      SET status='verified',
+          result_summary=$1,
+          completed_at=COALESCE(completed_at,now()),
+          verified_at=COALESCE(verified_at,now()),
+          verified_by=$2,
+          doctor_notified_at=now()
+      WHERE id=$3 AND hospital_id=$4 AND status='processing'
+      RETURNING *
+    ),
+    report AS (
+      INSERT INTO clinical_reports(
+        hospital_id,patient_id,visit_id,lab_order_id,encounter_id,
+        report_type,title,report_date,summary
+      )
+      SELECT hospital_id,patient_id,visit_id,id,encounter_id,
+             'lab_result',test_name,current_date,result_summary
+      FROM verified
+      RETURNING id,lab_order_id
+    ),
+    queue_done AS (
+      UPDATE queue_entries q
+      SET stage='followup',updated_at=now()
+      FROM verified v
+      WHERE q.id=v.queue_entry_id
+        AND q.hospital_id=$4
+        AND q.stage='lab'
+      RETURNING q.id
+    )
+    SELECT v.*,r.id AS result_report_id,(SELECT id FROM queue_done LIMIT 1) AS queue_id
+    FROM verified v
+    JOIN report r ON r.lab_order_id=v.id`,
    [result,ctx.user?.email||String(ctx.staff?.id||""),order.id,ctx.hospitalId]
   );
-  if(!r.rows[0])return res.status(409).json({error:"Lab order changed; refresh and try again"});
-  const report=await db.query(
-   "INSERT INTO clinical_reports(hospital_id,patient_id,visit_id,lab_order_id,encounter_id,report_type,title,report_date,summary) VALUES($1,$2,$3,$4,$5,'lab_result',$6,current_date,$7) RETURNING id",
-   [ctx.hospitalId,order.patient_id,order.visit_id||null,order.id,order.encounter_id||null,order.test_name,result]
-  );
-  if(order.queue_entry_id){
-   await db.query("UPDATE queue_entries SET stage='followup',updated_at=now() WHERE id=$1 AND hospital_id=$2 AND stage='lab'",[order.queue_entry_id,ctx.hospitalId]);
-  }
+  if(!r.rows[0])return res.status(409).json({error:"Lab verification could not be completed; refresh and retry"});
   await logWorkflowEvent(ctx,{patientId:order.patient_id,encounterId:order.encounter_id,eventType:"lab_result_verified",stage:"followup",entityType:"lab_order",entityId:order.id,metadata:{result_report_id:report.rows[0]?.id||null}});
   await notifyRoles({hospitalId:ctx.hospitalId,roles:["doctor"],title:"Laboratory result verified",body:"A laboratory result is ready for doctor review.",kind:"workflow",entityType:"lab_order",entityId:order.id,patientId:order.patient_id});
   return res.json(r.rows[0]);
