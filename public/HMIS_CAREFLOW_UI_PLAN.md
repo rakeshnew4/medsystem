@@ -49,13 +49,14 @@ HMIS references: OPD Patient Lookup/Registration, EMR patient lookup, patient pr
 
 ### UI-02 — Appointments / OPD
 HMIS references: OPD patient lookup, token, queue, OPD billing.
-- [ ] Appointment worklist/calendar
-- [ ] Doctor/session filters
-- [ ] New appointment flow
-- [ ] Check-in/token action
-- [ ] Cancellation/no-show states
-- [ ] Appointment detail/context
-- [ ] OPD billing handoff
+- [x] Appointment worklist with date-grouped day view and date filtering
+- [x] Doctor/session filters
+- [x] New appointment flow
+- [x] Check-in/token action
+- [x] Cancellation/no-show states
+- [x] Appointment detail/context through selected-patient workspace
+- [x] OPD billing handoff through the patient workspace Finance/Billing action path
+- [ ] Authenticated browser E2E for booking/check-in/cancel/no-show remains open until a real hospital staff session is available
 
 ### UI-03 — Queue / Token / Reception
 - [ ] Queue board by operational stage

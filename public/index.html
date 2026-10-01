@@ -193,7 +193,7 @@
   </div>
 </section>
 
-<section id="appointments" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Scheduled appointments</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Appointment status tells you the appointment outcome. Patient flow tells you where the patient currently is. These are different things: an appointment can be scheduled while the patient has not checked in yet.</div></div><button class="btn primary" onclick="openModal('appointmentModal')">+ Book appointment</button></div><div id="appointmentsTable" class="table-wrap"></div></div></section>
+<section id="appointments" class="section"><div class="card panel appointment-worklist"><div class="panel-head"><div><div class="kicker">OPD · APPOINTMENTS</div><h2 class="panel-title">Appointment worklist</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Plan the doctor session first; check-in creates the OPD token and patient flow. Appointment outcome and queue state remain separate.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="showSection('patients')">Patient lookup</button><button class="btn" onclick="showSection('queue')">OPD queue</button><button class="btn primary" onclick="openModal('appointmentModal')">+ Book appointment</button></div></div><div id="appointmentSummary" class="queue-summary"></div><div class="queue-toolbar appointment-toolbar"><div class="queue-search"><span>⌕</span><input id="appointmentSearch" type="search" placeholder="Search patient, UHID, token or doctor…" oninput="renderAppointmentsWorklist()"></div><select id="appointmentDoctorFilter" onchange="renderAppointmentsWorklist()" aria-label="Filter by doctor"><option value="all">All doctors</option></select><select id="appointmentStatusFilter" onchange="renderAppointmentsWorklist()" aria-label="Filter by appointment status"><option value="all">All appointment states</option><option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="checked_in">Checked in</option><option value="completed">Completed</option><option value="no_show">No-show</option><option value="cancelled">Cancelled</option></select><select id="appointmentTypeFilter" onchange="renderAppointmentsWorklist()" aria-label="Filter by consultation type"><option value="all">All sessions</option><option value="in_person">In-person</option><option value="online">Online video</option></select><input id="appointmentDateFilter" type="date" onchange="renderAppointmentsWorklist()" aria-label="Appointment date"><button class="btn" onclick="clearAppointmentFilters()">Clear</button></div><div id="appointmentWorklist"></div></div></section>
 <div id="clinicalModal" class="modal"><div class="modal-card patient-record-modal"><div class="patient-record-head"><div><div class="kicker">Patient record</div><h2 class="patient-record-name" id="clinicalPatientName">Patient</h2><div id="clinicalPatientMeta" class="patient-record-meta"></div></div><div class="patient-record-actions"><button class="btn" onclick="editPatientFromRecord()">Edit patient</button><button class="btn" onclick="closeModal('clinicalModal')">Close</button></div></div><div id="clinicalPatientSummary" class="patient-record-summary"></div><div id="clinicalBody"></div></div></div>
 
 <section id="patients" class="section">
@@ -1057,7 +1057,7 @@ function renderAll(){
     : '';
   return '<td>'+fmtDate(x.appointment_date)+'</td><td>'+fmtTime(x.appointment_time)+'</td><td><strong>'+esc(x.token||'—')+'</strong>'+flow+'</td><td><button class="record-link" onclick="openClinical('+x.patient_id+')"><strong>'+esc(x.patient_name)+'</strong></button><div style="font-size:11px;color:var(--muted)">'+esc(x.uhid||'')+' · '+esc(x.phone||'')+'</div></td><td>'+esc(x.doctor_name)+'</td><td>'+status(x.status)+onlineStatus+'</td><td><div style="display:flex;gap:4px;flex-wrap:wrap">'+checkin+confirm+online+pdf+wa+noShow+ai+'</div></td>';
 }
- document.getElementById('appointmentsTable').innerHTML=table(state.appointments,['Date','Time','Token','Patient','Doctor','Appointment','Patient flow'],appointmentTableRow); 
+ renderAppointmentsWorklist(); 
  renderPatientDirectory();// patients table replaced by workspace,['UHID','Patient','Today\'s visit','Care type','Phone','Patient status','Actions'],x=>'<td><strong>'+esc(x.uhid||'—')+'</strong></td><td><button class="record-link" onclick="openClinical('+x.id+')"><strong>'+esc(x.name)+'</strong></button></td><td>'+(x.today_token?'<strong>'+esc(x.today_token)+'</strong><div style="font-size:11px;color:var(--muted)">Current step: '+prettyStatus(x.queue_stage||'waiting')+'</div><button class="mini" onclick="showSection(\'queue\')">Open queue</button>':'<span style="color:var(--muted)">No OPD visit today</span>')+'</td><td>'+status(x.care_type==='ipd'?'IPD':'OPD')+(x.care_type==='ipd'&&x.bed_number?'<div style="font-size:11px;color:var(--muted)">'+esc(x.ward)+' · '+esc(x.bed_number)+'</div>':'')+'</td><td>'+esc(x.phone||'—')+'</td><td><select onchange="updatePatientStatus('+x.id+',this.value)"><option value="active" '+(x.status!=='inactive'?'selected':'')+'>Active</option><option value="inactive" '+(x.status==='inactive'?'selected':'')+'>Inactive</option></select></td><td><div style="display:flex;gap:4px;flex-wrap:wrap"><button class="mini" onclick="openClinical('+x.id+')">Record</button>'+(!x.today_token&&x.care_type!=='ipd'?'<button class="mini" onclick="openOpdRegistration('+x.id+')">Register OPD</button>':'')+'<button class="mini" onclick="editPatient('+x.id+')">Edit</button></div></td>');
  document.getElementById('doctorsTable').innerHTML=table(state.doctors,['Name','Specialty','Phone','Fee'],x=>'<td>'+esc(x.name)+'</td><td>'+esc(x.specialty)+'</td><td>'+esc(x.phone||'—')+'</td><td>'+(x.consultation_fee?'₹'+x.consultation_fee:'—')+'</td>');
  document.getElementById('followupsTable').innerHTML=table(state.followups,['Due','Patient','Doctor','Status'],x=>'<td>'+fmtDate(x.due_date)+'</td><td>'+esc(x.patient_name)+'</td><td>'+esc(x.doctor_name||'—')+'</td><td>'+status(x.status)+'</td>');
@@ -1680,6 +1680,50 @@ async function showAppointmentPaymentQr(appointment){
       alert('Appointment was registered, but the payment QR could not be generated: '+(e.message||'Payment QR is not configured.'));
     }
   }
+  function renderAppointmentsWorklist(){
+    const rows=Array.isArray(state.appointments)?state.appointments:[];
+    const q=String(document.getElementById('appointmentSearch')?.value||'').trim().toLowerCase();
+    const doctor=String(document.getElementById('appointmentDoctorFilter')?.value||'all');
+    const st=String(document.getElementById('appointmentStatusFilter')?.value||'all');
+    const date=String(document.getElementById('appointmentDateFilter')?.value||'');
+    const filtered=rows.filter(x=>{
+      if(doctor!=='all'&&String(x.doctor_id)!==doctor)return false;
+      if(st!=='all'&&String(x.status)!==st)return false;
+      const type=String(document.getElementById('appointmentTypeFilter')?.value||'all');
+      if(type!=='all'&&String(x.consultation_type||'in_person')!==type)return false;
+      if(date&&String(x.appointment_date).slice(0,10)!==date)return false;
+      if(q&&! [x.patient_name,x.uhid,x.phone,x.token,x.doctor_name,x.reason].some(v=>String(v||'').toLowerCase().includes(q)))return false;
+      return true;
+    }).sort((a,b)=>String(a.appointment_date+' '+a.appointment_time).localeCompare(String(b.appointment_date+' '+b.appointment_time)));
+    const doctors=[...new Map(rows.map(x=>[String(x.doctor_id),{id:x.doctor_id,name:x.doctor_name}])).values()].sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+    const sel=document.getElementById('appointmentDoctorFilter');
+    if(sel){
+      const current=sel.value;
+      sel.innerHTML='<option value="all">All doctors</option>'+doctors.map(d=>'<option value="'+esc(d.id)+'">'+esc(d.name||'Doctor')+'</option>').join('');
+      if([...sel.options].some(o=>o.value===current))sel.value=current;
+    }
+    const counts={pending:0,confirmed:0,checked_in:0,completed:0,no_show:0,cancelled:0};
+    rows.forEach(x=>{if(counts[x.status]!==undefined)counts[x.status]++});
+    const summary=document.getElementById('appointmentSummary');
+    if(summary)summary.innerHTML=[['pending','Pending'],['confirmed','Confirmed'],['checked_in','Checked in'],['no_show','No-show']].map(([s,l])=>'<button class="queue-summary-item '+(st===s?'is-action':'')+'" onclick="setAppointmentStatusFilter(\''+s+'\')"><strong>'+counts[s]+'</strong><span>'+l+'</span></button>').join('')+'<div class="queue-summary-total"><strong>'+filtered.length+'</strong><span>Showing</span></div>';
+    const host=document.getElementById('appointmentWorklist');if(!host)return;
+    if(!filtered.length){host.innerHTML='<div class="queue-empty"><div class="queue-empty-icon">✓</div><strong>No appointments match these filters</strong><span>Use Patient Lookup to find a patient or clear the worklist filters.</span></div>';return}
+    const days=[...new Map(filtered.map(x=>[String(x.appointment_date).slice(0,10),[]])).entries()];
+    days.forEach(([d])=>filtered.filter(x=>String(x.appointment_date).slice(0,10)===d).forEach(x=>days.find(y=>y[0]===d)[1].push(x)));
+    host.innerHTML=days.map(([d,list])=>'<section class="appointment-day"><div class="appointment-day-head"><div><strong>'+esc(fmtDate(d))+'</strong><span>'+list.length+' appointment'+(list.length===1?'':'s')+'</span></div><button class="mini" onclick="setAppointmentDateFilter(\''+d+'\')">View day</button></div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Patient</th><th>Doctor / session</th><th>Appointment</th><th>OPD flow</th><th>Actions</th></tr></thead><tbody>'+list.map(appointmentWorklistRow).join('')+'</tbody></table></div></section>').join('');
+  }
+  function appointmentWorklistRow(x){
+    const flow=x.queue_id?'<span class="status checked_in">'+esc(x.token||'Checked in')+'</span><small>'+esc(prettyStatus(x.queue_stage||'waiting'))+'</small>':'<span class="status pending">Not checked in</span>';
+    const primary=x.queue_id?'<button class="mini" onclick="openPatientWorkspace('+x.patient_id+',\'appointment\')">Open patient</button>':'<button class="mini primary" onclick="checkInAppointment('+x.id+')">Check-in & issue token</button>';
+    const confirm=x.status==='pending'?'<button class="mini" onclick="updateAppointmentStatus('+x.id+',\'confirmed\')">Confirm</button>':'';
+    const noShow=['pending','confirmed'].includes(x.status)?'<button class="mini" onclick="updateAppointmentStatus('+x.id+',\'no_show\')">No-show</button>':'';
+    const cancel=['pending','confirmed'].includes(x.status)?'<button class="mini" onclick="updateAppointmentStatus('+x.id+',\'cancelled\')">Cancel</button>':'';
+    const session=x.consultation_type==='online'?'<span class="role-pill">Online</span>':'<span class="role-pill">In-person</span>';
+    return '<tr><td><strong>'+esc(fmtTime(x.appointment_time))+'</strong></td><td><button class="record-link" onclick="openPatientWorkspace('+x.patient_id+',\'appointment\')"><strong>'+esc(x.patient_name)+'</strong></button><div style="font-size:11px;color:var(--muted)">'+esc(x.uhid||'')+(x.phone?' · '+esc(x.phone):'')+'</div></td><td><strong>'+esc(x.doctor_name||'Doctor')+'</strong><div style="font-size:11px;color:var(--muted)">'+session+(x.reason?' · '+esc(x.reason):'')+'</div></td><td>'+status(x.status)+'</td><td>'+flow+'</td><td><div style="display:flex;gap:4px;flex-wrap:wrap">'+primary+confirm+noShow+cancel+(x.consultation_type==='online'?'<button class="mini" onclick="openStaffVideo('+x.id+')">Video</button>':'')+'</div></td></tr>';
+  }
+  function setAppointmentStatusFilter(v){const el=document.getElementById('appointmentStatusFilter');if(el)el.value=v;renderAppointmentsWorklist()}
+  function setAppointmentDateFilter(v){const el=document.getElementById('appointmentDateFilter');if(el)el.value=v;renderAppointmentsWorklist()}
+  function clearAppointmentFilters(){['appointmentSearch','appointmentDateFilter'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});const s=document.getElementById('appointmentStatusFilter');if(s)s.value='all';const t=document.getElementById('appointmentTypeFilter');if(t)t.value='all';const d=document.getElementById('appointmentDoctorFilter');if(d)d.value='all';renderAppointmentsWorklist()}
   async function updateAppointmentStatus(id,status){try{await api('/appointments',{method:'PUT',body:JSON.stringify({id,status})});await loadAll()}catch(e){alert(e.message)}}
 async function checkInAppointment(id){try{const r=await api('/appointments',{method:'PUT',body:JSON.stringify({id,action:'checkin',stage:'waiting'})});await loadAll();showSection('queue');alert('OPD token issued: '+(r.queue?.token||'Token assigned'));}catch(e){alert(e.message)}}
 function openOpdRegistration(pid){const p=state.patients.find(x=>Number(x.id)===Number(pid));if(!p)return;document.getElementById('opdPatientId').value=p.id;document.getElementById('opdPatientLabel').textContent=(p.uhid||'No UHID')+' · '+p.name+(p.phone?' · '+p.phone:'');document.getElementById('opdDoctor').value='';document.getElementById('opdDoctorSearch').value='';document.getElementById('opdPriority').value='normal';document.getElementById('opdReason').value='';openModal('opdModal')}
