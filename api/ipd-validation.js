@@ -1,6 +1,7 @@
 import { admin, browser } from "hatchable";
 import { db } from "../lib/db.js";
 import { reviewScreenshot } from "../lib/groq-vision.js";
+import { litellmChat } from "../lib/llm.js";
 
 export const access="admin";
 export const methods=["GET","POST"];
@@ -24,22 +25,30 @@ export default async function(req,res){
     ]);
     const guards=await Promise.all(["/api/beds","/api/ipd","/api/discharge"].map(routeCheck));
     const html=await browser.html("https://hospital-ai.hatchable.site");
-    const uiChecks={
+    const publicUi={
       title:html.includes("CareFlow"),
-      inpatientNav:html.includes("Beds & admissions"),
-      dischargeUi:html.includes("Discharge readiness")&&html.includes("Save discharge checklist"),
-      roleLogin:html.includes("Enter CareFlow")
+      staffLoginVisible:html.includes("Staff Portal")||html.includes("Sign in"),
+      protectedStaffUiHidden:!html.includes("Beds & admissions")
     };
+    let llm={configured:!!process.env.LITELLM_API_KEY&&!!process.env.LITELLM_URL&&!!process.env.LITELLM_MODEL,ok:false,error:null};
+    if(llm.configured){
+      try{
+        const answer=await litellmChat({system:"Return exactly LITELLM_OK.",user:"Health check. Return exactly LITELLM_OK.",maxTokens:40,temperature:0});
+        llm.ok=!!String(answer||"").trim();
+      }catch(e){llm.error=e.message||"LiteLLM health check failed"}
+    }
     const ai=await reviewScreenshot({
       url:"https://hospital-ai.hatchable.site",
       prompt:"Review the CareFlow hospital operations home screen specifically for navigation clarity, staff workflow visibility, and whether the interface exposes the inpatient/bed workflow clearly. Flag missing or confusing UI controls."
     });
     res.json({
-      ok:dupes.rows.length===0&&Number(occupied.rows[0]?.n||0)===0&&Number(assignments.rows[0]?.n||0)===0&&Number(discharged.rows[0]?.n||0)===0&&guards.every(x=>x.blocked)&&Object.values(uiChecks).every(Boolean),
+      ok:dupes.rows.length===0&&Number(occupied.rows[0]?.n||0)===0&&Number(assignments.rows[0]?.n||0)===0&&Number(discharged.rows[0]?.n||0)===0&&guards.every(x=>x.blocked)&&publicUi.title&&publicUi.staffLoginVisible&&publicUi.protectedStaffUiHidden&&llm.ok,
       hospital,
       invariants:{duplicate_active_admissions:dupes.rows,orphan_occupied_beds:Number(occupied.rows[0]?.n||0),active_admissions_without_current_assignment:Number(assignments.rows[0]?.n||0),discharged_admissions_on_occupied_bed:Number(discharged.rows[0]?.n||0)},
       route_guards:guards,
-      ui_checks:uiChecks,
+      public_ui:publicUi,
+      protected_staff_ui_note:"Browser visual review is unauthenticated by design; authenticated staff UI remains a separate E2E gate.",
+      ai_backends:{groq_configured:!!process.env.GROQ_API_KEY,groq_vision_reviewed:true,litellm:llm},
       visual_review:ai
     });
   }catch(e){res.status(500).json({error:e.message||"IPD validation failed"})}
