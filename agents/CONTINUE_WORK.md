@@ -34,7 +34,7 @@ Use public/HMIS_CAREFLOW_PLAN.md as the source of truth. Prefer the earliest unf
 
 ## Current continuation target
 
-Theatre / procedures is intentionally parked by user request. The active workflow is now **Inventory / Assets**. The next-task loop is mandatory:
+Theatre / procedures is intentionally parked by user request. The active workflow is now **Inventory / Assets**. The latest pharmacy transfer increment is deployed as v396 with 11/11 production integrity checks passing; authenticated staff E2E is still the only unpassed completion gate. The next-task loop is mandatory:
 1. At the beginning of EVERY work turn, re-read this file and public/HMIS_CAREFLOW_PLAN.md.
 2. Before changing any workflow, inspect the relevant hmislk/hmis repository code/design on the development branch and use it as the domain, workflow, UI and data-model reference. Do not invent HMIS-like behavior without checking the repository.
 3. Execute the FIRST unfinished task listed below immediately. Do not stop at a status report when a safe implementation/test task remains.
