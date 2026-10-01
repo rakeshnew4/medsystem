@@ -650,11 +650,12 @@ Implemented in this increment:
 - Added protected `/api/departments` for hospital-scoped staff administration.
 - Staff UI now assigns and displays department alongside role/doctor.
 - External PostgreSQL department-permission schema was verified and applied idempotently through a temporary owner-only initializer; the initializer and schema-check routes were removed afterward.
-- Added `public/HMIS_CAREFLOW_STAFF_TEST_CASES.md` with explicit department/role-boundary cases.
+- Added protected department-scoped user override administration: administrators can select a staff member and department, then set each permission to Inherit / Allow / Deny. Inherit deletes the scoped override so precedence falls back cleanly.
+- Hardened `/api/permissions` user writes/deletes with hospital-scoped staff/department validation and strict boolean values.
+- Added `public/HMIS_CAREFLOW_STAFF_TEST_CASES.md` with explicit department/role-boundary and UI override cases.
 
 Remaining Staff/Roles gates:
 - Authenticated staff E2E for role boundaries and department-specific permission precedence.
-- Validate administrator permission editing UI against department-specific overrides.
 - Review staff lifecycle/audit behavior and hospital configuration against HMIS before moving to Integrations.
 
 # 14 — Integrations / REST / FHIR / LIS
