@@ -26,7 +26,7 @@ UI changes must never bypass server authorization or invent workflow states.
 ### UI-00 — Global shell / design system
 - [x] Header/sidebar foundation retained and navigation regrouped into OPD, Clinical & Diagnostics, Inpatient, Finance, Operations and Administration.
 - [x] Hospital home/dashboard now has an HMIS-style module launcher with direct worklist/workspace entry points.
-- [ ] Patient-context bar
+- [x] Patient-context bar — selected patient identity, UHID/PHN where available, active OPD/IPD state and admission/bed context are now the first workspace element.
 - [x] Search/action pattern foundation added to Patient Lookup.
 - [x] Existing modal/form/table/card primitives retained and extended with shared module-card/context styling.
 - [x] Existing loading/error/empty infrastructure retained; UI work will standardize remaining module-specific states.
@@ -45,7 +45,7 @@ HMIS references: OPD Patient Lookup/Registration, EMR patient lookup, patient pr
 - [x] Patient profile header/current-care context exists and is being visually standardized.
 - [x] Patient timeline/context exists in the workspace.
 - [x] Patient action launcher exists through Care workflow / Next action and is now part of the redesign target.
-- [x] Patient history/report grouping exists; visual action/report separation is the next refinement.
+- [x] Patient history/report grouping exists; visual Actions vs Reports/History separation is now implemented with workspace tabs.
 
 ### UI-02 — Appointments / OPD
 HMIS references: OPD patient lookup, token, queue, OPD billing.

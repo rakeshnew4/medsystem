@@ -1055,3 +1055,23 @@ td{font-size:13px}
   .sidebar .nav-group{display:grid!important;visibility:visible!important}
   .sidebar .nav-sub{display:grid!important;visibility:visible!important}
 }
+/* HMIS-aligned patient workspace context/actions/reports */
+.patient-identity-context{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:14px 16px;margin-bottom:12px;background:var(--surface-2);border:1px solid var(--line);border-radius:14px}
+.patient-identity-main{display:flex;align-items:center;gap:12px;min-width:0}
+.patient-identity-main .patient-directory-avatar{width:46px;height:46px;flex:0 0 46px}
+.patient-identity-ids{font-size:11px;color:var(--muted);margin-top:3px}
+.patient-identity-ids strong{color:var(--text);font-size:10px;letter-spacing:.04em}
+.patient-identity-ids span{margin:0 5px;color:var(--line)}
+.patient-identity-state{min-width:190px;text-align:right;display:grid;gap:4px}
+.patient-identity-state strong{font-size:12px}
+.patient-identity-state small{font-size:10px;color:var(--muted)}
+.patient-workspace-tabs{display:flex;gap:6px;padding:10px 0;border-bottom:1px solid var(--line);margin-bottom:12px}
+.patient-workspace-tabs .mini.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.patient-workspace-pane{min-width:0}
+.patient-report-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.patient-report-grid>.workspace-card{min-width:0}
+@media(max-width:760px){
+ .patient-identity-context{display:block}
+ .patient-identity-state{text-align:left;margin-top:12px;min-width:0}
+ .patient-report-grid{grid-template-columns:1fr}
+}
