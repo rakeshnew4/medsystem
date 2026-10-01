@@ -23,8 +23,9 @@ export default async function(req,res){
   if(encounterId)await db.query("UPDATE care_encounters SET current_stage='doctor',updated_at=now() WHERE id=$1",[encounterId]);
   // Completing vitals advances the active OPD queue to the doctor waiting stage.
   // Only waiting/vitals entries are advanced; later workflow stages are left untouched.
-  const qStage=await db.query("SELECT id,doctor_id,token FROM queue_entries WHERE hospital_id=$1 AND patient_id=$2 AND token_date=current_date AND stage IN ('waiting','vitals') ORDER BY id DESC LIMIT 1",[ctx.hospitalId,b.patient_id]);
-  if(qStage.rows[0])await db.query("UPDATE queue_entries SET stage='doctor',updated_at=now() WHERE id=$1",[qStage.rows[0].id]);
+  const localDate=await (async()=>{const h=await db.query("SELECT timezone FROM hospitals WHERE id=$1",[ctx.hospitalId]);const timezone=h.rows[0]?.timezone||"Asia/Kolkata";const parts=new Intl.DateTimeFormat("en-CA",{timeZone:timezone,year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const get=k=>parts.find(x=>x.type===k)?.value;return get("year")+"-"+get("month")+"-"+get("day")})();
+  const qStage=await db.query("SELECT id,doctor_id,token FROM queue_entries WHERE hospital_id=$1 AND patient_id=$2 AND token_date=$3 AND completed_at IS NULL AND stage IN ('waiting','vitals') ORDER BY id DESC LIMIT 1",[ctx.hospitalId,b.patient_id,localDate]);
+  if(qStage.rows[0])await db.query("UPDATE queue_entries SET stage='doctor',updated_at=now() WHERE id=$1 AND hospital_id=$2",[qStage.rows[0].id,ctx.hospitalId]);
   await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId,eventType:"vitals_recorded",stage:"vitals",entityType:"vitals",entityId:r.rows[0].id});
   const q=b.queue_entry_id?await db.query("SELECT doctor_id,token FROM queue_entries WHERE id=$1 AND hospital_id=$2",[b.queue_entry_id,ctx.hospitalId]):{rows:[]};
   await notifyRoles({hospitalId:ctx.hospitalId,roles:["doctor"],doctorId:q.rows[0]?.doctor_id||ctx.staff.doctor_id,title:"Vitals recorded",body:"Vitals are recorded and the patient is ready for consultation."+(q.rows[0]?.token?" Token "+q.rows[0].token+".":""),kind:"workflow",entityType:"patient",entityId:b.patient_id,patientId:b.patient_id,excludeStaffId:ctx.staff.id});
