@@ -583,3 +583,389 @@ button:disabled,.btn:disabled{opacity:.55;cursor:not-allowed}
 .queue-panel{overflow:visible}.queue-header{display:flex;justify-content:space-between;align-items:flex-start;gap:18px}.queue-header-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.queue-subtitle{font-size:12px;color:var(--muted);margin-top:5px}.queue-summary{display:grid;grid-template-columns:repeat(6,minmax(100px,1fr));gap:8px;margin:16px 0 12px}.queue-summary-item,.queue-summary-total{border:1px solid var(--line);background:var(--surface-2);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:9px;text-align:left}.queue-summary-item{cursor:pointer;color:var(--text)}.queue-summary-item:hover,.queue-summary-item.is-action{border-color:var(--accent);background:var(--accent-2)}.queue-summary-item strong,.queue-summary-total strong{font-family:'Manrope';font-size:20px}.queue-summary-item span,.queue-summary-total span{font-size:11px;color:var(--muted)}.queue-summary-total{justify-content:center}.queue-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;padding:10px;background:#f8faf9;border:1px solid var(--line);border-radius:12px}.queue-search{display:flex;align-items:center;gap:7px;flex:1;min-width:220px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:0 10px}.queue-search input{width:100%;height:38px;border:0;outline:0;background:transparent;color:var(--text);font-size:13px}.queue-toolbar select{height:40px;border:1px solid var(--line);border-radius:9px;background:#fff;padding:0 10px;color:var(--text);font-size:12px}.kanban-col.needs-action{box-shadow:inset 0 3px 0 var(--accent)}.kanban-head>div{display:grid;gap:2px}.kanban-head small{font-size:10px;color:var(--muted);font-weight:500}.queue-card{transition:transform .15s,box-shadow .15s,border-color .15s}.queue-card:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(20,49,42,.09);border-color:#b9d5cc}.queue-card-top{display:flex;justify-content:space-between;gap:8px;align-items:center}.queue-card-badges{display:flex;gap:4px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.queue-token{font-size:12px;padding:5px 8px}.queue-patient{font-family:'Manrope';font-size:15px;font-weight:800;margin-top:11px;line-height:1.25}.queue-uhid{font-size:10px;color:var(--muted);margin-top:2px}.queue-context{display:grid;gap:2px;margin-top:9px;font-size:11px;color:var(--muted)}.queue-context span:first-child{font-weight:700;color:var(--text)}.queue-wait{display:flex;justify-content:space-between;gap:8px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);font-size:10px;color:var(--muted)}.queue-priority{font-size:9px;text-transform:uppercase;letter-spacing:.06em;padding:4px 6px;border-radius:999px;font-weight:800;background:#f4f5f4}.queue-priority.high{background:#fbf2df;color:#805614}.queue-priority.urgent{background:#fbe7e7;color:#8b3232}.queue-primary-action{border:0;background:var(--accent);color:#fff;border-radius:8px;padding:6px 9px;font-size:10px;font-weight:800;cursor:pointer}.queue-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.queue-empty{padding:50px 20px;text-align:center;color:var(--muted);display:grid;place-items:center;gap:5px}.queue-empty strong{color:var(--text);font-size:14px}.queue-empty-icon{width:40px;height:40px;border-radius:50%;background:var(--accent-2);color:var(--accent);display:grid;place-items:center;font-weight:800;margin-bottom:5px}
 @media(max-width:900px){.queue-header{flex-direction:column}.queue-header-actions{width:100%;justify-content:flex-start}.queue-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.queue-toolbar{flex-wrap:wrap}.queue-search{min-width:100%;order:0}.queue-toolbar select,.queue-toolbar .btn{flex:1;min-width:110px}.queue-list{grid-template-columns:1fr}}
 @media(max-width:520px){.queue-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.queue-header-actions .btn{flex:1}.queue-card{padding:11px}.queue-patient{font-size:14px}}
+
+/* =========================================================
+   CareFlow Design System v1 — clean clinical enterprise UI
+   Inspired by modern financial/health product UX:
+   hierarchy first, generous whitespace, quiet surfaces.
+   Reception kiosk remains intentionally dark and is excluded
+   from these shell-level visual changes.
+   ========================================================= */
+:root{
+  --bg:#f7f9f8;
+  --surface:#fff;
+  --surface-2:#f3f7f5;
+  --surface-soft:#f8faf9;
+  --line:#e1e8e5;
+  --border:#e1e8e5;
+  --text:#17352f;
+  --muted:#6b7d77;
+  --accent:#087f6a;
+  --accent-2:#e4f4ef;
+  --shadow:0 2px 12px rgba(22,52,45,.045);
+  --shadow-hover:0 8px 24px rgba(22,52,45,.075);
+}
+
+html,body{
+  font-family:'DM Sans',Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+h1,h2,h3,h4,.title,.panel-title,.stat-value,.queue-patient,.bed-number{
+  font-family:'Manrope',Inter,system-ui,sans-serif;
+}
+
+.app-shell{background:var(--bg)}
+
+.sidebar{
+  background:#fff;
+  color:var(--text);
+  border-right:1px solid var(--line);
+  padding:22px 14px;
+  box-shadow:none;
+}
+
+.brand{
+  padding:4px 9px 24px;
+  border-bottom:1px solid var(--line);
+  margin-bottom:16px;
+}
+
+.brand-mark{
+  width:38px;height:38px;border-radius:11px;
+  background:var(--accent-2);
+  color:var(--accent);
+}
+
+.brand-title{color:var(--text)}
+.brand-sub{color:var(--muted);opacity:1}
+
+.nav{gap:3px}
+.nav button{
+  color:#5c706a;
+  border-radius:9px;
+  padding:10px 11px;
+  font-size:13px;
+}
+.nav button.active,.nav button:hover{
+  background:#edf7f4;
+  color:var(--accent);
+}
+.nav-group-toggle{color:#405a52!important}
+.nav-sub{border-left-color:var(--line)}
+.nav-link{color:#5c706a}
+.nav-link:hover{background:#edf7f4;color:var(--accent)}
+.nav-link small{
+  color:var(--accent);
+  border-color:#c5e5db;
+  background:#f4fbf8;
+}
+
+.sidebar-footer{
+  color:var(--muted);
+  opacity:1;
+}
+.sidebar-account{
+  border-color:var(--line);
+  background:#f7faf8;
+}
+.sidebar-account-label,.sidebar-account-email{color:var(--muted)}
+.sidebar-signout{
+  border-color:var(--line);
+  background:#fff;
+  color:var(--text);
+}
+.sidebar-signout:hover{background:var(--surface-2)}
+.sidebar-role-test-btn{
+  border-color:#cbe6dd;
+  background:#f1faf7;
+  color:var(--accent);
+}
+
+.main{
+  padding:30px 34px 48px;
+  max-width:1540px;
+}
+
+.topbar{
+  margin-bottom:28px;
+  align-items:center;
+}
+
+.kicker{
+  color:#71847d;
+  font-size:11px;
+  letter-spacing:.10em;
+}
+
+.title{
+  margin-top:5px;
+  font-size:30px;
+  line-height:1.15;
+  letter-spacing:-.035em;
+  font-weight:800;
+}
+
+.userBadge{
+  color:var(--muted);
+  font-size:11px;
+}
+
+.top-actions{gap:8px}
+
+.btn{
+  min-height:40px;
+  border:1px solid var(--line);
+  background:#fff;
+  color:var(--text);
+  border-radius:9px;
+  padding:9px 14px;
+  font-size:13px;
+  font-weight:650;
+  box-shadow:none;
+  transition:background .15s,border-color .15s,box-shadow .15s,transform .15s;
+}
+.btn:hover{
+  border-color:#cbdad5;
+  background:#fbfdfc;
+  box-shadow:0 3px 10px rgba(22,52,45,.05);
+}
+.btn.primary{
+  background:var(--accent);
+  border-color:var(--accent);
+  color:#fff;
+}
+.btn.primary:hover{
+  background:#066f5c;
+  border-color:#066f5c;
+  box-shadow:0 5px 14px rgba(8,127,106,.18);
+}
+.btn.ghost{background:transparent}
+
+.grid{gap:18px}
+
+.card{
+  border:1px solid var(--line);
+  border-radius:14px;
+  box-shadow:var(--shadow);
+}
+
+.panel{padding:22px}
+
+.panel-head{
+  margin-bottom:18px;
+  padding-bottom:0;
+}
+.panel-title{
+  font-size:17px;
+  font-weight:750;
+  letter-spacing:-.02em;
+}
+
+.stat{
+  min-height:120px;
+  padding:18px 19px;
+}
+.stat-label{
+  font-size:12px;
+  color:#71827d;
+  font-weight:600;
+}
+.stat-value{
+  font-size:29px;
+  color:var(--text);
+}
+.stat-note{font-size:11px}
+
+.form-grid{gap:15px}
+
+.field{gap:7px}
+.field label{
+  font-size:11px;
+  color:#5e726b;
+  font-weight:700;
+}
+.field input,.field select,.field textarea{
+  border:1px solid #d7e2de;
+  background:#fff;
+  border-radius:9px;
+  padding:10px 12px;
+  color:var(--text);
+  transition:border-color .15s,box-shadow .15s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{
+  border-color:#73bca9;
+  box-shadow:0 0 0 3px rgba(8,127,106,.08);
+  outline:none;
+}
+
+table{background:#fff}
+th,td{
+  border-bottom:1px solid #edf1ef;
+  padding:12px 10px;
+}
+th{
+  color:#71827d;
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+td{font-size:13px}
+
+.status{padding:5px 9px}
+.status.confirmed{background:#e7f6f1;color:#16705b}
+.status.pending{background:#fff5df;color:#85601d}
+.status.cancelled{background:#fdeceb;color:#9a3935}
+
+.queue-item{padding:13px 0;border-bottom-color:#edf1ef}
+
+.mini{
+  border:1px solid var(--line);
+  background:#fff;
+  color:var(--text);
+  border-radius:8px;
+  padding:6px 9px;
+  font-size:10px;
+}
+.mini:hover{
+  background:#f1f8f5;
+  border-color:#c9dfd7;
+  color:var(--accent);
+}
+
+.role-workspace-bar{
+  margin:14px 24px 18px;
+  padding:11px 13px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  box-shadow:var(--shadow);
+}
+.workspace-icon{
+  background:var(--accent-2);
+  color:var(--accent);
+}
+.workspace-nav-btn{
+  background:#f8faf9;
+  border-color:var(--line);
+  color:#536861;
+}
+.workspace-nav-btn:hover,.workspace-nav-btn.active{
+  background:var(--accent);
+  border-color:var(--accent);
+  color:#fff;
+}
+
+.dashboard-toolbar{
+  padding:9px 0 14px;
+  border-bottom:1px solid var(--line);
+}
+
+.modal{
+  background:rgba(20,43,37,.34);
+  backdrop-filter:blur(3px);
+}
+.modal-card{
+  border-radius:16px;
+  border-color:var(--line);
+  box-shadow:0 24px 70px rgba(20,43,37,.18);
+  padding:22px;
+}
+
+.empty{
+  padding:42px 24px;
+  color:#788983;
+}
+
+.queue-toolbar{
+  background:#f9fbfa;
+  border-color:var(--line);
+}
+.queue-search,.queue-toolbar select{
+  border-color:var(--line);
+}
+.queue-card{
+  border-color:var(--line);
+  border-radius:12px;
+  box-shadow:0 2px 8px rgba(20,49,42,.035);
+}
+.queue-card:hover{
+  box-shadow:var(--shadow-hover);
+  border-color:#c8ddd6;
+}
+.kanban-col{
+  background:#f4f7f6;
+  border:1px solid #e4ebe8;
+}
+
+.bed-card{
+  border-color:var(--line);
+  box-shadow:var(--shadow);
+}
+
+.ai-box{
+  background:#123a31;
+  border-radius:14px;
+}
+
+.ai-assistant-ball{
+  box-shadow:0 8px 24px rgba(7,92,77,.20);
+}
+
+.search-select-input:focus{
+  border-color:#73bca9;
+  box-shadow:0 0 0 3px rgba(8,127,106,.08);
+}
+
+.record-row{border-bottom-color:#edf1ef}
+
+/* Keep the intentionally immersive receptionist controller unchanged. */
+.reception-kiosk{
+  background:#0b211c!important;
+}
+.reception-kiosk *{
+  font-family:'DM Sans',Inter,system-ui,sans-serif;
+}
+.reception-kiosk h1,.reception-kiosk h2,.reception-kiosk h3,
+.reception-kiosk .reception-brand strong,.reception-kiosk .reception-control span,
+.reception-kiosk .reception-kiosk-status #receptionClock{
+  font-family:'Manrope',Inter,system-ui,sans-serif;
+}
+
+@media(max-width:900px){
+  .main{padding:22px 18px 36px}
+  .title{font-size:25px}
+}
+@media(max-width:560px){
+  .main{padding:14px 12px 28px}
+  .panel{padding:16px}
+  .title{font-size:23px}
+  .card{border-radius:13px}
+}
+
+/* Mobile app chrome: cleaner than a compressed desktop sidebar. */
+@media(max-width:760px){
+  .sidebar{
+    background:#fff;
+    border-bottom:1px solid var(--line);
+    box-shadow:0 3px 14px rgba(20,49,42,.06);
+  }
+  .brand{
+    border-bottom:0;
+    margin-bottom:2px;
+    padding-bottom:7px;
+  }
+  .nav button.active,.nav button:hover{
+    background:#edf7f4;
+  }
+  .topbar{
+    margin-bottom:16px;
+  }
+}
+
+/* Receptionist kiosk must retain its full-screen layout on all sizes. */
+.receptionist-mode .main{
+  padding:0!important;
+}
