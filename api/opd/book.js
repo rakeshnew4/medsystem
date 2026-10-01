@@ -45,6 +45,7 @@ export default async function(req,res){
   if(!patientId){
     const p=await db.query("INSERT INTO patients(hospital_id,name,phone,whatsapp_phone,whatsapp_opt_in,email) VALUES($1,$2,$3,$4,$5,$6) RETURNING id",[h.id,String(b.name).trim(),String(b.phone).trim(),String(b.phone).trim(),Boolean(b.whatsapp_opt_in),b.email||null]);
     patientId=p.rows[0].id;
+    await db.query("UPDATE patients SET uhid=COALESCE(NULLIF(uhid,''),'UHID-'||lpad(id::text,6,'0')),registration_source='online_booking',registration_source_locked=true,updated_at=now() WHERE id=$1 AND hospital_id=$2",[patientId,h.id]);
   }else{
     await db.query("UPDATE patients SET name=$1,email=$2,whatsapp_phone=$3,whatsapp_opt_in=$4,updated_at=now() WHERE id=$5",[String(b.name).trim(),b.email||null,String(b.phone).trim(),Boolean(b.whatsapp_opt_in),patientId]);
   }

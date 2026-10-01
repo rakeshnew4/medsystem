@@ -301,7 +301,7 @@ Implemented this run:
 Verification:
 - Public OPD hospital discovery endpoint returns the configured hospital and active doctors successfully.
 - Staff appointment/patient endpoints remain protected by CareFlow staff authorization; direct anonymous execution is correctly rejected.
-- Deployment dry-run and live deployment are required before this change is considered shipped.
+- Deployment dry-run completed with no blocking errors; live deployment completed as CareFlow v214.
 
 Next appointment/OPD work:
 - Verify the staff appointment UI end-to-end with an authenticated staff session.

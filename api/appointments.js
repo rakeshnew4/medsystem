@@ -44,11 +44,10 @@ export default async function(req,res){
     if(!patient&&b.patient_phone){const r=await db.query("SELECT id,name,uhid,phone FROM patients WHERE hospital_id=$1 AND phone=$2 ORDER BY id LIMIT 1",[hid,String(b.patient_phone).trim()]);patient=r.rows[0]||null}
     if(!patient){const r=await db.query("SELECT id,name,uhid,phone FROM patients WHERE hospital_id=$1 AND lower(trim(name))=lower(trim($2)) ORDER BY id LIMIT 1",[hid,String(b.patient_name).trim()]);patient=r.rows[0]||null}
     if(!patient){
-      const inserted=await db.query("INSERT INTO patients(hospital_id,name,phone,email,notes) VALUES($1,$2,$3,$4,$5) RETURNING id",[hid,String(b.patient_name).trim(),b.patient_phone||null,b.patient_email||null,"Created from appointment booking"]);
-      const patientId=inserted.rows[0].id;
-      const created=await db.query("UPDATE patients SET uhid=COALESCE(NULLIF(uhid,''),'UHID-'||lpad(id::text,6,'0')) WHERE id=$1 AND hospital_id=$2 RETURNING id,name,uhid,phone",[patientId,hid]);
-      patient=created.rows[0];
-      await logWorkflowEvent(ctx,{patientId:patient.id,eventType:"patient_registered",stage:"registration",entityType:"patient",entityId:patient.id,metadata:{source:"appointment"}});
+      return res.status(409).json({
+        error:"Patient registration is required before booking an appointment",
+        code:"PATIENT_REGISTRATION_REQUIRED"
+      });
     }
     const consultationType=b.consultation_type==="online"?"online":"in_person";
     const r=await db.query("INSERT INTO appointments(hospital_id,patient_id,doctor_id,appointment_date,appointment_time,status,source,reason,consultation_type,video_status) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id,appointment_date,appointment_time,status,patient_id,doctor_id,consultation_type,video_status,public_token",[hid,patient.id,b.doctor_id,b.appointment_date,b.appointment_time,b.status||"pending",b.source||"reception",b.reason||null,consultationType,consultationType==="online"?"scheduled":"not_required"]);
