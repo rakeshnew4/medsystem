@@ -1597,6 +1597,11 @@ function editTheatreRoom(id){const r=(state.theatre.rooms||[]).find(x=>Number(x.
 function addTheatreCatalog(){const name=prompt('Procedure name');if(!name)return;const code=prompt('Procedure code','PROC-01')||'';const duration=prompt('Default duration (minutes)','60');const type=prompt('Service type','procedure')||'procedure';saveTheatreMaster({action:'procedure_master',name,code,default_duration_minutes:duration,service_type:type,active:true});}
 function editTheatreCatalog(id){const c=(state.theatre.catalog||[]).find(x=>Number(x.id)===Number(id));if(!c)return;const name=prompt('Procedure name',c.name)||c.name;const code=prompt('Procedure code',c.code||'')||'';const duration=prompt('Default duration (minutes)',c.default_duration_minutes||'')||'';const type=prompt('Service type',c.service_type||'procedure')||'procedure';const active=confirm('Keep this procedure active?');saveTheatreMaster({action:'procedure_master',id:Number(id),name,code,default_duration_minutes:duration,service_type:type,active});}
 async function saveTheatreMaster(body){try{await api('/theatre',{method:body.id?'PUT':'POST',body:JSON.stringify(body)});await loadTheatre();}catch(e){alert(e.message)}}
+async function returnTheatreToWard(id){
+ const notes=prompt('Ward handoff notes (optional):','Procedure completed; patient returned to ward.')||'';
+ if(!confirm('Confirm this completed procedure is returned to the ward?'))return;
+ try{await api('/theatre',{method:'PUT',body:JSON.stringify({id:Number(id),action:'ward_return',notes})});await loadTheatre();alert('Patient marked returned to ward.');}catch(e){alert(e.message)}
+}
 async function addTheatreCharge(procedureId){
  const description=prompt('Charge description','Theatre procedure service');if(!description)return;
  const chargeType=prompt('Charge type: procedure / theatre_service / professional_fee / medicine','procedure')||'procedure';
@@ -1613,9 +1618,9 @@ function renderTheatre(){
  const el=document.getElementById('theatreTable');if(!el)return;
  el.innerHTML=rows.length?'<table><thead><tr><th>Scheduled</th><th>Patient</th><th>Procedure</th><th>Doctor</th><th>Room</th><th>Status</th><th>Action</th></tr></thead><tbody>'+rows.map(x=>{
    const next=x.status==='scheduled'?'in_progress':x.status==='in_progress'?'completed':null;
-   const action=next?'<button class="mini primary" onclick="advanceTheatre('+x.id+',\''+next+'\')">'+(next==='in_progress'?'Start':'Complete')+'</button>':''; const charge=(state.session?.staff?.role==='billing'||state.session?.staff?.role==='admin')?'<button class="mini" onclick="addTheatreCharge('+x.id+')">Charge</button>':'';
+   const action=next?'<button class="mini primary" onclick="advanceTheatre('+x.id+',\''+next+'\')">'+(next==='in_progress'?'Start':'Complete')+'</button>':''; const charge=(state.session?.staff?.role==='billing'||state.session?.staff?.role==='admin')?'<button class="mini" onclick="addTheatreCharge('+x.id+')">Charge</button>':''; const handoff=(x.status==='completed'&&!x.ward_returned_at&&x.admission_id)?'<button class="mini" onclick="returnTheatreToWard('+x.id+')">Return to ward</button>':'';
    const cancel=x.status==='scheduled'?'<button class="mini" onclick="advanceTheatre('+x.id+',\'cancelled\')">Cancel</button>':'';
-   return '<tr><td>'+(x.scheduled_start?fmtDate(x.scheduled_start)+' '+fmtTime(x.scheduled_start):'—')+'</td><td><button class="record-link" onclick="openPatientWorkspace('+x.patient_id+')"><strong>'+esc(x.patient_name||'Patient')+'</strong></button><div style="font-size:11px;color:var(--muted)">'+esc(x.uhid||'')+'</div></td><td>'+esc(x.procedure_name)+'</td><td>'+esc(x.doctor_name||'—')+'</td><td>'+esc(x.theatre_room_name||'—')+'</td><td>'+status(x.status)+'</td><td><div style="display:flex;gap:4px;flex-wrap:wrap">'+action+cancel+charge+'</div></td></tr>';
+   return '<tr><td>'+(x.scheduled_start?fmtDate(x.scheduled_start)+' '+fmtTime(x.scheduled_start):'—')+'</td><td><button class="record-link" onclick="openPatientWorkspace('+x.patient_id+')"><strong>'+esc(x.patient_name||'Patient')+'</strong></button><div style="font-size:11px;color:var(--muted)">'+esc(x.uhid||'')+'</div></td><td>'+esc(x.procedure_name)+'</td><td>'+esc(x.doctor_name||'—')+'</td><td>'+esc(x.theatre_room_name||'—')+'</td><td>'+status(x.status)+'</td><td><div style="display:flex;gap:4px;flex-wrap:wrap">'+action+cancel+charge+handoff+'</div></td></tr>';
  }).join('')+'</tbody></table>':'<div class="empty">No theatre procedures scheduled yet. Open a patient workspace to schedule one against an active IPD admission.</div>';
 }
 async function advanceTheatre(id,next){

@@ -36,9 +36,8 @@ Use public/HMIS_CAREFLOW_PLAN.md as the source of truth. Prefer the earliest unf
 
 The current workflow is **Theatre / procedures**. Continue in this order unless the plan changes:
 1. Expand Theatre billing UI/mapping for procedure, theatre-service, professional-fee and medicine charges without double-counting.
-2. Add Theatre-to-ward return/handoff state where required.
-3. Run authenticated doctor/nurse/billing E2E, role boundaries, invalid transitions, overlap protection and billing continuity.
-4. Only after those gates pass, mark Theatre Complete and advance to Inventory / Assets.
+2. Run authenticated doctor/nurse/billing E2E, role boundaries, invalid transitions, overlap protection and billing continuity.
+3. Only after those gates pass, mark Theatre Complete and advance to Inventory / Assets.
 6. Only after those gates pass, mark Theatre Complete and advance to Inventory / Assets.
 
 After each completed increment, update this section to the next concrete target before responding.

@@ -94,6 +94,18 @@ export default async function(req,res){
    if(!r.rows[0])return res.status(404).json({error:"Procedure master record not found"});
    return res.json(r.rows[0]);
  }
+ if(req.method==="PUT" && b.action==="ward_return"){
+   const id=Number(b.id||0); if(!id)return res.status(400).json({error:"Procedure id is required"});
+   const cur=await db.query("SELECT * FROM theatre_procedures WHERE id=$1 AND hospital_id=$2",[id,ctx.hospitalId]);
+   if(!cur.rows[0])return res.status(404).json({error:"Procedure not found"});
+   if(cur.rows[0].status!=="completed")return res.status(409).json({error:"Only completed procedures can be returned to the ward"});
+   if(cur.rows[0].ward_returned_at)return res.status(409).json({error:"Procedure has already been returned to the ward"});
+   const r=await db.query("UPDATE theatre_procedures SET ward_returned_at=now(),ward_return_notes=$1,ward_returned_by=$2,updated_at=now() WHERE id=$3 AND hospital_id=$4 RETURNING *",[String(b.notes||"").trim()||null,ctx.user.email,id,ctx.hospitalId]);
+   const row=r.rows[0];
+   if(row.encounter_id)await db.query("UPDATE care_encounters SET current_stage='ipd',updated_at=now() WHERE id=$1 AND hospital_id=$2 AND status='open'",[row.encounter_id,ctx.hospitalId]);
+   await logWorkflowEvent(ctx,{patientId:row.patient_id,encounterId:row.encounter_id||null,eventType:"theatre_returned_to_ward",stage:"ipd",entityType:"theatre_procedure",entityId:id,metadata:{ward_return_notes:row.ward_return_notes}});
+   return res.json(row);
+ }
  const id=Number(b.id||0);
  if(!id)return res.status(400).json({error:"Procedure id is required"});
  if(!allowedStatus.includes(b.status))return res.status(400).json({error:"Invalid procedure status"});
