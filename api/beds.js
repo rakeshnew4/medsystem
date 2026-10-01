@@ -54,33 +54,131 @@ export default async function(req,res){
     }
 
     if(b.action==="discharge"){
-      const a=await db.query(
-        "SELECT id,bed_id,patient_id,admitting_doctor_id FROM admissions WHERE id=$1 AND hospital_id=$2 AND discharged_at IS NULL",
-        [b.id,ctx.hospitalId]
-      );
-      if(!a.rows[0])return res.status(404).json({error:"Active admission not found"});
-      const admission=a.rows[0];
+      if(!b.id)return res.status(400).json({error:"Admission is required"});
 
-      await db.query(
-        "UPDATE admissions SET discharged_at=now(),status='discharged',discharge_summary=$1,discharge_doctor_id=$2,updated_at=now() WHERE id=$3 AND hospital_id=$4",
-        [b.discharge_summary||null,b.discharge_doctor_id||admission.admitting_doctor_id||null,admission.id,ctx.hospitalId]
-      );
-      await db.query(
-        "UPDATE care_encounters SET status='completed',ended_at=COALESCE(ended_at,now()),updated_at=now() WHERE admission_id=$1 AND hospital_id=$2 AND status='open'",
-        [admission.id,ctx.hospitalId]
-      );
-      await db.query(
-        "UPDATE bed_assignments SET released_at=now() WHERE admission_id=$1 AND hospital_id=$2 AND released_at IS NULL",
-        [admission.id,ctx.hospitalId]
-      );
-      if(admission.bed_id){
-        await db.query(
-          "UPDATE beds SET status='available',updated_at=now() WHERE id=$1 AND hospital_id=$2",
-          [admission.bed_id,ctx.hospitalId]
-        );
-      }
-      await logWorkflowEvent(ctx,{patientId:admission.patient_id,eventType:"ipd_discharged",stage:"discharge",entityType:"admission",entityId:admission.id,metadata:{bed_id:admission.bed_id}});
-      return res.json({id:admission.id,patient_id:admission.patient_id,status:"discharged",bed_id:admission.bed_id});
+      // Discharge is one atomic room-discharge transition. The admission, checklist
+      // and current bed are locked before any state changes. The guard requires every
+      // discharge gate to be satisfied, so a concurrent request cannot release the
+      // bed while another request is still changing the checklist.
+      const tx=await db.transaction([{
+        sql:`WITH locked_admission AS (
+          SELECT id,bed_id,patient_id,admitting_doctor_id
+          FROM admissions
+          WHERE id=$1 AND hospital_id=$2 AND discharged_at IS NULL
+          FOR UPDATE
+        ),
+        locked_checklist AS (
+          SELECT d.id, d.admission_id, d.clinical_clearance, d.reports_ready,
+                 d.medication_reconciled, d.billing_cleared,
+                 d.insurance_status, d.payment_status, d.discharge_medicines, d.summary
+          FROM discharge_checklists d
+          JOIN locked_admission a ON a.id=d.admission_id
+          WHERE d.hospital_id=$2
+          FOR UPDATE
+        ),
+        locked_bed AS (
+          SELECT b.id,b.status
+          FROM beds b
+          JOIN locked_admission a ON a.bed_id=b.id
+          WHERE b.hospital_id=$2
+          FOR UPDATE
+        ),
+        ready AS (
+          SELECT a.id,a.patient_id,a.bed_id,a.admitting_doctor_id,c.id AS encounter_id,
+                 COALESCE(d.summary,$3) AS discharge_summary
+          FROM locked_admission a
+          JOIN locked_checklist d ON d.admission_id=a.id
+          LEFT JOIN locked_bed bed ON bed.id=a.bed_id
+          LEFT JOIN care_encounters c
+            ON c.admission_id=a.id AND c.hospital_id=$2 AND c.status='open'
+          WHERE d.clinical_clearance
+            AND d.reports_ready
+            AND d.medication_reconciled
+            AND d.billing_cleared
+            AND (
+              d.payment_status='paid'
+              OR (d.payment_status='approved' AND d.insurance_status='approved')
+            )
+            AND (a.bed_id IS NULL OR bed.status='occupied')
+        ),
+        changed_admission AS (
+          UPDATE admissions a
+          SET discharged_at=now(),
+              status='discharged',
+              discharge_summary=r.discharge_summary,
+              discharge_doctor_id=COALESCE($4,r.admitting_doctor_id),
+              updated_at=now()
+          FROM ready r
+          WHERE a.id=r.id AND a.hospital_id=$2
+          RETURNING a.id,a.patient_id,a.bed_id,r.encounter_id
+        ),
+        completed_encounter AS (
+          UPDATE care_encounters c
+          SET status='completed',
+              ended_at=COALESCE(c.ended_at,now()),
+              current_stage='discharge',
+              updated_at=now()
+          FROM changed_admission a
+          WHERE c.admission_id=a.id AND c.hospital_id=$2 AND c.status='open'
+          RETURNING c.id
+        ),
+        released_assignments AS (
+          UPDATE bed_assignments ba
+          SET released_at=now()
+          FROM changed_admission a
+          WHERE ba.admission_id=a.id AND ba.hospital_id=$2 AND ba.released_at IS NULL
+          RETURNING ba.id
+        ),
+        released_bed AS (
+          UPDATE beds b
+          SET status='available',updated_at=now()
+          FROM changed_admission a
+          WHERE a.bed_id IS NOT NULL
+            AND b.id=a.bed_id AND b.hospital_id=$2 AND b.status='occupied'
+          RETURNING b.id
+        ),
+        discharge_event AS (
+          INSERT INTO workflow_events(
+            hospital_id,patient_id,encounter_id,event_type,stage,
+            actor_user_id,actor_staff_id,entity_type,entity_id,metadata
+          )
+          SELECT $2,a.patient_id,COALESCE(a.encounter_id,ce.id),
+                 'ipd_discharged','discharge',$5,$6,'admission',a.id,
+                 jsonb_build_object('bed_id',a.bed_id)
+          FROM changed_admission a
+          LEFT JOIN completed_encounter ce ON ce.id=a.encounter_id
+          RETURNING id
+        )
+        SELECT
+          (SELECT count(*) FROM locked_admission) AS admission_count,
+          (SELECT count(*) FROM locked_checklist) AS checklist_count,
+          (SELECT count(*) FROM locked_bed) AS bed_count,
+          (SELECT count(*) FROM ready) AS ready_count,
+          (SELECT count(*) FROM changed_admission) AS discharged_count,
+          (SELECT patient_id FROM changed_admission LIMIT 1) AS patient_id,
+          (SELECT bed_id FROM changed_admission LIMIT 1) AS bed_id
+        `,
+        params:[
+          Number(b.id),
+          ctx.hospitalId,
+          b.discharge_summary||null,
+          b.discharge_doctor_id||null,
+          ctx.user?.id||ctx.user?.email||null,
+          ctx.staff?.id||null
+        ]
+      }]);
+
+      const result=tx.results?.[0]?.rows?.[0]||{};
+      if(Number(result.admission_count||0)!==1)return res.status(404).json({error:"Active admission not found"});
+      if(Number(result.checklist_count||0)!==1)return res.status(409).json({error:"Discharge checklist is required before discharge"});
+      if(Number(result.bed_count||0)===0 && result.bed_id!==null && result.bed_id!==undefined)return res.status(409).json({error:"Current bed could not be verified"});
+      if(Number(result.ready_count||0)!==1)return res.status(409).json({error:"Discharge checklist is incomplete or payment/insurance approval is missing"});
+      return res.json({
+        id:Number(b.id),
+        patient_id:result.patient_id,
+        status:"discharged",
+        bed_id:result.bed_id==null?null:Number(result.bed_id)
+      });
     }
 
     if(b.action==="transfer"){
