@@ -19,7 +19,7 @@ export default async function(req,res){
       let expected=null;
       if(b.expected_discharge_date){
         const raw=String(b.expected_discharge_date).trim();
-        if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(raw))return res.status(400).json({error:"expected_discharge_date must be YYYY-MM-DD"});
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(raw))return res.status(400).json({error:"expected_discharge_date must be YYYY-MM-DD"});
         const d=new Date(raw+"T00:00:00Z");
         if(Number.isNaN(d.getTime()))return res.status(400).json({error:"Invalid expected_discharge_date"});
         expected=raw;
@@ -34,12 +34,14 @@ export default async function(req,res){
     return res.status(400).json({error:"Unknown IPD action"});
   }
 
-  const patientId=req.query?.patient_id;
-  const admissionId=req.query?.admission_id;
+  const patientId=req.query?.patient_id==null||req.query?.patient_id===""?null:Number(req.query.patient_id);
+  const admissionId=req.query?.admission_id==null||req.query?.admission_id===""?null:Number(req.query.admission_id);
+  if(patientId!==null&&(!Number.isInteger(patientId)||patientId<=0))return res.status(400).json({error:"patient_id must be a positive integer"});
+  if(admissionId!==null&&(!Number.isInteger(admissionId)||admissionId<=0))return res.status(400).json({error:"admission_id must be a positive integer"});
   let where="a.hospital_id=$1";
   const params=[ctx.hospitalId];
-  if(patientId){params.push(patientId);where+=" AND a.patient_id=$"+params.length}
-  if(admissionId){params.push(admissionId);where+=" AND a.id=$"+params.length}
+  if(patientId!==null){params.push(patientId);where+=" AND a.patient_id=$"+params.length}
+  if(admissionId!==null){params.push(admissionId);where+=" AND a.id=$"+params.length}
 
   const admissions=await db.query(
     `SELECT a.*,p.name AS patient_name,p.phone,p.date_of_birth,
