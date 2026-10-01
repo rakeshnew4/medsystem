@@ -638,7 +638,24 @@ Implemented: `migrations/0056_fixed_assets.sql`, `/api/fixed-assets`, `/api/fixe
 
 # 13 — Staff / roles / permissions / hospital configuration
 
-Not started.
+**In progress — department-scoped privilege foundation implemented.**
+
+HMIS review of `Privileges.java` and `UserPrivilageController.java` confirms module-level privileges plus user/role privilege assignment scoped to the logged institution/department. CareFlow already had role-level permissions and user overrides; the gap was department scope.
+
+Implemented in this increment:
+- Added `staff_profiles.department_id` with hospital-scoped department linkage.
+- Added department-aware user permission storage while preserving global user overrides.
+- Effective permission resolution now follows: department-specific user override → global user override → role permission → false.
+- Staff registration/update API now carries department assignment and returns department metadata.
+- Added protected `/api/departments` for hospital-scoped staff administration.
+- Staff UI now assigns and displays department alongside role/doctor.
+- External PostgreSQL department-permission schema was verified and applied idempotently through a temporary owner-only initializer; the initializer and schema-check routes were removed afterward.
+- Added `public/HMIS_CAREFLOW_STAFF_TEST_CASES.md` with explicit department/role-boundary cases.
+
+Remaining Staff/Roles gates:
+- Authenticated staff E2E for role boundaries and department-specific permission precedence.
+- Validate administrator permission editing UI against department-specific overrides.
+- Review staff lifecycle/audit behavior and hospital configuration against HMIS before moving to Integrations.
 
 # 14 — Integrations / REST / FHIR / LIS
 
