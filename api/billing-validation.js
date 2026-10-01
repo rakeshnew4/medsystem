@@ -31,16 +31,20 @@ export default async function(req,res){
     "SELECT count(*) AS n FROM invoices i WHERE ABS(i.subtotal-COALESCE((SELECT SUM(ii.amount) FROM invoice_items ii WHERE ii.invoice_id=i.id),0)) > 0.01",
     r=>Number(r[0]?.n||0));
 
+  await check("payment_ledger_access",
+    "SELECT count(*) AS n FROM invoice_payments",
+    r=>Number(r[0]?.n||0));
+
   await check("payment_rows_positive",
     "SELECT count(*) AS n FROM invoice_payments WHERE amount <= 0",
     r=>Number(r[0]?.n||0));
 
   await check("payment_sum_not_above_invoice",
-    "SELECT count(*) AS n FROM invoices i WHERE COALESCE((SELECT SUM(p.amount) FROM invoice_payments p WHERE p.invoice_id=i.id AND p.hospital_id=i.hospital_id),0) > i.paid + 0.01",
+    "SELECT count(*) AS n FROM (SELECT i.id,i.paid,COALESCE(SUM(p.amount),0) AS payment_sum FROM invoices i LEFT JOIN invoice_payments p ON p.invoice_id=i.id AND p.hospital_id=i.hospital_id GROUP BY i.id,i.paid HAVING COALESCE(SUM(p.amount),0) > i.paid + 0.01) q",
     r=>Number(r[0]?.n||0));
 
   await check("payment_sum_not_above_total",
-    "SELECT count(*) AS n FROM invoices i WHERE COALESCE((SELECT SUM(p.amount) FROM invoice_payments p WHERE p.invoice_id=i.id AND p.hospital_id=i.hospital_id),0) > i.total + 0.01",
+    "SELECT count(*) AS n FROM (SELECT i.id,i.total,COALESCE(SUM(p.amount),0) AS payment_sum FROM invoices i LEFT JOIN invoice_payments p ON p.invoice_id=i.id AND p.hospital_id=i.hospital_id GROUP BY i.id,i.total HAVING COALESCE(SUM(p.amount),0) > i.total + 0.01) q",
     r=>Number(r[0]?.n||0));
 
   await check("payment_invoice_hospital_integrity",
@@ -50,7 +54,7 @@ export default async function(req,res){
   // Legacy balances are deliberately reported separately: they predate the immutable
   // payment ledger and cannot be safely reconstructed without source payment metadata.
   await check("legacy_payment_ledger_gap",
-    "SELECT count(*) AS n FROM invoices i WHERE i.paid > 0 AND NOT EXISTS (SELECT 1 FROM invoice_payments p WHERE p.invoice_id=i.id)",
+    "SELECT count(*) AS n FROM (SELECT i.id FROM invoices i LEFT JOIN invoice_payments p ON p.invoice_id=i.id AND p.hospital_id=i.hospital_id WHERE i.paid > 0 GROUP BY i.id HAVING COUNT(p.id)=0) q",
     r=>Number(r[0]?.n||0));
 
   const passed=checks.filter(x=>x.pass).length;

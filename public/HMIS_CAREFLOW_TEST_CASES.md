@@ -334,5 +334,13 @@ The owner-only production validator must agree with direct read-only checks agai
 Expected: no validator runtime query failures; any discrepancy blocks release validation.
 Status: Open. Direct adapter checks are healthy, but the deployed validator currently reports failures in its ledger-related checks. See public/HMIS_BILLING_GATE_STATUS.md.
 
+## TC-BILL-022 — Payment-ledger validator adapter compatibility
+The owner-only billing integrity validator must execute every payment-ledger query successfully through CareFlow's configured external PostgreSQL adapter. Adapter-safe aggregate queries must not be treated as financial passes unless the query itself executes; any runtime query error keeps the validator gate failed.
+Status: Implemented for deployment v383; post-deploy validation pending. Authenticated Billing E2E remains required.
+
+## TC-BILL-022 — Payment-ledger validator adapter compatibility
+The owner-only billing integrity validator must execute every payment-ledger query successfully through CareFlow's configured external PostgreSQL adapter. Adapter-safe aggregate queries must not be treated as financial passes unless the query itself executes; any runtime query error keeps the validator gate failed.
+Status: Implemented for deployment v383; post-deploy validation pending. Authenticated Billing E2E remains required.
+
 ## Billing completion gate
 Billing is marked Complete only after authenticated invoice/payment E2E, role boundaries, invalid financial inputs, invoice continuity and workflow audit events pass.
