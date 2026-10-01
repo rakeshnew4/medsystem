@@ -262,7 +262,7 @@ A module is UI-complete only when the UI reflects the verified HMIS workflow, al
 16. UI-15 Global Responsive Shell Hardening
 
 ## Current release gates
-- Live baseline: v473 before the current role-landing patch; next deployment will advance this baseline.
+- Live baseline: v474.
 - Frontend main-script syntax parsing passes after the v469 interaction-regression repair.
 - Physical-device mobile verification remains open.
 - Authenticated hospital-staff E2E remains open for each module that explicitly lists it; role-preview and owner-level validators do not satisfy that gate.
@@ -296,3 +296,4 @@ A module is UI-complete only when the UI reflects the verified HMIS workflow, al
 - 2026-10-01: UI-15 responsive shell hardening implemented: mobile sidebar is a viewport-safe transform drawer with touch-safe backdrop/scrolling, and the AI floating assistant no longer uses a viewport-height entrance animation that could visually originate from the middle of a phone or desktop-mode viewport. Mobile assistant positioning now respects safe-area insets. Physical-device verification remains the final manual gate.
 - 2026-10-01: UI-15 interaction regression fixed in v469: a stray U12 CSS block had been embedded in the main JavaScript source, and a malformed billing invoice-PDF HTML string also broke parsing. Both were corrected; the live main script now passes syntax parsing. The theme-level AI assistant override forcing `top:75%` was also corrected to bottom-right viewport anchoring.
 - 2026-10-02: v471 safe-hardening pass: synchronized the continuation/UI release gates and hardened Patient Workspace optional module reads so secondary clinical/financial/pharmacy/theatre query failures degrade with explicit `degraded_sections` diagnostics instead of returning a workspace-wide 500. Core patient identity lookup remains strict. No unsupported clinical or financial mutation was introduced.
+- 2026-10-02: v474 UI-16 minimal role workspace pass: all supported staff roles now land on the normal Hospital overview first; role-specific focused workspaces remain available through the role workspace shortcuts and existing Patient Workspace flow. Main frontend syntax parsing passes. Genuine hospital-staff role-by-role E2E remains open.
