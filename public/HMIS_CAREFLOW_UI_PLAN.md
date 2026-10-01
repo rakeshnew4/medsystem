@@ -150,14 +150,14 @@ HMIS reference: inpatient search plus central Admission Profile.
 ### UI-10 — Theatre / Procedures
 HMIS references: surgery pages, surgery clinical details, admission profile.
 - [x] Procedure worklist — HMIS-aligned search by patient/UHID/admission/procedure/doctor/room with status and date filters, patient/admission context, lifecycle-aware actions, and responsive worklist presentation.
-- [ ] Room schedule
-- [ ] Patient/procedure header
-- [ ] Surgical team
-- [ ] Lifecycle controls
-- [ ] Theatre charges
-- [ ] Ward return
-- [ ] Validation/revert
-- [ ] Clinical/financial closure presentation
+- [x] Room schedule — room-by-room view built from hospital-scoped Theatre rooms and existing scheduled/in-progress procedures; no new scheduling mutation introduced.
+- [x] Patient/procedure header — selected procedure detail presents patient/UHID/BHT, admission, procedure, doctor, room, lifecycle, schedule and outcome context.
+- [x] Surgical team — selected procedure presents existing team assignments and exposes only the verified team_add/team_remove contracts.
+- [x] Lifecycle controls — selected procedure and worklist expose only scheduled→in_progress→completed and scheduled→cancelled transitions, with completion outcome capture.
+- [x] Theatre charges — selected procedure presents protected charge records and existing billing-authorized charge creation.
+- [x] Ward return — completed admission-linked procedures expose the existing protected ward_return transition and admission/encounter context.
+- [x] Validation/revert — selected completed procedures expose the existing protected validation and validation-revert contracts with required revert reason.
+- [x] Clinical/financial closure presentation — selected procedure combines lifecycle, outcome, charges, validation and ward-return state in one closure view.
 
 ### UI-11 — Inventory / Assets
 - [ ] Asset register
@@ -234,3 +234,4 @@ A module is UI-complete only when the UI reflects the verified HMIS workflow, al
 - 2026-10-01: UI-09 Insurance increment deployed as v413: added a dedicated Insurance/TPA claims worklist backed by the existing protected `/api/insurance` contract. Claims can be searched by payer, claim/policy number, patient or UHID and filtered by pending/submitted/approved/partially-approved/rejected/paid state; no financial mutation contract was introduced. Public access to the underlying route remains protected (401 in the pre-deploy access test). Next UI-09 task: financial audit/history; invoice editor remains blocked until a verified server mutation contract exists.
 - 2026-10-01: UI-09 financial audit/history increment deployed as v415: added protected, read-only `/api/billing-audit` with hospital-scoped payment ledger, billing workflow events and matching invoice audit events, plus an Audit history action from invoice detail. Public access returns 401 and the available unsigned app-user runner is rejected by `requireStaff()`. No financial mutation was introduced. Invoice editor remains blocked pending a verified server-side mutation contract.
 - 2026-10-01: UI-10 Theatre increment deployed as v417: procedure worklist now follows the HMIS surgery-search pattern with patient/UHID/admission/procedure/doctor/room search, status/date filters, BHT/admission context, scheduled end-time context and lifecycle-aware existing actions. No Theatre backend mutation contract changed. Dry-run passed with 0 errors; anonymous `/api/theatre` remains 401. Next UI-10 task: room schedule.
+- 2026-10-01: UI-10 Theatre full UI loop implemented in one increment: room schedule, patient/procedure header, surgical team, lifecycle controls, charge presentation, ward return, validation/revert, and clinical/financial closure view. The implementation uses only existing protected Theatre contracts; no scheduling or clinical/financial mutation contract was invented. Dry-run passed with 0 errors. Authenticated hospital-staff E2E remains open.

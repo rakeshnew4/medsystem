@@ -232,9 +232,14 @@
     </div>
     <div id="theatreWorklistMeta" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
     <div id="theatreTable" class="table-wrap" style="margin-top:12px"></div>
+    <div class="card panel" style="margin-top:16px">
+      <div class="panel-head"><div><div class="kicker">OPERATING ROOMS · SCHEDULE</div><h3 class="panel-title">Room schedule</h3><div style="font-size:12px;color:var(--muted);margin-top:4px">Room-by-room view of existing scheduled and active procedures. Scheduling remains governed by the protected Theatre API.</div></div><button class="btn" onclick="renderTheatreSchedule()">Refresh view</button></div>
+      <div id="theatreRoomSchedule" style="margin-top:12px"></div>
+    </div>
   </div>
   <div id="theatreMasterData" class="card panel" style="margin-top:16px;display:none"><div class="panel-head"><div><h3 class="panel-title">Theatre master data</h3><div style="font-size:12px;color:var(--muted);margin-top:4px">Administrator-only room and procedure catalogue management.</div></div></div><div id="theatreRoomsAdmin" class="table-wrap"></div><div id="theatreCatalogAdmin" class="table-wrap" style="margin-top:16px"></div></div>
 </section>
+<div id="theatreProcedureModal" class="modal"><div class="modal-card" style="max-width:1100px"><div class="panel-head"><div><div class="kicker">CLINICAL · THEATRE · PROCEDURE</div><h2 class="panel-title" id="theatreProcedureTitle">Procedure details</h2><div id="theatreProcedureContext" style="font-size:12px;color:var(--muted);margin-top:4px"></div></div><button class="btn" onclick="closeModal('theatreProcedureModal')">Close</button></div><div id="theatreProcedureBody" style="margin-top:14px"></div></div></div>
 <section id="assets" class="section">
   <div class="card panel">
     <div class="panel-head"><div><h2 class="panel-title">Inventory / fixed assets</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Hospital-scoped asset register with purchase, depreciation, warranty, custodian and transfer history.</div></div><button class="btn" onclick="loadAssets(true)">Refresh</button></div>
@@ -1907,35 +1912,77 @@ function renderTheatre(){
   const counts={scheduled:0,in_progress:0,completed:0,cancelled:0};rows.forEach(x=>counts[x.status]=(counts[x.status]||0)+1);
   const summary=document.getElementById('theatreSummary');
   if(summary)summary.innerHTML=[['Scheduled',counts.scheduled],['In progress',counts.in_progress],['Completed',counts.completed],['Rooms',rooms.length]].map(x=>'<div class="card stat"><div class="stat-label">'+x[0]+'</div><div class="stat-value">'+x[1]+'</div><div class="stat-note">Theatre workflow</div></div>').join('');
-  const q=String(document.getElementById('theatreSearch')?.value||'').trim().toLowerCase();
-  const sf=document.getElementById('theatreStatusFilter')?.value||'all';
-  const df=document.getElementById('theatreDateFilter')?.value||'all';
-  const filtered=rows.filter(x=>{
-    if(sf!=='all'&&x.status!==sf)return false;
-    if(!theatreDateMatches(x,df))return false;
-    if(!q)return true;
-    return [x.patient_name,x.uhid,x.admission_number,x.procedure_name,x.doctor_name,x.theatre_room_name,x.status].some(v=>String(v||'').toLowerCase().includes(q));
-  }).sort((a,b)=>new Date(a.scheduled_start||a.created_at||0)-new Date(b.scheduled_start||b.created_at||0));
+  const q=String(document.getElementById('theatreSearch')?.value||'').trim().toLowerCase(), sf=document.getElementById('theatreStatusFilter')?.value||'all', df=document.getElementById('theatreDateFilter')?.value||'all';
+  const filtered=rows.filter(x=>(sf==='all'||x.status===sf)&&theatreDateMatches(x,df)&&(!q||[x.patient_name,x.uhid,x.admission_number,x.procedure_name,x.doctor_name,x.theatre_room_name,x.status].some(v=>String(v||'').toLowerCase().includes(q)))).sort((a,b)=>new Date(a.scheduled_start||a.created_at||0)-new Date(b.scheduled_start||b.created_at||0));
   const meta=document.getElementById('theatreWorklistMeta');if(meta)meta.textContent=filtered.length+' of '+rows.length+' procedures shown · '+counts.scheduled+' scheduled · '+counts.in_progress+' in progress · '+counts.completed+' completed · '+counts.cancelled+' cancelled';
-  const el=document.getElementById('theatreTable');if(!el)return;
-  el.innerHTML=filtered.length?'<table><thead><tr><th>Scheduled</th><th>Patient / Admission</th><th>Procedure</th><th>Doctor</th><th>Room</th><th>Status</th><th>Action</th></tr></thead><tbody>'+filtered.map(x=>{
+  const el=document.getElementById('theatreTable');if(el)el.innerHTML=filtered.length?'<table><thead><tr><th>Scheduled</th><th>Patient / Admission</th><th>Procedure</th><th>Doctor</th><th>Room</th><th>Status</th><th>Action</th></tr></thead><tbody>'+filtered.map(x=>{
     const next=x.status==='scheduled'?'in_progress':x.status==='in_progress'?'completed':null;
-    const action=next?'<button class="mini primary" onclick="advanceTheatre('+x.id+',\''+next+'\')">'+(next==='in_progress'?'Start':'Complete')+'</button>':''; const charge=(state.session?.staff?.role==='billing'||state.session?.staff?.role==='admin')?'<button class="mini" onclick="addTheatreCharge('+x.id+')">Charge</button>':''; const handoff=(x.status==='completed'&&!x.ward_returned_at&&x.admission_id)?'<button class="mini" onclick="returnTheatreToWard('+x.id+')">Return to ward</button>':'';
-    const cancel=x.status==='scheduled'?'<button class="mini" onclick="advanceTheatre('+x.id+',\'cancelled\')">Cancel</button>':'';
-    return '<tr><td>'+(x.scheduled_start?fmtDate(x.scheduled_start)+' '+fmtTime(x.scheduled_start):'—')+'</td><td><button class="record-link" onclick="openPatientWorkspace('+x.patient_id+')"><strong>'+esc(x.patient_name||'Patient')+'</strong></button><div style="font-size:11px;color:var(--muted)">'+esc(x.uhid||'')+(x.admission_number?' · BHT '+esc(x.admission_number):'')+'</div></td><td><strong>'+esc(x.procedure_name||'Procedure')+'</strong><div style="font-size:11px;color:var(--muted)">'+(x.scheduled_end?'Until '+fmtTime(x.scheduled_end):'End time not set')+'</div></td><td>'+esc(x.doctor_name||'—')+'</td><td>'+esc(x.theatre_room_name||'—')+'</td><td>'+status(x.status)+'</td><td><div style="display:flex;gap:4px;flex-wrap:wrap">'+action+cancel+charge+handoff+'</div></td></tr>';
+    const action=next?'<button class="mini primary" onclick="event.stopPropagation();advanceTheatre('+x.id+',\''+next+'\')">'+(next==='in_progress'?'Start':'Complete')+'</button>':'';
+    const charge=(state.session?.staff?.role==='billing'||state.session?.staff?.role==='admin')?'<button class="mini" onclick="event.stopPropagation();addTheatreCharge('+x.id+')">Charge</button>':'';
+    const handoff=(x.status==='completed'&&!x.ward_returned_at&&x.admission_id)?'<button class="mini" onclick="event.stopPropagation();returnTheatreToWard('+x.id+')">Return to ward</button>':'';
+    const cancel=x.status==='scheduled'?'<button class="mini" onclick="event.stopPropagation();advanceTheatre('+x.id+',\'cancelled\')">Cancel</button>':'';
+    const validation=x.status==='completed'?(x.validated_at?'<span class="status paid">Validated</span>':'<button class="mini" onclick="event.stopPropagation();validateTheatreProcedure('+x.id+')">Validate</button>'):'';
+    return '<tr onclick="openTheatreProcedure('+x.id+')" style="cursor:pointer"><td>'+(x.scheduled_start?fmtDate(x.scheduled_start)+' '+fmtTime(x.scheduled_start):'—')+'</td><td><button class="record-link" onclick="event.stopPropagation();openPatientWorkspace('+x.patient_id+')"><strong>'+esc(x.patient_name||'Patient')+'</strong></button><div style="font-size:11px;color:var(--muted)">'+esc(x.uhid||'')+(x.admission_number?' · BHT '+esc(x.admission_number):'')+'</div></td><td><strong>'+esc(x.procedure_name||'Procedure')+'</strong><div style="font-size:11px;color:var(--muted)">'+(x.scheduled_end?'Until '+fmtTime(x.scheduled_end):'End time not set')+'</div></td><td>'+esc(x.doctor_name||'—')+'</td><td>'+esc(x.theatre_room_name||'—')+'</td><td>'+status(x.status)+(x.validated_at?' <span class="status paid">validated</span>':'')+(x.ward_returned_at?' <span class="status active">ward returned</span>':'')+'</td><td><div style="display:flex;gap:4px;flex-wrap:wrap">'+action+cancel+charge+handoff+validation+'</div></td></tr>';
   }).join('')+'</tbody></table>':'<div class="empty">'+(rows.length?'No procedures match the current worklist filters.':'No theatre procedures scheduled yet. Open a patient workspace to schedule one against an active IPD admission.')+'</div>';
+  renderTheatreSchedule();
 }
 async function advanceTheatre(id,next){
- try{
-  const body={id:Number(id),status:next};
-  if(next==='completed'){
-    const outcome=prompt('Document procedure outcome before completion:');
-    if(outcome===null)return;
-    body.outcome=outcome;
-  }
-  await api('/theatre',{method:'PUT',body:JSON.stringify(body)});
-  await loadTheatre();
- }catch(e){alert(e.message)}
+  try{
+    const body={id:Number(id),status:next};
+    if(next==='completed'){const outcome=prompt('Document procedure outcome before completion:');if(outcome===null)return;body.outcome=outcome;}
+    await api('/theatre',{method:'PUT',body:JSON.stringify(body)});await loadTheatre();
+  }catch(e){alert(e.message)}
+}
+function renderTheatreSchedule(){
+  const el=document.getElementById('theatreRoomSchedule');if(!el)return;
+  const rooms=state.theatre?.rooms||[], rows=(state.theatre?.procedures||[]).filter(x=>['scheduled','in_progress'].includes(x.status)&&x.scheduled_start), now=Date.now();
+  if(!rooms.length){el.innerHTML='<div class="empty">No theatre rooms are configured.</div>';return;}
+  el.innerHTML=rooms.map(r=>{
+    const items=rows.filter(x=>Number(x.theatre_room_id)===Number(r.id)).sort((a,b)=>new Date(a.scheduled_start)-new Date(b.scheduled_start));
+    return '<div class="card" style="margin-bottom:10px;padding:14px"><div class="panel-head"><div><strong>'+esc(r.name)+'</strong><div style="font-size:11px;color:var(--muted)">'+esc(r.code||'No code')+' · '+esc(r.status||'available')+'</div></div><span class="status '+(r.status==='available'?'active':'pending')+'">'+items.length+' active</span></div>'+
+      (items.length?'<div style="margin-top:10px;display:grid;gap:7px">'+items.map(x=>{const st=new Date(x.scheduled_start),en=x.scheduled_end?new Date(x.scheduled_end):null;const live=st.getTime()<=now&&(!en||en.getTime()>now);return '<button class="card" style="text-align:left;border:1px solid var(--border);padding:10px;cursor:pointer" onclick="openTheatreProcedure('+x.id+')"><div style="display:flex;justify-content:space-between;gap:8px"><strong>'+esc(x.procedure_name||'Procedure')+'</strong><span class="status '+(live?'active':'pending')+'">'+(live?'In room':'Scheduled')+'</span></div><div style="font-size:12px;margin-top:4px">'+fmtTime(x.scheduled_start)+(x.scheduled_end?' – '+fmtTime(x.scheduled_end):'')+' · '+esc(x.patient_name||'Patient')+'</div><div style="font-size:11px;color:var(--muted)">'+esc(x.uhid||'No UHID')+(x.admission_number?' · BHT '+esc(x.admission_number):'')+' · '+esc(x.doctor_name||'No doctor')+'</div></button>'}).join('')+'</div>':'<div class="empty" style="margin-top:8px">No scheduled/in-progress procedures in this room.</div>')+'</div>';
+  }).join('');
+}
+function openTheatreProcedure(id){
+  const x=(state.theatre?.procedures||[]).find(p=>Number(p.id)===Number(id));if(!x)return;
+  const team=(state.theatre?.team||[]).filter(t=>Number(t.procedure_id)===Number(id));
+  document.getElementById('theatreProcedureTitle').textContent=x.procedure_name||'Theatre procedure';
+  document.getElementById('theatreProcedureContext').innerHTML=esc(x.patient_name||'Patient')+' · '+esc(x.uhid||'No UHID')+(x.admission_number?' · BHT '+esc(x.admission_number):'')+' · '+esc(x.theatre_room_name||'No room');
+  const next=x.status==='scheduled'?'in_progress':x.status==='in_progress'?'completed':null, lifecycle=next?'<button class="btn primary" onclick="advanceTheatre('+x.id+',\''+next+'\');closeModal(\'theatreProcedureModal\')">'+(next==='in_progress'?'Start procedure':'Complete procedure')+'</button>':'';
+  const cancel=x.status==='scheduled'?'<button class="btn" onclick="advanceTheatre('+x.id+',\'cancelled\');closeModal(\'theatreProcedureModal\')">Cancel</button>':'';
+  const charge=(state.session?.staff?.role==='billing'||state.session?.staff?.role==='admin')?'<button class="btn" onclick="addTheatreCharge('+x.id+')">Add charge</button>':'';
+  const ward=(x.status==='completed'&&!x.ward_returned_at&&x.admission_id)?'<button class="btn" onclick="returnTheatreToWard('+x.id+');closeModal(\'theatreProcedureModal\')">Return to ward</button>':'';
+  const validate=x.status==='completed'&&!x.validated_at?'<button class="btn" onclick="validateTheatreProcedure('+x.id+')">Validate closure</button>':'';
+  const revert=x.validated_at?'<button class="btn" onclick="revertTheatreValidation('+x.id+')">Revert validation</button>':'';
+  const roles=['surgeon','assistant_surgeon','anesthetist','nurse','technician','other'], staff=(state.staff||[]).filter(s=>s.active&&s.role!=='pending');
+  const teamRows=team.length?team.map(t=>'<tr><td>'+esc(t.display_name||t.email||'Staff')+'</td><td>'+esc(t.team_role)+'</td><td>'+esc(t.doctor_name||t.staff_role||'—')+'</td><td>'+(x.status!=='completed'&&x.status!=='cancelled'?'<button class="mini" onclick="removeTheatreTeam('+t.id+','+x.id+')">Remove</button>':'')+'</td></tr>').join(''):'<tr><td colspan="4" class="empty">No surgical team members recorded.</td></tr>';
+  const addTeam=x.status!=='completed'&&x.status!=='cancelled'?'<div class="form-grid" style="margin-top:10px"><select id="theatreTeamStaff">'+staff.map(s=>'<option value="'+s.id+'">'+esc(s.display_name||s.email)+' · '+esc(s.role)+'</option>').join('')+'</select><select id="theatreTeamRole">'+roles.map(r=>'<option value="'+r+'">'+esc(r.replace('_',' '))+'</option>').join('')+'</select><button class="btn" onclick="addTheatreTeam('+x.id+')">Add team member</button></div>':'';
+  document.getElementById('theatreProcedureBody').innerHTML='<div class="grid stats"><div class="card stat"><div class="stat-label">Lifecycle</div><div class="stat-value" style="font-size:16px">'+esc(x.status)+'</div><div class="stat-note">'+(x.started_at?'Started '+fmtDate(x.started_at)+' '+fmtTime(x.started_at):'Not started')+'</div></div><div class="card stat"><div class="stat-label">Schedule</div><div class="stat-value" style="font-size:16px">'+(x.scheduled_start?fmtDate(x.scheduled_start)+' '+fmtTime(x.scheduled_start):'Not scheduled')+'</div><div class="stat-note">'+(x.scheduled_end?'Ends '+fmtTime(x.scheduled_end):'End time not set')+'</div></div><div class="card stat"><div class="stat-label">Closure</div><div class="stat-value" style="font-size:16px">'+(x.validated_at?'Validated':'Open')+'</div><div class="stat-note">'+(x.ward_returned_at?'Ward returned':'Ward return pending')+'</div></div></div>'+
+    '<div class="card" style="margin-top:12px;padding:14px"><div class="panel-head"><div><strong>Patient / procedure header</strong><div style="font-size:12px;color:var(--muted)">Doctor: '+esc(x.doctor_name||'Unassigned')+' · Room: '+esc(x.theatre_room_name||'Unassigned')+' · Admission: '+esc(x.admission_number||'—')+'</div></div><button class="btn" onclick="openPatientWorkspace('+x.patient_id+')">Patient workspace</button></div><div style="margin-top:8px;font-size:12px">Outcome: '+esc(x.outcome||'Not documented')+'</div></div>'+
+    '<div class="card" style="margin-top:12px;padding:14px"><div class="panel-head"><div><strong>Surgical team</strong><div style="font-size:12px;color:var(--muted)">Existing hospital staff assignments for this procedure.</div></div></div><div class="table-wrap" style="margin-top:8px"><table><thead><tr><th>Staff</th><th>Team role</th><th>Profile</th><th></th></tr></thead><tbody>'+teamRows+'</tbody></table></div>'+addTeam+'</div>'+
+    '<div class="card" style="margin-top:12px;padding:14px"><div class="panel-head"><div><strong>Lifecycle & closure</strong><div style="font-size:12px;color:var(--muted)">Only server-defined Theatre transitions are exposed.</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">'+lifecycle+cancel+charge+ward+validate+revert+'</div></div><div style="margin-top:8px;font-size:12px;color:var(--muted)">Validated: '+(x.validated_at?fmtDate(x.validated_at)+' by '+esc(x.validated_by||'staff'):'No')+' · Ward return: '+(x.ward_returned_at?fmtDate(x.ward_returned_at)+' by '+esc(x.ward_returned_by||'staff'):'No')+'</div></div>'+
+    '<div id="theatreProcedureCharges" class="card" style="margin-top:12px;padding:14px"><strong>Theatre charges</strong><div class="empty" style="margin-top:8px">Loading charges…</div></div>';
+  openModal('theatreProcedureModal');loadTheatreProcedureCharges(id);
+}
+async function loadTheatreProcedureCharges(id){
+  const el=document.getElementById('theatreProcedureCharges');if(!el)return;
+  try{const rows=await api('/theatre-charges?procedure_id='+encodeURIComponent(id));el.innerHTML='<div class="panel-head"><div><strong>Theatre charges</strong><div style="font-size:12px;color:var(--muted)">Financial linkage is read from the protected Theatre charges contract.</div></div><span class="status '+(rows.length&&rows.every(x=>x.invoice_id&&x.invoice_item_id)?'active':'pending')+'">'+(rows.length?'₹'+rows.reduce((n,x)=>n+Number(x.amount||0),0).toFixed(2):'No charges')+'</span></div>'+(rows.length?'<div class="table-wrap" style="margin-top:8px"><table><thead><tr><th>Description</th><th>Type</th><th>Amount</th><th>Invoice</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+esc(x.description)+'</td><td>'+esc(x.charge_type)+'</td><td>₹'+Number(x.amount||0).toFixed(2)+'</td><td>'+esc(x.invoice_number||'Unlinked')+'</td></tr>').join('')+'</tbody></table></div>':'<div class="empty" style="margin-top:8px">No Theatre charges recorded.</div>');}catch(e){el.innerHTML='<div class="empty">Charges unavailable for this role.</div>'}
+}
+async function addTheatreTeam(procedureId){
+  const staffId=Number(document.getElementById('theatreTeamStaff')?.value||0), teamRole=document.getElementById('theatreTeamRole')?.value||'';if(!staffId||!teamRole)return;
+  try{await api('/theatre',{method:'POST',body:JSON.stringify({action:'team_add',procedure_id:Number(procedureId),staff_id:staffId,team_role:teamRole})});await loadTheatre();openTheatreProcedure(procedureId)}catch(e){alert(e.message)}
+}
+async function removeTheatreTeam(teamId,procedureId){
+  if(!confirm('Remove this team member from the procedure?'))return;
+  try{await api('/theatre',{method:'PUT',body:JSON.stringify({action:'team_remove',id:Number(teamId)})});await loadTheatre();openTheatreProcedure(procedureId)}catch(e){alert(e.message)}
+}
+async function validateTheatreProcedure(procedureId){
+  if(!confirm('Validate this completed Theatre procedure? All charges must already be linked to invoice lines.'))return;
+  try{await api('/theatre-validate',{method:'POST',body:JSON.stringify({procedure_id:Number(procedureId)})});await loadTheatre();openTheatreProcedure(procedureId);alert('Theatre procedure validated.')}catch(e){alert(e.message)}
+}
+async function revertTheatreValidation(procedureId){
+  const reason=prompt('Validation revert reason (required):');if(reason===null||reason.trim().length<3)return alert('A validation revert reason is required.');
+  try{await api('/theatre-validation-revert',{method:'POST',body:JSON.stringify({procedure_id:Number(procedureId),reason:reason.trim()})});await loadTheatre();openTheatreProcedure(procedureId);alert('Theatre validation reverted.')}catch(e){alert(e.message)}
 }
   function renderBeds(){
   if(!state.beds.length){document.getElementById('bedsGrid').innerHTML='<div class="empty">No beds configured yet.</div>';return}

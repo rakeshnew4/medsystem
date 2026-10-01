@@ -391,3 +391,38 @@ Billing is marked Complete only after authenticated invoice/payment E2E, role bo
 ## TC-THEATRE-001 — Theatre procedure worklist
 The Theatre module exposes a read-oriented worklist with HMIS-aligned search across patient, UHID, admission/BHT, procedure, doctor and room, plus procedure-state and date filters. Patient identity remains linked to the existing Patient Workspace, and existing lifecycle/charge/ward-return actions remain mapped to their protected server transitions.
 Status: Deployed in v417. Dry-run passed with 0 errors. Anonymous GET /api/theatre returns 401. Authenticated hospital-staff browser verification remains pending because the available runner cannot establish a real staff session.
+## TC-THEATRE-020 — Room schedule
+Room schedule groups existing scheduled/in-progress Theatre procedures by hospital-scoped theatre room and preserves procedure/patient context without adding a scheduling mutation.
+Status: Implemented in the UI-10 full-loop increment; authenticated browser verification pending.
+
+## TC-THEATRE-021 — Patient/procedure header
+Opening a Theatre procedure shows patient/UHID/BHT, admission, procedure, doctor, room, lifecycle, schedule and outcome context and links to Patient Workspace.
+Status: Implemented; authenticated browser verification pending.
+
+## TC-THEATRE-022 — Surgical team
+Opening a procedure shows existing surgical team assignments and only exposes the verified team_add/team_remove server actions for editable procedures.
+Status: Implemented; authenticated role-boundary browser verification pending.
+
+## TC-THEATRE-023 — Lifecycle controls
+Theatre UI exposes only scheduled → in_progress → completed and scheduled → cancelled transitions; completion requires an outcome and server validation remains authoritative.
+Status: Implemented; authenticated browser verification pending.
+
+## TC-THEATRE-024 — Theatre charges
+Procedure detail shows protected Theatre charges and existing billing/admin charge creation; financial linkage remains server-authorized.
+Status: Implemented; authenticated billing execution pending.
+
+## TC-THEATRE-025 — Ward return
+Completed admission-linked procedures expose the protected ward_return action only when the procedure has not already been returned and retain admission/encounter continuity checks on the server.
+Status: Implemented; authenticated browser verification pending.
+
+## TC-THEATRE-026 — Validation/revert
+Completed procedures can surface protected validation and validation-revert controls; validation requires invoice-linked Theatre charges and revert requires a non-empty reason.
+Status: Implemented; authenticated role-boundary browser verification pending.
+
+## TC-THEATRE-027 — Clinical/financial closure
+Procedure detail combines lifecycle, outcome, Theatre charges, validation state and ward-return state in one closure presentation without inventing a new mutation.
+Status: Implemented; authenticated browser verification pending.
+
+## TC-THEATRE-028 — Full UI-10 loop access boundary
+The Theatre UI remains backed by protected routes; anonymous GET /api/theatre, /api/theatre-charges, /api/theatre-validate and /api/theatre-validation-revert must not expose protected data or mutations.
+Status: Dry-run passed with 0 errors; post-deploy anonymous access verification pending.
