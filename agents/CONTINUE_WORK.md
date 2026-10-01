@@ -34,7 +34,7 @@ Use public/HMIS_CAREFLOW_PLAN.md as the source of truth. Prefer the earliest unf
 
 ## Current continuation target
 
-Theatre / procedures is intentionally parked by user request. The active workflow is now **Inventory / Assets**. The latest pharmacy transfer increment is deployed as v396 with 11/11 production integrity checks passing; authenticated staff E2E is still the only unpassed completion gate. The next-task loop is mandatory:
+Theatre / procedures is intentionally parked by user request. The active workflow is now **Inventory / Assets**. The latest pharmacy transfer increment is deployed as v396 with 11/11 production integrity checks passing; authenticated staff E2E is still the only unpassed completion gate. A dedicated HMIS_CAREFLOW_UI_PLAN.md is now the source of truth for the UI redesign workstream. The UI work must proceed module-by-module without weakening backend completion gates. The next-task loop is mandatory:
 1. At the beginning of EVERY work turn, re-read this file and public/HMIS_CAREFLOW_PLAN.md.
 2. Before changing any workflow, inspect the relevant hmislk/hmis repository code/design on the development branch and use it as the domain, workflow, UI and data-model reference. Do not invent HMIS-like behavior without checking the repository.
 3. Execute the FIRST unfinished task listed below immediately. Do not stop at a status report when a safe implementation/test task remains.
@@ -43,6 +43,9 @@ Theatre / procedures is intentionally parked by user request. The active workflo
 6. Before any new workflow is started, verify its required CareFlow schema exists in the external PostgreSQL adapter database.
 
 ### NEXT TASK QUEUE — always keep this current
+UI workstream is now the active implementation focus requested by the user. Execute UI-00 then UI-01 onward from public/HMIS_CAREFLOW_UI_PLAN.md, while preserving the backend safety gates below.
+UI-00 current: module launcher/navigation regrouping deployed in the next UI release; remaining global tasks are patient-context bar, consistent breadcrumbs/back behavior and legacy visual cleanup.
+UI-01 current: Patient Lookup/Search workspace redesign started; next concrete task is to refine the selected-patient header into a prominent HMIS-style identity/context bar and separate Actions from Reports/History.
 1. Inventory / Assets: authenticated staff E2E for asset create/search/transfer, plus concurrent transfer and role-boundary execution tests. **Blocked only by the missing hospital staff session; do not claim completion.**
 1a. Inventory / Assets schema gate is satisfied; production invariant validator is live and returns 0 violations.
 2. Inventory / Assets safety: continue non-session-safe coverage for inactive-asset protection, hospital isolation, concurrent transfer invariants and transfer-history integrity. v373 rejects a no-op transfer where location and custodian are unchanged inside the transfer transaction. v375 extends the production validator with no-op transfer-history and inactive/disposed/retired-asset transfer-history checks; the deployed validator returns 0 violations across 7 checks. Authenticated execution remains open. Pharmacy transfer state machine is now implemented: issue → in_transit → receive/cancel, with transfer-linked ledger continuity and department role boundaries; next is dry-run/deploy plus non-mutating route/invariant verification.

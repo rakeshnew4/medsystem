@@ -42,22 +42,22 @@
     <button class="active nav-home" data-section="dashboard">Overview</button>
 
     <div class="nav-group open">
-      <button class="nav-group-toggle" onclick="toggleNavGroup(this)">Front desk <span>⌄</span></button>
+      <button class="nav-group-toggle" onclick="toggleNavGroup(this)">OPD <span>⌄</span></button>
       <div class="nav-sub">
-        <button data-section="queue">Queue board</button>
+        <button data-section="patients">Patient Lookup</button>
         <button data-section="appointments">Appointments</button>
-        <button data-section="patients">Patients</button>
+        <button data-section="queue">OPD Queue / Tokens</button>
         <button data-section="followups">Follow-ups</button>
         <a class="nav-link" href="/patient/" target="_blank" rel="noopener">Patient portal <small>Test</small></a>
       </div>
     </div>
 
     <div class="nav-group open">
-      <button class="nav-group-toggle" onclick="toggleNavGroup(this)">Clinical <span>⌄</span></button>
+      <button class="nav-group-toggle" onclick="toggleNavGroup(this)">Clinical & Diagnostics <span>⌄</span></button>
       <div class="nav-sub">
-        <button data-section="doctor-room">Doctor Room</button>
+        <button data-section="doctor-room">Doctor Consultation</button>
         <button data-section="doctors">Doctors</button>
-        <button data-section="lab">Lab</button>
+        <button data-section="lab">Laboratory</button>
         <button data-section="pharmacy">Pharmacy</button>
         <button data-section="theatre">Theatre / Procedures</button>
       </div>
@@ -135,6 +135,21 @@
 <section id="dashboard" class="section active">
   <div class="dashboard-toolbar"><div class="dashboard-toolbar-label"><strong>Dashboard period</strong><span>Appointments follow this range · Active IPD stays current</span></div><div class="dashboard-range-controls"><select id="dashboardRange" aria-label="Dashboard period" onchange="changeDashboardRange(this.value)"><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="last7">Last 7 days</option><option value="next7">Next 7 days</option><option value="last30">Last 30 days</option><option value="next30">Next 30 days</option><option value="custom">Custom range</option></select><input id="dashboardFrom" type="date" aria-label="From date" style="display:none" onchange="applyCustomDashboardRange()"><span id="dashboardRangeSep" style="display:none">to</span><input id="dashboardTo" type="date" aria-label="To date" style="display:none" onchange="applyCustomDashboardRange()"><button class="btn" type="button" onclick="loadAllWithLoader()">Apply</button></div></div>
   <div id="stats" class="grid stats"></div>
+  <div class="home-section-label"><h2>Hospital modules</h2><span>Open a worklist or workspace</span></div>
+<div class="module-launcher" aria-label="Hospital modules">
+  <button class="module-card" type="button" onclick="showSection('patients')"><div class="module-card-head"><div class="module-icon">P</div><span class="module-arrow">→</span></div><strong>Patient Registration</strong><span>Search, register and open the patient workspace.</span><span class="module-status">Patient / OPD</span></button>
+  <button class="module-card" type="button" onclick="showSection('appointments')"><div class="module-card-head"><div class="module-icon">A</div><span class="module-arrow">→</span></div><strong>Appointments & OPD</strong><span>Appointments, check-in and outpatient flow.</span><span class="module-status">OPD</span></button>
+  <button class="module-card" type="button" onclick="showSection('queue')"><div class="module-card-head"><div class="module-icon">Q</div><span class="module-arrow">→</span></div><strong>Queue & Tokens</strong><span>Worklists, priorities and next-patient dispatch.</span><span class="module-status">OPD Queue</span></button>
+  <button class="module-card" type="button" onclick="showSection('doctor-room')"><div class="module-card-head"><div class="module-icon">D</div><span class="module-arrow">→</span></div><strong>Clinical Care</strong><span>Doctor room, consultation, orders and follow-up.</span><span class="module-status">Clinical</span></button>
+  <button class="module-card" type="button" onclick="showSection('lab')"><div class="module-card-head"><div class="module-icon">L</div><span class="module-arrow">→</span></div><strong>Laboratory</strong><span>Orders, sample collection, results and verification.</span><span class="module-status">Diagnostics</span></button>
+  <button class="module-card" type="button" onclick="showSection('pharmacy')"><div class="module-card-head"><div class="module-icon">Rx</div><span class="module-arrow">→</span></div><strong>Pharmacy & Stock</strong><span>Dispensing, batches, transfers, bin card and stock.</span><span class="module-status">Pharmacy</span></button>
+  <button class="module-card" type="button" onclick="showSection('beds')"><div class="module-card-head"><div class="module-icon">B</div><span class="module-arrow">→</span></div><strong>Admissions & Beds</strong><span>Admissions, bed occupancy, transfers and discharge.</span><span class="module-status">Inpatient</span></button>
+  <button class="module-card" type="button" onclick="showSection('billing')"><div class="module-card-head"><div class="module-icon">₹</div><span class="module-arrow">→</span></div><strong>Billing & Payments</strong><span>Invoices, charges, payments and financial history.</span><span class="module-status">Finance</span></button>
+  <button class="module-card" type="button" onclick="showSection('theatre')"><div class="module-card-head"><div class="module-icon">T</div><span class="module-arrow">→</span></div><strong>Theatre & Procedures</strong><span>Procedure worklist, rooms, teams and lifecycle.</span><span class="module-status">Procedures</span></button>
+  <button class="module-card" type="button" onclick="showSection('assets')"><div class="module-card-head"><div class="module-icon">I</div><span class="module-arrow">→</span></div><strong>Inventory & Assets</strong><span>Assets, transfers, stock history and reports.</span><span class="module-status">Inventory</span></button>
+  <button class="module-card" type="button" onclick="showSection('staff')"><div class="module-card-head"><div class="module-icon">S</div><span class="module-arrow">→</span></div><strong>Staff & Access</strong><span>Staff, departments, roles and permissions.</span><span class="module-status">Administration</span></button>
+  <button class="module-card" type="button" onclick="showSection('analytics')"><div class="module-card-head"><div class="module-icon">R</div><span class="module-arrow">→</span></div><strong>Reports & Analytics</strong><span>Operational, financial and management reporting.</span><span class="module-status">Reports</span></button>
+</div>
   <div class="grid two-col" style="margin-top:16px;grid-template-columns:1fr">
     <div class="card panel"><div class="panel-head"><h2 class="panel-title">Appointments</h2><button class="btn" onclick="showSection('appointments')">View all</button></div><div id="todayAppointments" class="table-wrap"></div></div>
   </div>
@@ -182,15 +197,15 @@
 <div id="clinicalModal" class="modal"><div class="modal-card patient-record-modal"><div class="patient-record-head"><div><div class="kicker">Patient record</div><h2 class="patient-record-name" id="clinicalPatientName">Patient</h2><div id="clinicalPatientMeta" class="patient-record-meta"></div></div><div class="patient-record-actions"><button class="btn" onclick="editPatientFromRecord()">Edit patient</button><button class="btn" onclick="closeModal('clinicalModal')">Close</button></div></div><div id="clinicalPatientSummary" class="patient-record-summary"></div><div id="clinicalBody"></div></div></div>
 
 <section id="patients" class="section">
+  <div class="patient-module-header"><div><h2>Patient Lookup & Workspace</h2><p>Search first, select the patient identity, then continue into OPD, clinical, IPD, pharmacy or billing.</p></div><div class="patient-module-header-actions"><button class="btn" onclick="showSection('appointments')">Appointments</button><button class="btn primary" onclick="openModal('patientRegisterModal')">+ New patient</button></div></div>
   <div class="patient-workspace-layout">
     <div class="card panel patient-directory">
-      <div class="panel-head"><div><h2 class="panel-title">Patient workspace</h2><div class="record-section-note">Search by name, UHID or phone. Select a patient to work from one place.</div></div><button class="btn primary" onclick="openModal('patientRegisterModal')">+ Register</button></div>
-      <div class="patient-search"><input id="patientWorkspaceSearch" placeholder="Search patient, UHID or phone…" autocomplete="off" oninput="renderPatientDirectory()"></div>
-      <div class="patient-filters"><button class="mini active" data-pfilter="all" onclick="setPatientFilter('all',this)">All</button><button class="mini" data-pfilter="active" onclick="setPatientFilter('active',this)">Active</button><button class="mini" data-pfilter="opd" onclick="setPatientFilter('opd',this)">OPD</button><button class="mini" data-pfilter="ipd" onclick="setPatientFilter('ipd',this)">IPD</button></div>
+      <div class="patient-lookup-toolbar"><div class="patient-lookup-search"><span aria-hidden="true">⌕</span><input id="patientWorkspaceSearch" placeholder="Search name, UHID, PHN, phone or identifier…" autocomplete="off" oninput="renderPatientDirectory()"></div><div class="patient-lookup-actions"><button class="mini active" data-pfilter="all" onclick="setPatientFilter('all',this)">All</button><button class="mini" data-pfilter="active" onclick="setPatientFilter('active',this)">Active</button><button class="mini" data-pfilter="opd" onclick="setPatientFilter('opd',this)">OPD</button><button class="mini" data-pfilter="ipd" onclick="setPatientFilter('ipd',this)">IPD</button></div></div>
+      <div class="patient-action-report-label">Patient records</div>
       <div id="patientDirectory"></div>
     </div>
     <div class="card panel patient-workspace-main">
-      <div id="patientWorkspaceEmpty" class="patient-workspace-empty"><div class="doctor-empty-icon">+</div><h3>Select a patient</h3><p>Open a patient to see their current care, appointments, clinical history, investigations, prescriptions, billing, IPD and journey.</p></div>
+      <div id="patientWorkspaceEmpty" class="patient-workspace-empty"><div class="doctor-empty-icon">+</div><h3>Select a patient</h3><p>Patient identity is the entry point. After selection, CareFlow shows the current encounter, actions, clinical information and reports in one contextual workspace.</p></div>
       <div id="patientWorkspaceBody" style="display:none"></div>
     </div>
   </div>
