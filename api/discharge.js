@@ -21,5 +21,6 @@ export default async function(req,res){
   await logWorkflowEvent(ctx,{patientId:a.rows[0].patient_id,eventType:"discharge_checklist_updated",stage:"discharge",entityType:"admission",entityId:b.admission_id});return res.json(r.rows[0]);
  }
  const r=await db.query("UPDATE discharge_checklists SET clinical_clearance=$1,reports_ready=$2,medication_reconciled=$3,billing_cleared=$4,insurance_status=$5,payment_status=$6,discharge_medicines=$7,summary=$8,updated_at=now(),cleared_by=CASE WHEN $1 AND $2 AND $3 AND $4 AND ($6='paid' OR ($6='approved' AND $5='approved')) THEN $9 ELSE cleared_by END,cleared_at=CASE WHEN $1 AND $2 AND $3 AND $4 AND ($6='paid' OR ($6='approved' AND $5='approved')) THEN now() ELSE cleared_at END WHERE admission_id=$10 AND hospital_id=$11 RETURNING *",[!!b.clinical_clearance,!!b.reports_ready,!!b.medication_reconciled,!!b.billing_cleared,insuranceStatus,paymentStatus,b.discharge_medicines||null,b.summary||null,ctx.user.email,b.admission_id,ctx.hospitalId]);
- return res.json(r.rows[0]||{error:"Discharge checklist not found"});
+ if(!r.rows[0])return res.status(404).json({error:"Discharge checklist not found"});
+ return res.json(r.rows[0]);
 }

@@ -53,6 +53,11 @@ Status: Requires authenticated staff session.
 Expected: admission becomes discharged, IPD encounter completes, active bed assignment is released, bed becomes available, discharge event is recorded.
 Status: Requires authenticated staff session. Discharge state transition is now atomic and inserts the discharge workflow event in the same transaction.
 
+## TC-IPD-019 — Missing discharge checklist update is not a success
+Route: /api/discharge; Method: PUT; Actor: authenticated staff.
+Expected: a valid active admission with no discharge checklist returns HTTP 404 rather than HTTP 200 with an error payload.
+Status: Implemented in v441; authenticated execution pending.
+
 ## TC-IPD-013 — Discharge cannot bypass checklist
 Scenario: active admission with an incomplete/missing discharge checklist.
 Expected: HTTP 409; admission remains active, encounter remains open, assignment remains active and bed remains occupied.
