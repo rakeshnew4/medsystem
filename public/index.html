@@ -676,7 +676,10 @@ async function loadSectionData(id,force=false){
     setup:async()=>{if(!p['action.setup.manage'])return;await loadHospitalConfig()}
   };
   const loader=loaders[id];if(!loader)return;
-  showCareFlowLoader('Loading '+(SECTION_TITLES[id]||'section')+'…');
+  // The receptionist kiosk is an interactive control surface. Never place
+  // the global blocking loader over it; its own controls must remain clickable.
+  const kiosk=id==='reception-desk';
+  if(!kiosk)showCareFlowLoader('Loading '+(SECTION_TITLES[id]||'section')+'…');
   try{
     sectionLoadState[id]=loader();
     await sectionLoadState[id];
@@ -684,7 +687,7 @@ async function loadSectionData(id,force=false){
     delete sectionLoadState[id];
     if(e.status===401){location.replace('/login?next='+encodeURIComponent(location.pathname));return}
     if(e.status!==403)console.error(e);
-  }finally{hideCareFlowLoader(true)}
+  }finally{if(!kiosk)hideCareFlowLoader(true);else hideCareFlowLoader(true)}
 }
 async function refreshCurrentSection(){
   const id=document.querySelector('.section.active')?.id||roleDefaultSection();
