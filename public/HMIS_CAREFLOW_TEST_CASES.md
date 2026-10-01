@@ -143,7 +143,7 @@ Status: Hardened v453; authenticated fault-injection execution pending.
 ## TC-PHARMACY-033 — Deterministic dispense event-repair boundary
 Route: /api/pharmacy-dispense-validation; Method: GET; Actor: administrator/owner validation only.
 Expected: simulated workflow-event persistence failure is caught as recorded=false, no marker event is written, and the terminal-dispense unique guard exists. No stock or dispense mutation is performed.
-Status: Implemented v454; automated execution pending.
+Status: Implemented v455; automated execution pending.
 
 # IPD / Beds / Discharge
 
