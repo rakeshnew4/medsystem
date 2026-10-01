@@ -344,7 +344,35 @@ Remaining encounter work:
 
 # 04 — Queue / token
 
-Not started.
+**In progress — HMIS-aligned queue dispatch foundation implemented.**
+
+HMIS queue/token workflows treat the queue as an operational state machine: patients move through the appropriate work queue, staff act on the next eligible patient, and priority/arrival ordering matters.
+
+Implemented this run:
+- Queue Board/API ordering now respects urgent → high → normal priority before token/arrival order.
+- Added a role-aware Call next action to the Queue Board for receptionist, nurse, doctor, lab and pharmacy workflows.
+- Call-next uses the existing protected queue transition endpoint, so the normal encounter/workflow event path remains in force.
+- Role dispatch targets:
+  - receptionist: waiting → vitals
+  - nurse: waiting → vitals
+  - doctor: doctor → in_room
+  - lab: lab → followup
+  - pharmacy: pharmacy → completed
+- The Queue Board continues to support manual stage movement for exceptional cases.
+- Public token tracking remains available separately from staff queue management.
+
+Verification:
+- Deployment v220 completed successfully.
+- Dry-run reported no blocking errors.
+- Anonymous queue access remains correctly protected with HTTP 401.
+- Public OPD hospital discovery remains healthy with HTTP 200 and active doctors returned.
+
+Remaining queue/token work:
+- Authenticated end-to-end testing of Call next for each role.
+- Add stronger concurrency-safe dispatch semantics at the database transaction level.
+- Verify token numbering/reset rules across hospital-local dates and doctors.
+- Verify display/queue-board synchronization and patient token tracking after every stage transition.
+- Reconcile cancellation/no-show/expired-token behavior with appointment status transitions.
 
 # 05 — Nursing / vitals / triage
 
