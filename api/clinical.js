@@ -1,5 +1,5 @@
 import { db } from "../lib/db.js"; import { requirePermission } from "../lib/authz.js";
-import { logWorkflowEvent, findOpenEncounter } from "../lib/workflow.js";
+import { logWorkflowEvent, findOpenEncounter, getOrCreateEncounter } from "../lib/workflow.js";
 import { notifyRoles } from "../lib/staff-notifications.js";
 export const access="user"; export const methods=["GET","POST","PUT"];
 export default async function(req,res){
@@ -15,15 +15,11 @@ export default async function(req,res){
    const n=await db.query("SELECT COALESCE(MAX(visit_number),0)+1 AS n FROM doctor_visits WHERE hospital_id=$1 AND patient_id=$2",[ctx.hospitalId,b.patient_id]);
    let encounterId=b.encounter_id||null;
    if(!encounterId){
-     const existing=await db.query("SELECT id FROM care_encounters WHERE hospital_id=$1 AND patient_id=$2 AND encounter_type='opd' AND appointment_id IS NOT DISTINCT FROM $3 AND status='open' ORDER BY started_at DESC LIMIT 1",[ctx.hospitalId,b.patient_id,b.appointment_id||null]);
-     if(existing.rows[0])encounterId=existing.rows[0].id;
-     else {
-       const ce=await db.query("INSERT INTO care_encounters(hospital_id,patient_id,encounter_type,appointment_id,doctor_id,status,reason) VALUES($1,$2,'opd',$3,$4,'open',$5) RETURNING id",[ctx.hospitalId,b.patient_id,b.appointment_id||null,b.doctor_id||ctx.staff.doctor_id||null,b.reason||"OPD consultation"]);
-       encounterId=ce.rows[0].id;
-     }
+     const ce=await getOrCreateEncounter(ctx,b.patient_id,{appointmentId:b.appointment_id||null,encounterType:'opd',doctorId:b.doctor_id||ctx.staff.doctor_id||null,reason:b.reason||'OPD consultation',stage:'doctor',priority:b.priority||'normal'});
+     encounterId=ce.id;
    }
    const r=await db.query("INSERT INTO doctor_visits(hospital_id,patient_id,doctor_id,appointment_id,queue_entry_id,encounter_id,visit_number,clinical_notes,visit_status,started_at,ended_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,now(),CASE WHEN $9='completed' THEN now() ELSE NULL END) RETURNING *",[ctx.hospitalId,b.patient_id,b.doctor_id||ctx.staff.doctor_id||null,b.appointment_id||null,b.queue_entry_id||null,encounterId,n.rows[0].n,b.clinical_notes||null,b.visit_status||"open"]);
-   await db.query("UPDATE care_encounters SET current_stage=$1,updated_at=now() WHERE id=$2",[b.visit_status==="completed"?"completed":"doctor",encounterId]);
+   await db.query("UPDATE care_encounters SET current_stage=$1,status=$2,ended_at=CASE WHEN $2='completed' THEN COALESCE(ended_at,now()) ELSE ended_at END,updated_at=now() WHERE id=$3 AND hospital_id=$4",[b.visit_status==="completed"?"completed":"doctor",b.visit_status==="completed"?"completed":"open",encounterId,ctx.hospitalId]);
    await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId, eventType:b.visit_status==="completed"?"consultation_completed":"consultation_started",stage:b.visit_status==="completed"?"completed":"doctor",entityType:"doctor_visit",entityId:r.rows[0].id});
    return res.json(r.rows[0]);
   }

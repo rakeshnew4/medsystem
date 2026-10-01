@@ -1,6 +1,6 @@
 import { db } from "../lib/db.js";
 import { requirePermission } from "../lib/authz.js";
-import { logWorkflowEvent, findOpenEncounter } from "../lib/workflow.js";
+import { logWorkflowEvent, findOpenEncounter, getOrCreateEncounter } from "../lib/workflow.js";
 import { allocateOpdToken, hospitalLocalDate } from "../lib/opd.js";
 import { notifyStage } from "../lib/staff-notifications.js";
 
@@ -31,19 +31,12 @@ export default async function(req,res){
       [hid,b.patient_id,b.appointment_id||null,b.doctor_id||null,stage,b.priority||"normal",token.token,token.tokenDate,token.tokenNumber,b.reason||null,b.notes||null]
     );
 
-    const encounter=await findOpenEncounter(ctx,b.patient_id,{appointmentId:b.appointment_id||null,encounterType:"opd"});
-    if(encounter){
-      await db.query("UPDATE care_encounters SET doctor_id=COALESCE($1,doctor_id),current_stage=$2,priority=$3,updated_at=now() WHERE id=$4",[b.doctor_id||null,stage,b.priority||"normal",encounter.id]);
-    }else{
-      const er=await db.query(
-        "INSERT INTO care_encounters(hospital_id,patient_id,encounter_type,appointment_id,doctor_id,status,reason,current_stage,priority) VALUES($1,$2,'opd',$3,$4,'open',$5,$6,$7) RETURNING id",
-        [hid,b.patient_id,b.appointment_id||null,b.doctor_id||null,b.reason||null,stage,b.priority||"normal"]
-      );
-      await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId:er.rows[0].id,eventType:"opd_registered",stage:"waiting",entityType:"queue",entityId:r.rows[0].id,metadata:{token:token.token,token_date:token.tokenDate}});
-    }
-    await logWorkflowEvent(ctx,{patientId:b.patient_id,eventType:"queue_created",stage,entityType:"queue",entityId:r.rows[0].id,metadata:{token:token.token,token_date:token.tokenDate,priority:b.priority||"normal"}});
+    const encounter=await getOrCreateEncounter(ctx,b.patient_id,{appointmentId:b.appointment_id||null,encounterType:"opd",doctorId:b.doctor_id||null,reason:b.reason||"OPD visit",stage,priority:b.priority||"normal"});
+    await db.query("UPDATE care_encounters SET doctor_id=COALESCE($1,doctor_id),current_stage=$2,priority=$3,updated_at=now() WHERE id=$4",[b.doctor_id||null,stage,b.priority||"normal",encounter.id]);
+    await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId:encounter.id,eventType:"opd_registered",stage:"waiting",entityType:"queue",entityId:r.rows[0].id,metadata:{token:token.token,token_date:token.tokenDate}});
+    await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId:encounter.id,eventType:"queue_created",stage,entityType:"queue",entityId:r.rows[0].id,metadata:{token:token.token,token_date:token.tokenDate,priority:b.priority||"normal"}});
     await notifyStage({hospitalId:hid,stage,title:"Patient added to queue",body:"Token "+(token.token||"—")+" is ready for "+(stage==="waiting"?"nurse vitals":"the next workflow step")+".",entityType:"queue",entityId:r.rows[0].id,patientId:b.patient_id,excludeStaffId:ctx.staff.id,doctorId:b.doctor_id||null});
-    return res.json({...r.rows[0],token});
+    return res.json({...r.rows[0],encounter_id:encounter.id,encounter,token});
   }
 
   if(req.method==="PUT"){
@@ -64,7 +57,10 @@ export default async function(req,res){
     }
 
     const encounter=await findOpenEncounter(ctx,q.patient_id,{appointmentId:q.appointment_id||null,encounterType:"opd"});
-    if(encounter)await db.query("UPDATE care_encounters SET doctor_id=COALESCE($1,doctor_id),current_stage=$2,priority=$3,updated_at=now() WHERE id=$4",[q.doctor_id,q.stage,q.priority||"normal",encounter.id]);
+    if(encounter){
+      await db.query("UPDATE care_encounters SET doctor_id=COALESCE($1,doctor_id),current_stage=$2,priority=$3,status=CASE WHEN $2='completed' THEN 'completed' ELSE status END,ended_at=CASE WHEN $2='completed' THEN COALESCE(ended_at,now()) ELSE ended_at END,updated_at=now() WHERE id=$4",[q.doctor_id,q.stage,q.priority||"normal",encounter.id]);
+    }
+    q.encounter_id=encounter?.id||null;
     await logWorkflowEvent(ctx,{patientId:q.patient_id,encounterId:encounter?.id||null,eventType:q.stage==="completed"?"queue_completed":"queue_stage_changed",stage:q.stage,entityType:"queue",entityId:q.id,metadata:{token:q.token,token_date:q.token_date,priority:q.priority||"normal"}});
     if(previous && previous.stage!==q.stage){
       const labels={waiting:"Nurse vitals",vitals:"Doctor consultation",doctor:"Doctor waiting",in_room:"Doctor consultation",lab:"Lab work",followup:"Follow-up desk",pharmacy:"Pharmacy dispensing",completed:"Visit completed"};
