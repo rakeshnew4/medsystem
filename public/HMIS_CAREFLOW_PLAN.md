@@ -432,6 +432,7 @@ Implemented:
 - Consultation completion is owned by the clinical workflow: completing the visit closes the linked queue item and linked appointment instead of relying on separate browser calls.
 - Existing open-visit completion now performs the same queue/appointment closure checks as a newly created visit.
 - Completion requires a non-empty consultation note server-side and in the Doctor Room UI.
+- v438 hardens the PUT consultation path: invalid visit statuses are rejected before mutation, and a completion without a non-empty note is rejected before the doctor_visit row is updated, preventing partial clinical-state mutation.
 - The Doctor Room no longer exposes a separate generic “Complete queue item” action that could bypass clinical documentation.
 - Prescriptions from Doctor Room are now bound to the active open consultation visit; server-side validation rejects prescriptions without an active assigned consultation.
 - Canonical encounter stage/status and workflow events continue to be updated as part of consultation documentation.

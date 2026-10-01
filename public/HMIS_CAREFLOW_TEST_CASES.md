@@ -1,5 +1,10 @@
 # HMIS → CareFlow Test Cases\n\nThis file is the executable test checklist for the workflow-by-workflow HMIS implementation.\n\n## Test policy\n\nFor every workflow:\n1. Validate the intended happy path.\n2. Validate role and permission boundaries.\n3. Validate invalid state transitions.\n4. Validate duplicate, concurrency, and idempotency behavior where relevant.\n5. Validate that the canonical encounter remains attached.\n6. Validate workflow notifications and events.\n7. Run automated safe API tests before deployment.\n8. Run an authenticated browser/staff test before marking the workflow complete.\n\nAutomated tests must not mutate a real patient unless a dedicated test patient/session is explicitly used.\n\n# Queue / token
 
+## TC-CLINICAL-021 — Invalid consultation completion does not mutate the visit
+Route: /api/clinical; Method: PUT type=visit; Actor: authenticated doctor/admin.
+Expected: invalid visit status returns HTTP 400; completed without a non-empty clinical note returns HTTP 400 before updating the doctor_visits row. Existing visit status/notes/ended_at remain unchanged.
+Status: Server-side hardened in v438; authenticated execution pending.
+
 ## TC-QUEUE-021 — Invalid queue transition is rejected
 Route: /api/queue; Method: PUT; Actor: authenticated non-admin staff.
 Expected: generic queue edits may only follow the HMIS-aligned forward state machine (waiting → vitals → doctor → in_room → downstream completion stages). Backward/sideways jumps return HTTP 409 and create no queue, encounter or workflow-event mutation.
