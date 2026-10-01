@@ -445,3 +445,8 @@ Status: Implemented in v450; authenticated staff concurrency execution remains p
 Route: /api/pharmacy-stock-transfers; Method: POST action=receive/cancel; Actor: authenticated pharmacy staff.
 Expected: receive changes a transfer to received only when destination stock is actually incremented; cancel changes it to cancelled only when source stock is actually restored. Missing/inactive stock must leave the transfer in_transit and return HTTP 409; no false terminal state or missing ledger movement is allowed.
 Status: Implemented in v451; authenticated staff execution remains pending.
+
+## TC-INVENTORY-031 — Pharmacy receipt retry/idempotency
+Route: /api/pharmacy-stock; Method: POST action=receive; Actor: authenticated pharmacy staff.
+Expected: an optional idempotency_key is persisted with the receipt ledger. Reusing the same key cannot add stock a second time; the retry returns HTTP 409. Missing keys preserve the existing receipt behavior.
+Status: Implemented in v452; authenticated execution remains pending.

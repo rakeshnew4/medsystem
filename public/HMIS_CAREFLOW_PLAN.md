@@ -7,7 +7,7 @@ CareFlow: https://hospital-ai.hatchable.site
 ## 2026-10-01 hardening increments — v450/v451
 
 v450: discharge checklist mutations are transaction-bound to an active admission lock, preventing writes after terminal discharge.
-v451: pharmacy transfer receive/cancel terminal status is now gated by the successful stock mutation itself, preventing false received/cancelled states when destination/source stock is missing or inactive. Authenticated staff concurrency execution remains an open gate.
+v451: pharmacy transfer receive/cancel terminal status is now gated by the successful stock mutation itself, preventing false received/cancelled states when destination/source stock is missing or inactive. v452: pharmacy stock receipt now supports an optional durable idempotency key, preventing duplicate stock addition on client/network retries. Authenticated staff concurrency execution remains an open gate.
 
 The discharge checklist mutation path is now transaction-bound to an active admission lock. HMIS nursing-discharge review confirms discharge is a gated inpatient workflow; CareFlow now prevents checklist writes from racing past terminal discharge state. Authenticated staff concurrency execution remains a required open gate.
 
