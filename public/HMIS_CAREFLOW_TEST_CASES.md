@@ -135,7 +135,15 @@ Status: Implemented in v261; authenticated browser test pending.
 Scheduling UI loads hospital-scoped theatre rooms and active doctor profiles and sends the selected IDs to the protected API.
 Status: Implemented in v261; authenticated browser test pending.
 
-## TC-THEATRE-015 — Procedure history
+## TC-THEATRE-015 — Standalone Theatre workbench
+Permitted doctor/nurse users can navigate to the Theatre section and see hospital-scoped procedure records and room summary.
+Status: Implemented in v263; authenticated browser test pending.
+
+## TC-THEATRE-016 — Start/cancel/complete controls
+The workbench exposes only valid lifecycle actions; completion prompts for and submits an outcome.
+Status: Implemented in v263; authenticated browser test pending.
+
+## TC-THEATRE-017 — Procedure history
 Patient Workspace displays scheduled/completed/cancelled procedure history without exposing another hospital's records.
 Status: Implemented in v261; authenticated browser test pending.
 
