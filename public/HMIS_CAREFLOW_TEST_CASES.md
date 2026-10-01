@@ -255,7 +255,7 @@ Status: Endpoint exists; authenticated browser/PDF verification pending.
 
 ## TC-BILL-017 — Legacy payment-ledger reconciliation
 Pre-ledger invoices with a positive `invoices.paid` balance must be reconciled into `invoice_payments` without changing the authoritative invoice total/paid balance or creating duplicate payment rows.
-Status: Production audit found 946 legacy invoices requiring reconciliation; mutation/backfill is intentionally not claimed complete.
+Status: Production audit found 946 legacy invoices requiring reconciliation; mutation/backfill is intentionally not claimed complete. New invoice creation is now atomic: invoice + line items + initial payment ledger entry commit together, so newly created invoices cannot create a ledger gap through a partial write.
 
 ## Billing completion gate
 Billing is marked Complete only after authenticated invoice/payment E2E, role boundaries, invalid financial inputs, invoice continuity and workflow audit events pass.

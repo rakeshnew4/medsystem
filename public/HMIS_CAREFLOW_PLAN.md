@@ -560,6 +560,7 @@ Implemented now:
 - Dedicated E2E patient and unpaid invoice fixture created and labeled E2E TEST DATA.
 - CareFlow already contains non-production role-preview test credentials in the staff-login test hint; no production staff passwords are exposed.
 - Added primary-admin-only /api/e2e-bootstrap so the automated browser harness can enter a selected test role without duplicating credentials.
+- Hardened invoice creation so the invoice row, all invoice items, and any initial payment-ledger row are committed in one database transaction; a partial financial write can no longer leave an invoice without its matching line items/payment record.
 
 Remaining Billing work:
 - Authenticated billing E2E: create invoice → inspect invoice → record partial payment → record final payment → verify status/outstanding balance.

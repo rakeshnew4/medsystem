@@ -19,12 +19,17 @@ export default async function(req,res){
   if(!Number.isFinite(tax)||tax<0)return res.status(400).json({error:"Invalid tax"});
   if(!Number.isFinite(paid)||paid<0||paid>total)return res.status(400).json({error:"Payment cannot be negative or exceed the invoice total"});
   const status=paid>=total?"paid":paid>0?"partial":"unpaid";
-  const inv=await db.query("INSERT INTO invoices(hospital_id,patient_id,appointment_id,visit_id,invoice_number,subtotal,discount,tax,total,paid,payment_method,status,notes,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *",[ctx.hospitalId,b.patient_id,b.appointment_id||null,b.visit_id||null,invoiceNumber,subtotal,discount,tax,total,paid,b.payment_method||null,status,b.notes||null,ctx.user.email]);
-  if(paid>0) await db.query("INSERT INTO invoice_payments(hospital_id,invoice_id,amount,payment_method,reference,received_by) VALUES($1,$2,$3,$4,$5,$6)",[ctx.hospitalId,inv.rows[0].id,b.paid,b.payment_method||null,b.reference||null,ctx.user.email]);
-  for(const item of b.items) await db.query("INSERT INTO invoice_items(invoice_id,description,quantity,unit_price,amount) VALUES($1,$2,$3,$4,$5)",[inv.rows[0].id,item.description,Number(item.quantity||1),Number(item.unit_price||0),Number(item.quantity||1)*Number(item.unit_price||0)]);
-  await logWorkflowEvent(ctx,{patientId:b.patient_id,eventType:"invoice_created",stage:"billing",entityType:"invoice",entityId:inv.rows[0].id,metadata:{total,paid,status}});
-  if(ctx.staff.role!=="billing")await notifyRoles({hospitalId:ctx.hospitalId,roles:["billing"],title:"New bill ready",body:"A new invoice is waiting for billing/payment action.",kind:"workflow",entityType:"invoice",entityId:inv.rows[0].id,patientId:b.patient_id,excludeStaffId:ctx.staff.id});
-  return res.json(inv.rows[0]);
+  const statements=[
+    {sql:"INSERT INTO invoices(hospital_id,patient_id,appointment_id,visit_id,invoice_number,subtotal,discount,tax,total,paid,payment_method,status,notes,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *",params:[ctx.hospitalId,b.patient_id,b.appointment_id||null,b.visit_id||null,invoiceNumber,subtotal,discount,tax,total,paid,b.payment_method||null,status,b.notes||null,ctx.user.email]},
+    ...items.map(item=>({sql:"INSERT INTO invoice_items(invoice_id,description,quantity,unit_price,amount) SELECT x.id,$2,$3,$4,$5 FROM (SELECT id FROM invoices WHERE invoice_number=$1 AND hospital_id=$6) x",params:[invoiceNumber,item.description,item.quantity,item.unit_price,item.quantity*item.unit_price,ctx.hospitalId]}))
+  ];
+  if(paid>0)statements.push({sql:"INSERT INTO invoice_payments(hospital_id,invoice_id,amount,payment_method,reference,received_by) SELECT $1,id,$2,$3,$4,$5 FROM invoices WHERE invoice_number=$6 AND hospital_id=$1",params:[ctx.hospitalId,paid,b.payment_method||null,b.reference||null,ctx.user.email,invoiceNumber]});
+  const tx=await db.transaction(statements);
+  const inv=tx.results?.[0]?.rows?.[0];
+  if(!inv)return res.status(500).json({error:"Invoice creation failed"});
+  await logWorkflowEvent(ctx,{patientId:b.patient_id,eventType:"invoice_created",stage:"billing",entityType:"invoice",entityId:inv.id,metadata:{total,paid,status}});
+  if(ctx.staff.role!=="billing")await notifyRoles({hospitalId:ctx.hospitalId,roles:["billing"],title:"New bill ready",body:"A new invoice is waiting for billing/payment action.",kind:"workflow",entityType:"invoice",entityId:inv.id,patientId:b.patient_id,excludeStaffId:ctx.staff.id});
+  return res.json(inv);
  }
  if(req.method==="PUT"){
   const b=req.body||{};const amount=Number(b.amount);
