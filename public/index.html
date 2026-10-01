@@ -123,6 +123,7 @@
       <button type="button" class="reception-control" onclick="openReceptionPanel('search')"><b>2</b><span>SEARCH</span></button>
       <button type="button" class="reception-control" onclick="openReceptionPanel('edit')"><b>3</b><span>EDIT</span></button>
       <button type="button" class="reception-control" onclick="openReceptionPanel('queue')"><b>4</b><span>QUEUE</span></button>
+      <button type="button" class="reception-control reception-patient-control" onclick="exitReceptionMinimal()"><b>←</b><span>PATIENT</span></button>
     </div>
   </div>
 </section>
@@ -1681,7 +1682,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     if(e.ctrlKey||e.altKey||e.metaKey)return;
     const tag=e.target?.tagName?.toLowerCase();
     if(['input','textarea','select'].includes(tag))return;
-    const map={F1:'walkin',F2:'appointment',F3:'search',F4:'edit',F5:'queue'};
+    const map={F1:'walkin',F2:'search',F3:'edit',F4:'queue'};
     if(map[e.key]){e.preventDefault();openReceptionPanel(map[e.key])}
   });
 });

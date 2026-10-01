@@ -912,6 +912,8 @@ td{font-size:13px}
 
 .ai-assistant-ball{
   box-shadow:0 8px 24px rgba(7,92,77,.20);
+  top:75%!important;
+  bottom:auto!important;
 }
 
 .search-select-input:focus{
