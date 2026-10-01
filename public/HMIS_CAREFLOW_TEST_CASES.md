@@ -374,6 +374,9 @@ Status: Implemented in v409; authenticated browser verification remains pending.
 Invoice detail submits incremental payment amounts through the existing PUT /api/billing contract; no UI-side total replacement is used.
 Status: Implemented in v409; authenticated billing-staff execution remains pending.
 
+## TC-INVENTORY-029 — Pharmacy transfer production gate
+The deployed `/api/pharmacy-stock-transfers` state machine is live. On 2026-10-01, the owner-only `/api/pharmacy-stock-validation` returned 11/11 checks passing with 0 violations; the transfer route returned HTTP 401 without authentication and the available signed-in app-user path was rejected by `requireStaff()` with HTTP 401. A real hospital-staff session is unavailable, so authenticated issue/receive/cancel, role-boundary, invalid-transition and concurrency tests remain open.
+
 ## TC-BILL-031 — Invoice PDF action
 Invoice detail exposes Print / PDF and opens the existing protected invoice PDF route for the selected invoice.
 Status: Implemented in v410; authenticated browser verification remains pending.
