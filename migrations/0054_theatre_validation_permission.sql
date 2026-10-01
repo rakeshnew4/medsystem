@@ -1,0 +1,3 @@
+INSERT INTO permissions(permission_key,label,category,description) VALUES ('action.theatre.validate','Validate Theatre surgery','Actions','Perform HMIS-aligned post-procedure Theatre financial validation') ON CONFLICT (permission_key) DO UPDATE SET label=EXCLUDED.label,category=EXCLUDED.category,description=EXCLUDED.description;
+INSERT INTO role_permissions(role,permission_key,allowed) SELECT 'admin',permission_key,true FROM permissions WHERE permission_key='action.theatre.validate' ON CONFLICT (role,permission_key) DO UPDATE SET allowed=true;
+INSERT INTO role_permissions(role,permission_key,allowed) SELECT 'billing',permission_key,true FROM permissions WHERE permission_key='action.theatre.validate' ON CONFLICT (role,permission_key) DO UPDATE SET allowed=true;

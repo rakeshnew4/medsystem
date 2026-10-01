@@ -6,7 +6,7 @@ export const access="user";
 export const methods=["POST"];
 
 export default async function(req,res){
-  const ctx=await requirePermission(req,res,"action.theatre.manage");
+  const ctx=await requirePermission(req,res,"action.theatre.validate");
   if(!ctx)return;
 
   const b=req.body||{};

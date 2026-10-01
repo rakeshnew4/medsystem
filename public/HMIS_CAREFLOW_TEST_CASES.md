@@ -200,7 +200,7 @@ Verify Theatre procedure states, completed-outcome requirements, ward-return sta
 Status: Automated production invariant check passed: the original eight integrity/isolation checks returned zero violations; v287 added four additional checks (completed-without-outcome, scheduled-on-unavailable-room, invalid theatre-service source, invalid medicine/pharmacy-dispense source), all zero against the external PostgreSQL database; v288 added invoice-item identity/amount continuity and charge-patient continuity checks, also zero. The current HMIS-aligned increment also audits completed procedures with unlinked Theatre charges; authenticated execution remains pending.
 
 ## TC-THEATRE-031 — HMIS-aligned Surgery Validation / financial closure
-Route: /api/theatre-validate; Method: POST; Actor: doctor/admin with Theatre manage permission.
+Route: /api/theatre-validate; Method: POST; Actor: billing/admin with Theatre validation permission.
 Expected: only a completed, unvalidated procedure can be validated; every Theatre charge must already have both invoice_id and invoice_item_id; validation records validated_at/validated_by and creates a theatre_procedure_validated workflow event.
 Status: Implemented in v310; anonymous access returns HTTP 401. Authenticated execution pending.
 

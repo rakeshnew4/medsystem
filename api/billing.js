@@ -19,6 +19,8 @@ export default async function(req,res){
   if(!Number.isFinite(tax)||tax<0)return res.status(400).json({error:"Invalid tax"});
   if(!Number.isFinite(paid)||paid<0||paid>total)return res.status(400).json({error:"Payment cannot be negative or exceed the invoice total"});
   const status=paid>=total?"paid":paid>0?"partial":"unpaid";
+  const encounter=await db.query("SELECT id FROM care_encounters WHERE hospital_id=$1 AND patient_id=$2 AND status='open' AND ($3::bigint IS NULL OR id=$3) ORDER BY started_at DESC LIMIT 1",[ctx.hospitalId,b.patient_id,b.visit_id||null]);
+  const encounterId=encounter.rows[0]?.id||null;
   const statements=[
     {sql:"INSERT INTO invoices(hospital_id,patient_id,appointment_id,visit_id,invoice_number,subtotal,discount,tax,total,paid,payment_method,status,notes,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *",params:[ctx.hospitalId,b.patient_id,b.appointment_id||null,b.visit_id||null,invoiceNumber,subtotal,discount,tax,total,paid,b.payment_method||null,status,b.notes||null,ctx.user.email]},
     ...items.map(item=>({sql:"INSERT INTO invoice_items(invoice_id,description,quantity,unit_price,amount) SELECT x.id,$2,$3,$4,$5 FROM (SELECT id FROM invoices WHERE invoice_number=$1 AND hospital_id=$6) x",params:[invoiceNumber,item.description,item.quantity,item.unit_price,item.quantity*item.unit_price,ctx.hospitalId]}))
