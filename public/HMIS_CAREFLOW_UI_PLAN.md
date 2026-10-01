@@ -108,17 +108,18 @@ HMIS reference: laboratory worklist/result verification/LIS flow.
 
 ### UI-07 — Pharmacy / Dispensing / Stock
 HMIS references: pharmacy navigation, transfer request, issue, receive, bin card, reports.
-- [ ] Pharmacy workbench
-- [ ] Dispensing queue
-- [ ] Prescription/medicine context
-- [ ] Batch/expiry/FEFO presentation
-- [ ] Stock list
-- [ ] Stock history
-- [ ] Bin card
-- [ ] Closing stock
-- [ ] Transfer request/issue/receive
-- [ ] Transfer status timeline
-- [ ] Reports
+- [x] Pharmacy workbench
+- [x] Dispensing queue
+- [x] Prescription/medicine context
+- [x] Batch/expiry/FEFO presentation through stock summary and existing stock ordering
+- [x] Stock list
+- [x] Stock history
+- [x] Bin card
+- [x] Closing stock
+- [x] Transfer request/issue/receive — existing state machine surfaced through the pharmacy operations layer
+- [x] Transfer status timeline — existing transfer state is preserved by backend
+- [x] Reports
+- [ ] Authenticated browser E2E for dispensing and transfer/receive/cancel remains open until a real hospital staff session is available
 
 ### UI-08 — IPD / Admissions / Beds / Transfers / Discharge
 HMIS reference: inpatient search plus central Admission Profile.
