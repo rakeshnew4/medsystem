@@ -311,7 +311,36 @@ Next appointment/OPD work:
 
 # 03 — Encounter model
 
-Not started.
+**Foundation implemented — HMIS-aligned encounter layer is now the canonical OPD context.**
+
+HMIS uses a central PatientEncounter concept for the patient's care episode; CareFlow's existing `care_encounters` table already provided the right architectural base. The implementation now treats that record as the canonical OPD encounter while keeping `doctor_visits` as the clinical consultation record attached to it.
+
+Implemented:
+- Added centralized `getOrCreateEncounter()` workflow logic.
+- OPD queue creation now creates/reuses the same `care_encounters` record and returns `encounter_id`.
+- Doctor consultation creation now reuses the canonical encounter instead of independently creating another OPD encounter.
+- Queue stage changes update the encounter's current stage and priority.
+- Completing the queue closes the encounter with `ended_at`.
+- Completing a doctor consultation closes the same encounter.
+- Added protected `/api/encounters` for encounter lookup/history and lifecycle updates.
+- Added explicit workflow events: `encounter_started`, `encounter_updated`, `encounter_completed`, `encounter_cancelled`.
+- Existing lab orders, medications, reports and vitals continue to carry `encounter_id`.
+
+Design decision:
+- `care_encounters` = the patient-care episode/context.
+- `queue_entries` = operational queue/token record.
+- `doctor_visits` = doctor consultation record inside the encounter.
+- Clinical orders/results/medications = child records linked to the encounter.
+
+Verification:
+- Deployment v218 completed.
+- `/api/encounters` is protected by the staff/user authorization layer; anonymous access correctly returns 401.
+
+Remaining encounter work:
+- Authenticated UI verification of encounter history and lifecycle actions.
+- Surface encounter ID/current encounter context consistently in Patient Workspace.
+- Ensure IPD admission/admission-transfer workflows use the same encounter lifecycle consistently.
+- Add richer encounter metadata only where the verified HMIS workflow requires it.
 
 # 04 — Queue / token
 
