@@ -46,6 +46,7 @@ Theatre / procedures is now the active UI workstream. **The active implementatio
 Run this queue top-to-bottom. A checkbox is marked complete only after the deployed behavior has actually been exercised and the expected result observed. Demo-mode execution counts as application E2E for workflow/permission behavior, but is explicitly labeled demo E2E and does not replace the real OTP/staff-production gate.
 
 1. [ ] E2E-AUTH — verify CARE_FLOW_DEMO_MODE=true harness; verify all 8 roles (admin, receptionist, nurse, doctor, lab, pharmacy, billing, store); verify role selection; verify false/unset restores OTP; verify demo identity never becomes a real staff account.
+2a. [ ] E2E-VISUAL — run deployed Chromium UI smoke tests at desktop/mobile sizes; exercise safe visible interactions; capture screenshots; run Groq multimodal visual review; fix verified layout/readability/mobile findings; keep genuine staff-auth UI evidence separate.
 2. [ ] E2E-RECEPTION — Receptionist: Hospital Home → Patient Workspace → search/select existing patient → register new patient → duplicate protection → UHID/source → appointment → check-in → token → queue; verify restricted actions return expected denial.
 3. [ ] E2E-QUEUE — queue ordering/priority → call-next → concurrent call-next → valid forward transitions → invalid transition 409 → terminal completion → patient context continuity.
 4. [ ] E2E-NURSING — Nurse: patient workspace → vitals → triage → red flags → nursing handoff → queue progression; validate invalid vitals and role boundaries.

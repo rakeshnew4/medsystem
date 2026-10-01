@@ -228,6 +228,13 @@ HMIS references: `Privileges.java`, `UserPrivilageController.java`, `ConfigOptio
 - [x] AI floating assistant positioning — removed viewport-sized entrance animation that could make the fixed assistant appear to originate from the middle of a phone/desktop-mode viewport; assistant now stays anchored to the viewport and respects mobile safe-area insets.
 - [x] Desktop-mode-on-phone baseline — fixed AI control no longer depends on a viewport-height animation, and the sidebar keeps normal desktop behavior when the browser deliberately reports a desktop-width viewport.
 
+### UI-17 — Automated visual/UI verification layer
+- [x] Chromium screenshot runner — admin-only `/api/e2e-visual` captures deployed CareFlow screens at desktop/mobile viewports and stores PNG evidence.
+- [x] Safe interaction smoke checks — patient portal Home/Book/Manage/Track tabs and staff-login empty-email validation are exercised without sending OTPs or mutating hospital data.
+- [x] LLM visual review — screenshots are reviewed with the configured Groq multimodal model; findings are recorded separately from browser assertions.
+- [x] First verified visual defect fixed — patient portal tabs now wrap on narrow screens; browser assertion confirms no horizontal overflow and all four tabs remain clickable.
+- [ ] Full authenticated staff visual loop — requires genuine hospital-staff OTP/session evidence and remains a separate gate.
+
 ### UI-16 — Minimal role workspaces / hospital-home-first landing
 - [x] Role landing rule — all supported staff roles now resolve to the normal Hospital overview first instead of auto-opening a role-specific operational screen.
 - [x] Doctor minimal workspace — Dashboard → My Queue / Patients / Follow-ups / Appointments, with Doctor Room as the focused work surface.
