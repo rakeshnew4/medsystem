@@ -29,7 +29,7 @@ For each domain:
 - [x] Architecture reconnaissance
 - [x] 01 Patient registration
 - [ ] 02 Appointment / OPD
-- [ ] 03 Encounter model
+- [x] 03 Encounter model
 - [ ] 04 Queue / token
 - [ ] 05 Nursing / vitals / triage
 - [ ] 06 Doctor consultation
@@ -311,7 +311,7 @@ Next appointment/OPD work:
 
 # 03 — Encounter model
 
-**Foundation implemented — HMIS-aligned encounter layer is now the canonical OPD context.**
+**Complete for the current OPD foundation — HMIS-aligned encounter layer is now the canonical OPD context.**
 
 HMIS uses a central PatientEncounter concept for the patient's care episode; CareFlow's existing `care_encounters` table already provided the right architectural base. The implementation now treats that record as the canonical OPD encounter while keeping `doctor_visits` as the clinical consultation record attached to it.
 
@@ -336,9 +336,12 @@ Verification:
 - Deployment v218 completed.
 - `/api/encounters` is protected by the staff/user authorization layer; anonymous access correctly returns 401.
 
-Remaining encounter work:
-- Authenticated UI verification of encounter history and lifecycle actions.
-- Surface encounter ID/current encounter context consistently in Patient Workspace.
+Completed in the current OPD foundation:
+- Encounter history/current encounter context is surfaced in Patient Workspace.
+- Queue cards expose the linked Encounter ID and encounter stage/status.
+- The canonical encounter remains connected to queue and doctor consultation.
+
+Deferred to the corresponding IPD workflow:
 - Ensure IPD admission/admission-transfer workflows use the same encounter lifecycle consistently.
 - Add richer encounter metadata only where the verified HMIS workflow requires it.
 
@@ -360,6 +363,9 @@ Implemented this run:
   - pharmacy: pharmacy → completed
 - The Queue Board continues to support manual stage movement for exceptional cases.
 - Public token tracking remains available separately from staff queue management.
+- Patient Workspace now shows the canonical current encounter and recent encounter history.
+- Queue cards now expose the linked Encounter ID and encounter stage/status so the operational token is visibly tied to the care episode.
+- Deployment v223 completed successfully.
 
 Verification:
 - Deployment v220 completed successfully.
