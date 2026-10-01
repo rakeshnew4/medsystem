@@ -323,7 +323,7 @@ Status: Open. The current automated runner cannot establish the hospital staff a
 
 ## TC-BILL-019 — Production billing integrity validator
 The owner-only validator audits invoice paid/status bounds, invoice-item arithmetic, invoice subtotal continuity, payment positivity and bounds, and payment/invoice hospital integrity.
-Status: Automated production audit rechecked on 2026-10-01: 0 structural financial violations; 946 legacy invoices with positive paid balances have no payment-ledger rows. Authenticated billing E2E remains required and this validator is not a substitute for staff-session testing.
+Status: Rechecked in v433 after repairing the external payment-ledger schema: 9/10 checks pass with 0 structural financial violations. The remaining failure is the explicit `legacy_payment_ledger_gap`: 13 existing pre-ledger paid invoices have positive `invoices.paid` balances without `invoice_payments` rows. Authenticated billing E2E remains required and this validator is not a substitute for staff-session testing.
 
 ## TC-BILL-020 — Legacy payment-ledger reconciliation gate
 Audit all pre-ledger invoices with positive invoices.paid and no invoice_payments row. Do not fabricate payment method, reference, receiver or timestamp data. Any reconciliation must preserve the authoritative invoice total/paid balance and be idempotent.
@@ -344,7 +344,7 @@ Status: Implemented in v383/v384; external payment-ledger runtime remains unreso
 
 ## TC-BILL-023 — Payment-ledger schema gate semantics
 The owner-only validator must treat invoice_payments table presence as a positive schema assertion: exactly one matching public table is a pass, absence is a failure. If the schema is absent through the configured external adapter, dependent ledger checks must fail explicitly as schema-unavailable rather than as generic database query errors.
-Status: Implemented in the current increment; deployment and post-deploy validation pending. Billing remains incomplete.
+Status: Implemented and deployed in v433. The owner-only fixed-schema repair endpoint created/verified `invoice_payments` through the configured external PostgreSQL adapter; the post-deploy validator now reaches every ledger query successfully. Billing remains incomplete because the legacy reconciliation gate and authenticated staff E2E are still open.
 
 ## TC-BILL-024 — Billing worklist UI search/filter
 Billing worklist exposes invoice, patient, UHID and phone search plus unpaid/partial/paid filters; filtering is client-side over the already hospital-scoped billing response and does not bypass server authorization.
