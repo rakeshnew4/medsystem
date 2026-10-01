@@ -31,14 +31,22 @@ export default async function(req,res){
     "SELECT count(*) AS n FROM invoices i WHERE ABS(i.subtotal-COALESCE((SELECT SUM(ii.amount) FROM invoice_items ii WHERE ii.invoice_id=i.id),0)) > 0.01",
     r=>Number(r[0]?.n||0));
 
-  await check("payment_ledger_access",
-    "SELECT count(*) AS n FROM information_schema.tables WHERE table_schema='public' AND table_name='invoice_payments'",
-    r=>Number(r[0]?.n||0) === 1 ? 0 : 1);
+  // The external adapter does not reliably expose information_schema to the
+  // application runtime. Probe the actual ledger relation instead: COUNT(*) is
+  // read-only, succeeds for an existing table even when it is empty, and throws
+  // when the relation is absent.
+  let ledgerReady=false;
+  try{
+    const ledgerProbe=await db.query("SELECT count(*) AS n FROM invoice_payments");
+    ledgerReady=true;
+    checks.push({id:"payment_ledger_access",pass:true,value:0,rows:Number(ledgerProbe.rows?.[0]?.n||0)});
+  }catch(error){
+    checks.push({id:"payment_ledger_access",pass:false,error:String(error?.message||error).slice(0,300)});
+  }
 
   // Do not run dependent ledger checks when the external schema is absent.
   // This keeps a missing table explicit instead of producing misleading
   // generic query failures for every downstream ledger invariant.
-  const ledgerReady = checks.find(x=>x.id==="payment_ledger_access")?.pass === true;
   if(!ledgerReady){
     for(const id of ["payment_rows_positive","payment_sum_not_above_invoice","payment_sum_not_above_total","payment_invoice_hospital_integrity","legacy_payment_ledger_gap"]){
       checks.push({id,pass:false,error:"invoice_payments schema is not available through the configured external PostgreSQL adapter"});

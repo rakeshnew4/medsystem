@@ -1055,6 +1055,62 @@ td{font-size:13px}
   .sidebar .nav-group{display:grid!important;visibility:visible!important}
   .sidebar .nav-sub{display:grid!important;visibility:visible!important}
 }
+/* UI-00 accessibility and legacy-control normalization: keep older module controls visually consistent with the current shell. */
+.main button:focus-visible,
+.main a:focus-visible,
+.main input:focus-visible,
+.main select:focus-visible,
+.main textarea:focus-visible{
+  outline:3px solid rgba(8,127,106,.20);
+  outline-offset:2px;
+}
+.main button:disabled,
+.main .btn:disabled,
+.main .mini:disabled{
+  opacity:.48;
+  cursor:not-allowed;
+  box-shadow:none!important;
+  transform:none!important;
+}
+.main .btn,
+.main .mini{
+  font-family:'DM Sans',Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+.main .panel-head,
+.main .section-head{
+  align-items:center;
+}
+.main .panel-head .btn,
+.main .section-head .btn{
+  flex:0 0 auto;
+}
+.main table tbody tr:hover td{
+  background:#fbfdfc;
+}
+.main .status,
+.main .role-pill{
+  line-height:1.2;
+  white-space:nowrap;
+}
+.main .empty,
+.main .loading,
+.main .error{
+  border-radius:12px;
+}
+.main .error{
+  border:1px solid #f0d1ce;
+  background:#fff8f7;
+  color:#8f3833;
+}
+.main .loading{
+  color:var(--muted);
+}
+.main .legacy-action-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+}
 /* HMIS-aligned patient workspace context/actions/reports */
 .patient-identity-context{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:14px 16px;margin-bottom:12px;background:var(--surface-2);border:1px solid var(--line);border-radius:14px}
 .patient-identity-main{display:flex;align-items:center;gap:12px;min-width:0}

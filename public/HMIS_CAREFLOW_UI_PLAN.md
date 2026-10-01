@@ -33,7 +33,7 @@ UI changes must never bypass server authorization or invent workflow states.
 - [x] Responsive/mobile navigation foundation retained and module launcher made responsive.
 - [x] Back/return foundation exists; module-specific contextual back behavior remains to be standardized.
 - [x] Role/permission-aware navigation/action visibility foundation retained.
-- [ ] Remove legacy visual inconsistencies — ongoing module-by-module.
+- [x] Remove baseline legacy visual inconsistencies across shared controls, focus states, disabled states and common table/action presentation; module-specific cleanup continues inside each module.
 
 ### UI-01 — Patient Registration & Patient Search
 HMIS references: OPD Patient Lookup/Registration, EMR patient lookup, patient profile.
@@ -136,8 +136,8 @@ HMIS reference: inpatient search plus central Admission Profile.
 - [ ] Authenticated browser E2E for admission/transfer/discharge remains open until a real hospital staff session is available
 
 ### UI-09 — Billing / Charges / Payments
-- [ ] Billing worklist
-- [ ] Patient/invoice context
+- [x] Billing worklist — searchable by invoice/patient/UHID/phone with payment-state filter and outstanding-balance summary
+- [x] Patient/invoice context — invoice rows open the selected patient's workspace while preserving financial context
 - [ ] Charge grouping
 - [ ] Invoice editor
 - [ ] Payment history
@@ -228,3 +228,6 @@ A module is UI-complete only when the UI reflects the verified HMIS workflow, al
 - 2026-10-01: UI-00 increment deployed to the working tree: HMIS-style module launcher added to Hospital Home; primary navigation regrouped around OPD, Clinical/Diagnostics, Inpatient, Finance, Operations and Administration; responsive module cards added.
 - 2026-10-01: UI-01 increment started: Patient Lookup redesigned as a lookup-first workspace with prominent New Patient action, search/filter toolbar and clearer patient-record selection hierarchy. Existing backend/API behavior preserved.
 - 2026-10-01: UI-01 increment deployed as v399: selected-patient identity/context bar added with UHID/PHN and OPD/IPD/admission state; Patient Workspace now separates operational Actions from Reports & History. No backend workflow transitions changed.
+- 2026-10-01: UI-00 baseline cleanup: shared legacy controls now have consistent focus-visible, disabled, action-row, table-hover and error/loading presentation.
+- 2026-10-01: UI-09 increment prepared: Billing is now a searchable/filterable financial worklist with explicit outstanding-balance summary and patient/UHID/phone context; existing billing mutation contracts are unchanged. Dry-run passed with 0 errors, but deployment was blocked by the runtime safety gate, so production remains v407. Next UI-09 task after publication: charge grouping and invoice detail/payment-history presentation.
+- 2026-10-01: UI-00 baseline cleanup increment: normalized shared legacy controls with consistent focus-visible treatment, disabled-state behavior, action-row alignment, table hover feedback and common error/loading presentation. No workflow or backend behavior changed. Next UI target: UI-01 identifier search coverage.

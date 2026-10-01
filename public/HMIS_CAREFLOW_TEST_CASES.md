@@ -346,5 +346,13 @@ Status: Implemented in v383/v384; external payment-ledger runtime remains unreso
 The owner-only validator must treat invoice_payments table presence as a positive schema assertion: exactly one matching public table is a pass, absence is a failure. If the schema is absent through the configured external adapter, dependent ledger checks must fail explicitly as schema-unavailable rather than as generic database query errors.
 Status: Implemented in the current increment; deployment and post-deploy validation pending. Billing remains incomplete.
 
+## TC-BILL-024 — Billing worklist UI search/filter
+Billing worklist exposes invoice, patient, UHID and phone search plus unpaid/partial/paid filters; filtering is client-side over the already hospital-scoped billing response and does not bypass server authorization.
+Status: UI implemented in current draft; deployment blocked by runtime safety gate; browser verification pending.
+
+## TC-BILL-025 — Billing patient context UI
+Selecting a patient from the billing worklist opens the existing Patient Workspace context without changing invoice/payment state.
+Status: UI implemented in current draft; deployment blocked by runtime safety gate; browser verification pending.
+
 ## Billing completion gate
 Billing is marked Complete only after authenticated invoice/payment E2E, role boundaries, invalid financial inputs, invoice continuity and workflow audit events pass.
