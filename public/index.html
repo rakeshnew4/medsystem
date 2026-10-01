@@ -298,7 +298,7 @@ function showCareFlowLoader(label='Loading…'){
     cfLoadingProgressTimer=setInterval(()=>{
       if(cfLoadingProgress<88)setCareFlowProgress(cfLoadingProgress+(cfLoadingProgress<45?4:2));
     },180);
-    cfLoadingFailsafe=setTimeout(()=>hideCareFlowLoader(true),12000);
+    cfLoadingFailsafe=setTimeout(()=>{hideCareFlowLoader(true);el.classList.remove('show');el.style.pointerEvents='none'},12000);
   }
   cfLoadingCount++;
 }
@@ -602,6 +602,14 @@ window.addEventListener('hashchange',restoreSection);
 function toggleNavGroup(btn){const group=btn.closest('.nav-group');group.classList.toggle('open')}
 function openMobileNav(){document.body.classList.add('mobile-nav-open')}
 function closeMobileNav(){document.body.classList.remove('mobile-nav-open')}
+function toggleReceptionAdvancedIdentity(){
+  const panel=document.getElementById('receptionAdvancedIdentity');
+  const button=panel?.previousElementSibling?.querySelector('button');
+  if(!panel)return;
+  const open=panel.style.display!=='none';
+  panel.style.display=open?'none':'grid';
+  if(button)button.textContent=open?'SHOW ADVANCED':'HIDE ADVANCED';
+}
 // Mobile navigation behaves as an overlay: any selection or tap outside the drawer returns to the full-screen workspace.
 document.addEventListener('click',function(e){if(!document.body.classList.contains('mobile-nav-open'))return;const sidebar=document.getElementById('appSidebar');const menu=e.target.closest('.mobile-menu-btn');if(menu)return;if(e.target.closest('.mobile-nav-close')||e.target.closest('.sidebar .nav button')||e.target.closest('.sidebar-footer button')||(!sidebar?.contains(e.target))){closeMobileNav()}});
 function togglePinnedScreen(){
@@ -618,7 +626,13 @@ function updatePinButton(){
   const on=pinned===active;b.classList.toggle('primary',on);b.innerHTML=on?'★':'☆';b.setAttribute('aria-label',on?'Unpin screen':'Pin screen');
   b.title=on?'This screen is pinned and will open next time':'Pin this screen so it opens next time';
 }
-document.querySelectorAll('.nav-sub button[data-section],.nav-home').forEach(b=>b.onclick=()=>{showSection(b.dataset.section);closeMobileNav()});
+document.querySelectorAll('.nav-sub button[data-section],.nav-home').forEach(b=>b.onclick=()=>{showSection(b.dataset.section).catch(e=>console.error(e));closeMobileNav()});
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.nav-sub button[data-section],.nav-home');
+  if(!b)return;
+  e.preventDefault();
+  showSection(b.dataset.section).catch(err=>console.error('Navigation failed',err));
+});
 async function openModal(id){
   const deps={appointmentModal:['patients','doctors'],followupModal:['patients','doctors'],billingModal:['patients'],queueModal:['patients','doctors'],opdModal:['patients','doctors'],admitModal:['patients','doctors'],staffModal:['doctors']}[id]||[];
   try{for(const dep of deps)await loadSectionData(dep);populateSelects()}catch(e){console.error(e)}
@@ -822,8 +836,10 @@ async function loadAll(){
   }catch(e){
     if(e.status===401){location.replace('/login?next='+encodeURIComponent(location.pathname));return}
     if(e.status===403){console.error(e);return}
-    console.error(e);alert(e.message)
-  }
+    console.error(e);
+    const host=document.getElementById('stats');
+    if(host)host.innerHTML='<div class="card panel empty" style="grid-column:1/-1"><strong>Workspace data could not be loaded.</strong><div style="margin-top:6px">Please use Refresh once. If it continues, the error has been logged for diagnosis.</div><button class="btn" style="margin-top:12px" onclick="loadAllWithLoader()">Retry</button></div>';
+  }finally{hideCareFlowLoader(true)}
 }
 async function loadDisplayAdmin(){return api('/display-admin').then(r=>{state.displayAdmin=r;renderDisplayAdmin()}).catch(e=>{if(e.status!==403)alert(e.message)})}
 function createDisplayDevice(){const name=prompt('Display name:','Reception TV');if(!name)return;const location=prompt('Location:','Reception');if(location===null)return;const token=Number(prompt('Token area percentage (0-100):','50'));const ad=100-token;const seconds=Number(prompt('Advertisement rotation seconds:','10'));api('/display-admin',{method:'POST',body:JSON.stringify({type:'device',name,location,token_percent:token,ad_percent:ad,ad_rotation_seconds:seconds})}).then(loadDisplayAdmin).catch(e=>alert(e.message))}
