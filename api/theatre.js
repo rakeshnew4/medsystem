@@ -28,11 +28,25 @@ export default async function(req,res){
      LEFT JOIN doctors d ON d.id=t.doctor_id LEFT JOIN theatre_rooms r ON r.id=t.theatre_room_id
      LEFT JOIN admissions a ON a.id=t.admission_id
      WHERE t.hospital_id=$1 ORDER BY COALESCE(t.scheduled_start,t.created_at) DESC LIMIT 300`,[ctx.hospitalId]);
-   const rooms=await db.query("SELECT id,name,code,status FROM theatre_rooms WHERE hospital_id=$1 ORDER BY name",[ctx.hospitalId]);
-   return res.json({procedures:r.rows,rooms:rooms.rows});
+   const rooms=await db.query("SELECT id,name,code,status,notes FROM theatre_rooms WHERE hospital_id=$1 ORDER BY name",[ctx.hospitalId]);
+   const catalog=await db.query("SELECT id,name,code,default_duration_minutes,service_type,active FROM theatre_procedure_catalog WHERE hospital_id=$1 ORDER BY active DESC,name",[ctx.hospitalId]);
+   return res.json({procedures:r.rows,rooms:rooms.rows,catalog:catalog.rows});
  }
 
  const b=req.body||{};
+ if(req.method==="POST" && ["room","procedure_master"].includes(String(b.action||""))){
+   if(ctx.staff.role!=="admin")return res.status(403).json({error:"Only administrators can change Theatre master data"});
+   if(b.action==="room"){
+     const name=String(b.name||"").trim(); if(!name)return res.status(400).json({error:"Theatre room name is required"});
+     const r=await db.query("INSERT INTO theatre_rooms(hospital_id,name,code,status,notes) VALUES($1,$2,$3,$4,$5) RETURNING *",[ctx.hospitalId,name,String(b.code||"").trim()||null,b.status||"available",b.notes||null]);
+     return res.json(r.rows[0]);
+   }
+   const name=String(b.name||"").trim(); if(!name)return res.status(400).json({error:"Procedure name is required"});
+   const duration=b.default_duration_minutes==null||b.default_duration_minutes===""?null:Number(b.default_duration_minutes);
+   if(duration!==null&&(!Number.isFinite(duration)||duration<=0))return res.status(400).json({error:"Invalid default duration"});
+   const r=await db.query("INSERT INTO theatre_procedure_catalog(hospital_id,name,code,default_duration_minutes,service_type,active) VALUES($1,$2,$3,$4,$5,$6) RETURNING *",[ctx.hospitalId,name,String(b.code||"").trim()||null,duration,b.service_type||"procedure",b.active!==false]);
+   return res.json(r.rows[0]);
+ }
  if(req.method==="POST"){
    if(!b.patient_id||!String(b.procedure_name||"").trim())return res.status(400).json({error:"Patient and procedure name are required"});
    const patient=await db.query("SELECT id FROM patients WHERE id=$1 AND hospital_id=$2",[b.patient_id,ctx.hospitalId]);
@@ -65,6 +79,20 @@ export default async function(req,res){
    const row=r.rows[0];
    await logWorkflowEvent(ctx,{patientId:b.patient_id,eventType:"procedure_scheduled",stage:"theatre",entityType:"theatre_procedure",entityId:row.id,metadata:{procedure_name:row.procedure_name,admission_id:admissionId,theatre_room_id:b.theatre_room_id||null}});
    return res.json(row);
+ }
+ if(req.method==="PUT" && ["room","procedure_master"].includes(String(b.action||""))){
+   if(ctx.staff.role!=="admin")return res.status(403).json({error:"Only administrators can change Theatre master data"});
+   const id=Number(b.id||0); if(!id)return res.status(400).json({error:"Master-data id is required"});
+   if(b.action==="room"){
+     const r=await db.query("UPDATE theatre_rooms SET name=COALESCE(NULLIF($1,''),name),code=$2,status=$3,notes=$4 WHERE id=$5 AND hospital_id=$6 RETURNING *",[String(b.name||"").trim(),String(b.code||"").trim()||null,b.status||"available",b.notes||null,id,ctx.hospitalId]);
+     if(!r.rows[0])return res.status(404).json({error:"Theatre room not found"});
+     return res.json(r.rows[0]);
+   }
+   const duration=b.default_duration_minutes==null||b.default_duration_minutes===""?null:Number(b.default_duration_minutes);
+   if(duration!==null&&(!Number.isFinite(duration)||duration<=0))return res.status(400).json({error:"Invalid default duration"});
+   const r=await db.query("UPDATE theatre_procedure_catalog SET name=COALESCE(NULLIF($1,''),name),code=$2,default_duration_minutes=$3,service_type=$4,active=$5,updated_at=now() WHERE id=$6 AND hospital_id=$7 RETURNING *",[String(b.name||"").trim(),String(b.code||"").trim()||null,duration,b.service_type||"procedure",b.active!==false,id,ctx.hospitalId]);
+   if(!r.rows[0])return res.status(404).json({error:"Procedure master record not found"});
+   return res.json(r.rows[0]);
  }
  const id=Number(b.id||0);
  if(!id)return res.status(400).json({error:"Procedure id is required"});
