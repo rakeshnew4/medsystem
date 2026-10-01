@@ -25,11 +25,11 @@ Reference: HMIS `Privileges.java` and `UserPrivilageController.java` on the deve
 - TC-STAFF-019: Staff create/update/activation changes write hospital-scoped audit entries containing actor, action, entity identity and before/after state.
 - TC-STAFF-020: Role/global/department permission changes and clearing an override write auditable staff lifecycle entries.
 - TC-STAFF-021: Staff audit history is hospital-scoped and restricted to administrators; anonymous access remains HTTP 401.
-- TC-STAFF-022: Staff directory supports search/filter by name/email/role/department/active state and shows hospital-scoped results.
-- TC-STAFF-023: Staff detail preserves email, display name, role, doctor link, department and active state.
-- TC-STAFF-024: Staff lifecycle actions use the existing /team contract and never allow cross-hospital mutation.
-- TC-STAFF-025: Staff registration clearly distinguishes pending vs active accounts and handles duplicate-safe feedback.
-- TC-STAFF-026: Role catalogue reflects only supported CareFlow roles and does not invent HMIS privilege categories.
+- TC-STAFF-022: Staff directory supports search/filter by name/email/role/department/active state and shows hospital-scoped results. **v427 implemented; automated authenticated execution pending.**
+- TC-STAFF-023: Staff detail preserves email, display name, role, doctor link, department and active state. **v427 implemented; automated authenticated execution pending.**
+- TC-STAFF-024: Staff lifecycle actions use the existing /team contract and never allow cross-hospital mutation. **v428 UI implemented; authenticated execution pending.**
+- TC-STAFF-025: Staff registration clearly distinguishes pending vs active accounts and handles duplicate-safe feedback. **v428 UI implemented; authenticated execution pending.**
+- TC-STAFF-026: Role catalogue reflects only supported CareFlow roles and does not invent HMIS privilege categories. **v428 UI implemented; authenticated execution pending.**
 - TC-STAFF-027: Role permission matrix groups/searches permissions and shows the role baseline.
 - TC-STAFF-028: Global and department-scoped user overrides are clearly distinguished.
 - TC-STAFF-029: Inherit clears the user override; Allow/Deny persist boolean overrides; effective state remains server-authoritative.

@@ -87,12 +87,12 @@ Inventory backend safety was already verified before this UI pass: fixed-asset v
 - Authenticated hospital-staff E2E remains open because the available execution environment has not established a real staff session.
 
 ### UI-12 LOOP QUEUE — execute in order; authenticated E2E is deliberately last/deferred
-1. [ ] U12-01 Staff directory worklist.
-2. [ ] U12-02 Staff identity/detail.
-3. [ ] U12-03 Staff lifecycle controls.
-4. [ ] U12-04 Staff registration flow.
-5. [ ] U12-05 Department context.
-6. [ ] U12-06 Role catalogue.
+1. [x] U12-01 Staff directory worklist — implemented in v427 with search, role/department/status filters, counts and empty state.
+2. [x] U12-02 Staff identity/detail — implemented in v427 with selected-record identity, role, department, doctor link, account/hospital context and permission handoff.
+3. [x] U12-03 Staff lifecycle controls — v428: selected-record role/department/doctor-link/active controls, confirmation and administrator-only audit history.
+4. [x] U12-04 Staff registration flow — v428: display name, supported role, optional department/doctor link, pending/active choice and server duplicate-safe feedback.
+5. [x] U12-05 Department context — v428: hospital-scoped department cards with staff/active counts and directory filtering.
+6. [x] U12-06 Role catalogue — v428: supported CareFlow roles with staff and enabled-permission counts.
 7. [ ] U12-07 Role permission matrix.
 8. [ ] U12-08 User permission overrides.
 9. [ ] U12-09 Inherit / Allow / Deny UX.
@@ -110,7 +110,7 @@ Inventory backend safety was already verified before this UI pass: fixed-asset v
 21. [ ] U12-21 Documentation/test pass.
 22. [ ] U12-22 Automated access/contract verification.
 23. [ ] U12-23 Authenticated administrator/staff E2E — intentionally deferred until a genuine staff session is available.
-NEXT concrete implementation target: U12-01 Staff directory worklist.
+NEXT concrete implementation target: U12-07 Role permission matrix.
 
 ### HMIS reference rule
 For every U12 increment, inspect the relevant HMIS staff/privilege/configuration/audit code before implementation. Current references include `Privileges.java`, `UserPrivilageController.java`, `ConfigOption.java`, `ConfigOptionController.java`, `AuditEventController.java`, and `all_audit_events.xhtml`. Do not invent privilege categories, configuration semantics or audit behavior without checking the repository.

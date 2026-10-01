@@ -179,12 +179,13 @@ HMIS references: Store inventory/asset registry, fixed-asset reports, stock hist
 ### UI-12 — Staff / Roles / Permissions / Hospital Setup
 HMIS references: `Privileges.java`, `UserPrivilageController.java`, `ConfigOption.java`, `ConfigOptionController.java`, `AuditEventController.java`, and `all_audit_events.xhtml`. CareFlow already has protected staff, permission, department, availability, hospital-configuration and staff-audit contracts; U12 is the UI/operational redesign of those verified contracts.
 
-- [ ] U12-01 Staff directory worklist — searchable/filterable staff register with name/email/role/department/status filters, counts and clear empty/loading/error states.
-- [ ] U12-02 Staff identity/detail — selected staff profile with email, display name, role, doctor link, department, active state and hospital scope.
-- [ ] U12-03 Staff lifecycle controls — activate/deactivate, role assignment, doctor association and department assignment using the existing `/team` contract.
-- [ ] U12-04 Staff registration flow — guided registration with validation, pending/active distinction and duplicate-safe feedback.
-- [ ] U12-05 Department context — hospital-scoped department selector/filter and visible operational ownership on staff records.
-- [ ] U12-06 Role catalogue — clear presentation of supported roles and role responsibilities without inventing unsupported roles.
+- [x] U12-01 Staff directory worklist — v427: searchable/filterable staff register with name/email/role/department/status filters, counts and clear empty state.
+- [x] U12-02 Staff identity/detail — v427: selected staff profile with email, display name, role, doctor link, department, active state and hospital context.
+- [x] U12-03 Staff lifecycle controls — v428: selected-record activate/deactivate, supported role assignment, doctor association and department assignment using the existing `/team` contract, with audit history.
+- [x] U12-04 Staff registration flow — v428: display name, email, supported role, optional department/doctor link and pending/active distinction using the existing `/team` POST contract.
+- [x] U12-05 Department context — v428: hospital-scoped department cards show staff/active counts and role context and link back to directory filtering.
+- [x] U12-06 Role catalogue — v428: supported CareFlow roles with current staff and enabled-permission counts; no unsupported HMIS privilege categories introduced.
+- [ ] U12-07 Role permission matrix — group/search permission baseline by supported role.
 - [ ] U12-07 Role permission matrix — searchable/grouped permissions with role baseline state and safe admin-only mutation controls.
 - [ ] U12-08 User permission overrides — global user override and department-scoped override presented together with explicit scope.
 - [ ] U12-09 Inherit / Allow / Deny UX — make effective-vs-override state explicit; Inherit clears the user override rather than writing a fake third backend value.
