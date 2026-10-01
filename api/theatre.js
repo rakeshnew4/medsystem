@@ -28,7 +28,8 @@ export default async function(req,res){
      LEFT JOIN doctors d ON d.id=t.doctor_id LEFT JOIN theatre_rooms r ON r.id=t.theatre_room_id
      LEFT JOIN admissions a ON a.id=t.admission_id
      WHERE t.hospital_id=$1 ORDER BY COALESCE(t.scheduled_start,t.created_at) DESC LIMIT 300`,[ctx.hospitalId]);
-   return res.json(r.rows);
+   const rooms=await db.query("SELECT id,name,code,status FROM theatre_rooms WHERE hospital_id=$1 ORDER BY name",[ctx.hospitalId]);
+   return res.json({procedures:r.rows,rooms:rooms.rows});
  }
 
  const b=req.body||{};

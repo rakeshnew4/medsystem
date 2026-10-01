@@ -21,7 +21,8 @@ export default async function(req,res){
   const canClinical=perms["action.clinical.view"]===true;
   const canBilling=perms["action.billing.manage"]===true;
   const canPharmacy=perms["action.pharmacy.manage"]===true;
-  const [clinical,appointments,billing,followups,ipd,workflow,pharmacy,insurance,discharge,encounters,triage]=await Promise.all([
+  const canTheatre=perms["action.theatre.manage"]===true;
+  const [clinical,appointments,billing,followups,ipd,workflow,pharmacy,insurance,discharge,encounters,triage,theatre]=await Promise.all([
     canClinical
       ? Promise.all([
           db.query("SELECT v.*,ce.encounter_type FROM vitals v LEFT JOIN care_encounters ce ON ce.id=v.encounter_id WHERE v.hospital_id=$1 AND v.patient_id=$2 ORDER BY v.recorded_at DESC LIMIT 20",[ctx.hospitalId,pid]),
@@ -40,10 +41,14 @@ export default async function(req,res){
     db.query("SELECT * FROM insurance_claims WHERE hospital_id=$1 AND patient_id=$2 ORDER BY created_at DESC LIMIT 30",[ctx.hospitalId,pid]),
     db.query("SELECT * FROM discharge_checklists d WHERE d.hospital_id=$1 AND d.admission_id=(SELECT id FROM admissions WHERE hospital_id=$1 AND patient_id=$2 AND discharged_at IS NULL ORDER BY admitted_at DESC LIMIT 1)",[ctx.hospitalId,pid]),
     db.query("SELECT ce.*,d.name AS doctor_name,a.appointment_date,a.appointment_time,q.id AS queue_id,q.token,q.token_number,q.stage AS queue_stage,q.priority AS queue_priority FROM care_encounters ce LEFT JOIN doctors d ON d.id=ce.doctor_id LEFT JOIN appointments a ON a.id=ce.appointment_id LEFT JOIN LATERAL (SELECT q.* FROM queue_entries q WHERE q.hospital_id=ce.hospital_id AND q.patient_id=ce.patient_id AND q.completed_at IS NULL ORDER BY q.checked_in_at DESC,q.id DESC LIMIT 1) q ON true WHERE ce.hospital_id=$1 AND ce.patient_id=$2 ORDER BY ce.started_at DESC,ce.id DESC LIMIT 20",[ctx.hospitalId,pid]),
-    canClinical ? db.query("SELECT t.*,COALESCE(s.display_name,t.assessed_by) AS assessor_name FROM triage_assessments t LEFT JOIN staff_profiles s ON lower(s.email)=lower(t.assessed_by) WHERE t.hospital_id=$1 AND t.patient_id=$2 ORDER BY t.assessed_at DESC LIMIT 20",[ctx.hospitalId,pid]) : Promise.resolve({rows:[]})
+    canClinical ? db.query("SELECT t.*,COALESCE(s.display_name,t.assessed_by) AS assessor_name FROM triage_assessments t LEFT JOIN staff_profiles s ON lower(s.email)=lower(t.assessed_by) WHERE t.hospital_id=$1 AND t.patient_id=$2 ORDER BY t.assessed_at DESC LIMIT 20",[ctx.hospitalId,pid]) : Promise.resolve({rows:[]}),
+    canTheatre ? Promise.all([
+      db.query("SELECT t.*,r.name AS theatre_room_name,d.name AS doctor_name FROM theatre_procedures t LEFT JOIN theatre_rooms r ON r.id=t.theatre_room_id LEFT JOIN doctors d ON d.id=t.doctor_id WHERE t.hospital_id=$1 AND t.patient_id=$2 ORDER BY COALESCE(t.scheduled_start,t.created_at) DESC LIMIT 30",[ctx.hospitalId,pid]),
+      db.query("SELECT id,name,code,status FROM theatre_rooms WHERE hospital_id=$1 ORDER BY name",[ctx.hospitalId])
+    ]).then(x=>({procedures:x[0].rows,rooms:x[1].rows})) : Promise.resolve({procedures:[],rooms:[]})
   ]);
 
-  const permissions={clinical:canClinical,billing:canBilling,pharmacy:canPharmacy};
+  const permissions={clinical:canClinical,billing:canBilling,pharmacy:canPharmacy,theatre:canTheatre};
   res.json({
     patient,
     clinical:canClinical?clinical:null,
@@ -57,6 +62,7 @@ export default async function(req,res){
     discharge:canClinical?discharge.rows[0]||null:null,
     encounters:encounters.rows,
     triage:canClinical?triage.rows:[],
+    theatre:canTheatre?theatre:{procedures:[],rooms:[]},
     role:ctx.staff?.role||null,
     permissions
   });

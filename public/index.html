@@ -1083,7 +1083,11 @@ function patientCareTeamActions(p,s){
    ['Investigation','Order or review investigations.',clinical,'workspaceLab('+id+')',clinical],
    ['Follow-up','Schedule the next visit.',true,'workspaceFollowupForm('+id+')',clinical]
   ]},
-  {role:'lab',label:'Lab',step:'04',items:[
+  {role:'nurse',label:'Theatre',step:'04',items:[
+   ['Schedule procedure','Plan an inpatient clinical procedure and assign a theatre room.',!!(p.care_type==='ipd'&&activeAdm),'workspaceTheatre('+id+')',!!s.permissions?.theatre],
+   ['Review procedures','Review this patient\'s scheduled and completed procedures.',true,'workspaceTheatre('+id+')',!!s.permissions?.theatre]
+  ]},
+  {role:'lab',label:'Lab',step:'05',items:[
    ['Open lab work','Review investigations and update sample/result workflow.',q==='lab'||!!(s.clinical?.lab_orders?.length),'showSection(\'lab\')',clinical]
   ]},
   {role:'pharmacy',label:'Pharmacy',step:'05',items:[
@@ -1094,7 +1098,7 @@ function patientCareTeamActions(p,s){
   ]}
  ];
  const html=groups.map(g=>{
-  const active=g.role===role || (role==='admin'&&g.role==='doctor');
+  const active=g.role===role || (role==='admin'&&g.role==='doctor') || (g.label==='Theatre'&&(role==='doctor'||role==='nurse'));
   const items=g.items.map(it=>{
    const ready=it[2]===true;
    const permitted=active&&it[4]===true;
@@ -1277,7 +1281,33 @@ function workspaceLab(pid){
  const b='<form class="form-grid" onsubmit="workspaceSaveLab(event,'+pid+')"><div class="field full"><label>Investigation / test</label><input name="test_name" required placeholder="e.g. CBC"></div><div class="field full"><label>Notes</label><textarea name="notes"></textarea></div><div class="field full"><button class="btn primary">Order investigation</button></div></form>';
  workspaceActionPanel({title:'Order investigation',body:b},pid,'doctor');
 }
-function workspaceInvoice(pid,anchorRole){
+function workspaceTheatre(pid){
+ const s=state.activePatientRecord||{}, a=(s.ipd?.admissions||[]).find(x=>!x.discharged_at);
+ if(!a)return alert('Theatre procedures are currently linked to an active IPD admission.');
+ const rooms=(s.theatre?.rooms||[]).filter(r=>r.status!=='inactive');
+ const doctors=(state.doctors||[]).filter(d=>d.active!==false);
+ const roomOptions=rooms.map(r=>'<option value="'+r.id+'">'+esc(r.name)+(r.code?' · '+esc(r.code):'')+'</option>').join('');
+ const doctorOptions=doctors.map(d=>'<option value="'+d.id+'">'+esc(d.name)+' · '+esc(d.specialty||'Doctor')+'</option>').join('');
+ const body='<form class="form-grid" onsubmit="workspaceSaveTheatre(event,'+pid+','+a.id+')"><div class="field full"><label>Procedure</label><input name="procedure_name" required placeholder="Procedure / surgery name"></div><div class="field"><label>Theatre room</label><select name="theatre_room_id"><option value="">Select room</option>'+roomOptions+'</select></div><div class="field"><label>Responsible doctor</label><select name="doctor_id"><option value="">Select doctor</option>'+doctorOptions+'</select></div><div class="field"><label>Scheduled start</label><input name="scheduled_start" type="datetime-local" required></div><div class="field"><label>Scheduled end</label><input name="scheduled_end" type="datetime-local"></div><div class="field full"><label>Clinical notes</label><textarea name="clinical_notes" placeholder="Document the planned procedure context."></textarea></div><div class="field full"><button class="btn primary">Schedule procedure</button></div></form>';
+ workspaceActionPanel({title:'Schedule theatre procedure',body},pid,'nurse');
+}
+async function workspaceSaveTheatre(e,pid,admissionId){
+ e.preventDefault();
+ try{
+  const b=Object.fromEntries(new FormData(e.target).entries());
+  b.patient_id=pid;b.admission_id=admissionId;
+  if(b.doctor_id)b.doctor_id=Number(b.doctor_id);
+  if(b.theatre_room_id)b.theatre_room_id=Number(b.theatre_room_id);
+  await api('/theatre',{method:'POST',body:JSON.stringify(b)});
+  await refreshPatientWorkspace(pid);
+  alert('Theatre procedure scheduled.');
+ }catch(x){alert(x.message)}
+}
+function patientTheatre(procedures){
+ if(!procedures?.length)return '<div class="empty">No theatre procedures recorded for this patient.</div>';
+ return procedures.slice(0,8).map(x=>'<div class="compact-record"><div><strong>'+esc(x.procedure_name)+'</strong><span>'+esc(x.theatre_room_name||'Theatre room not assigned')+' · '+esc(x.doctor_name||'Doctor not assigned')+'</span><small>'+(x.scheduled_start?fmtDate(x.scheduled_start)+' · '+fmtTime(x.scheduled_start):'Not scheduled')+'</small></div><span class="status '+esc(x.status)+'">'+esc(prettyStatus(x.status))+'</span></div>').join('');
+}
+  function workspaceInvoice(pid,anchorRole){
  const b='<form class="form-grid" onsubmit="workspaceSaveInvoice(event,'+pid+')"><div class="field full"><label>Description</label><input name="description" required placeholder="Consultation / lab / medicine"></div><div class="field"><label>Amount</label><input name="amount" type="number" min="0" step="0.01" required></div><div class="field"><label>Payment received now</label><input name="paid" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Payment method</label><select name="payment_method"><option value="">Not paid</option><option>cash</option><option>upi</option><option>card</option><option>bank_transfer</option></select></div><div class="field full"><label>Notes</label><textarea name="notes"></textarea></div><div class="field full"><button class="btn primary">Create bill</button></div></form>';
  workspaceActionPanel({title:'Create bill / collect payment',body:b},pid,anchorRole||'billing');
 }
@@ -1334,7 +1364,8 @@ function renderPatientWorkspace(){
  '<!-- summary moved into patient header -->'+
  '<div class="patient-workspace-grid"><div class="patient-workspace-column">'+
  '<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Today / current care</h3><div class="record-section-note">What staff need to know before taking the next action.</div></div></div>'+patientCurrentCare(p,activeAdm,latestVitals,lastVisit,s)+'</div>'+
- (s.permissions.clinical?patientTriageSummary(s.triage||[]):'')+
+ (s.permissions.theatre?'<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Operation Theatre / Procedures</h3><div class="record-section-note">Scheduled and completed clinical procedures linked to this patient admission.</div></div><button class="mini" onclick="workspaceTheatre('+p.id+')">+ Schedule</button></div>'+patientTheatre(s.theatre?.procedures||[])+'</div>':'')+
+  (s.permissions.clinical?patientTriageSummary(s.triage||[]):'')+
    (s.role==='doctor'&&s.permissions.clinical?'<div class="workspace-card ai-clinical-card"><div class="panel-head"><div><h3 class="panel-title">🎙 AI Listen Summary</h3><div class="record-section-note">Listen to the consultation, then generate a documentation draft. Review and approve before saving.</div></div></div><textarea id="aiScribeInput" rows="5" placeholder="Conversation transcript will appear here…"></textarea><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn" onclick="toggleClinicalDictation()">🎙 Start Listening</button><button class="btn primary" onclick="runClinicalScribe()">Stop & Summarize</button></div><div id="aiScribeDraft" style="margin-top:10px"></div></div><div class="workspace-card consultation-card"><div class="panel-head"><div><h3 class="panel-title">Doctor consultation</h3><div class="record-section-note">Review the AI draft or write/edit the final clinical note yourself.</div></div></div><textarea id="doctorConsultationNote" rows="8" placeholder="Chief complaint, history, examination, assessment, plan…">'+esc(lastVisit?.visit_status==='open'?lastVisit.clinical_notes||'':'')+'</textarea><div class="consultation-footer"><button class="btn" onclick="saveDoctorVisit(false)">Save draft</button><button class="btn primary" onclick="saveDoctorVisit(true)">Save & complete visit</button></div></div>':'')+
  '<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Appointments</h3><div class="record-section-note">Recent and upcoming visits.</div></div><button class="mini" onclick="showSection(\'appointments\')">Open appointments</button></div>'+patientAppointments(ap)+'</div>'+
  (s.permissions.clinical?'<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Clinical summary</h3><div class="record-section-note">Documentation already recorded for this patient.</div></div><button class="mini" onclick="openClinical('+p.id+')">Full clinical record</button></div>'+patientClinicalSummary(c)+'</div>':'<div class="workspace-card"><div class="empty">Clinical details are restricted for your role.</div></div>')+
