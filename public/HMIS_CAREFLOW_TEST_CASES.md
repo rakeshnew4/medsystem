@@ -147,6 +147,22 @@ Status: Implemented in v263; authenticated browser test pending.
 Patient Workspace displays scheduled/completed/cancelled procedure history without exposing another hospital's records.
 Status: Implemented in v261; authenticated browser test pending.
 
+## TC-THEATRE-018 — Theatre master data
+Administrator can create/update hospital-scoped theatre rooms and procedure catalogue records; non-admin theatre users cannot mutate master data.
+Status: Implemented in v265; authenticated role test pending.
+
+## TC-THEATRE-019 — Admission-profile entry
+Active IPD admission profile exposes a Theatre/Procedure entry point; discharged admissions cannot schedule new procedures.
+Status: Implemented in v265; authenticated browser test pending.
+
+## TC-THEATRE-020 — Theatre charge creation
+Billing/admin can create a hospital-scoped Theatre charge tied to a procedure; invalid amounts and unknown procedures are rejected.
+Status: Implemented in current draft; authenticated execution pending.
+
+## TC-THEATRE-021 — Charge-to-invoice linkage
+A Theatre charge can be linked once to an invoice belonging to the same patient; linking is idempotency-protected and invoice subtotal/total/status are recalculated.
+Status: Implemented in current draft; authenticated execution pending.
+
 ## Theatre completion gate
 Do not mark Theatre Complete until authenticated happy-path E2E, role boundaries, invalid transitions, overlap protection, encounter continuity, workflow events and billing continuity pass.
 

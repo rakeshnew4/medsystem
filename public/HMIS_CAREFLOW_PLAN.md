@@ -592,9 +592,10 @@ Implemented:
 Remaining:
 - Patient Workspace Theatre scheduling/history entry point implemented in **v261**.
 - Standalone Theatre workbench implemented in **v263**, including hospital-scoped procedure list, room summary, start/cancel/complete controls and doctor/nurse navigation.
-- Next implementation target is Theatre room/procedure master-data administration, followed by the admission-profile entry point.
-- Procedure master data and theatre-room administration.
-- Link procedure/service/professional/pharmacy charges into Billing without double-counting.
+- Theatre room and procedure master-data administration implemented in **v265** with administrator-only mutations and hospital isolation.
+- Admission-profile Theatre entry point implemented in **v265**.
+- Added Theatre billing-charge foundation: charges are tied to procedures/patients, can be linked once to a same-patient invoice, and invoice subtotal/total/status are recalculated transactionally.
+- Remaining: richer procedure/service/professional/pharmacy charge mapping and billing UI, without double-counting.
 - Theatre-to-ward handoff/return state where required.
 - Authenticated doctor/nurse E2E and role-boundary testing.
 
