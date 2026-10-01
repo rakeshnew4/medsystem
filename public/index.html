@@ -996,6 +996,7 @@ async function loadInventoryTransfers(){
   }catch(e){if(e.status!==403)alert(e.message||'Could not load transfers')}
 }
 function openInventoryTransferForm(){
+  if(!can('action.pharmacy.manage')){alert('Pharmacy transfer permission is required for this action.');return}
   const modal=document.getElementById('inventoryTransferModal');if(!modal)return;
   const stocks=(state.inventoryStock||[]).filter(x=>Number(x.quantity||0)>0&&x.active!==false);
   const s=document.getElementById('inventoryTransferStock');
