@@ -45,6 +45,7 @@ For each domain:
 
 ## Current implementation status — 2026-10-01
 
+- **Pharmacy transfer/receive — next implementation:** the production `pharmacy_stock_transfers` table and protected GET route exist, but the state-changing issue/receive/cancel API is not yet published. This run verified the schema and existing route; implementation of atomic issue → in_transit → receive/cancel was attempted but the project write was blocked by the runtime safety gate, so no stock was mutated and no partial code was deployed.
 - **Staff landing/navigation correction completed:** aligned the CareFlow staff shell with the HMIS-style workflow separation so authentication lands on the normal hospital home rather than forcing the receptionist operational screen.
 - Receptionists now default to `dashboard` on a fresh authenticated entry, even if an older receptionist-specific last/pinned screen exists in browser storage.
 - **Queue transition safety increment — v378:** generic non-admin queue edits now use an explicit HMIS-aligned forward state machine and reject invalid backward/sideways transitions with HTTP 409; completed queue visits remain terminal. Authenticated staff E2E is still required before this safety gate can be marked passed.
@@ -721,6 +722,7 @@ Current status: direct external PostgreSQL checks are healthy, while the deploye
 
 ## Change log
 - Billing validator runtime-consistency increment — v383/v384: replaced correlated payment-ledger subqueries with adapter-safe aggregate checks and added an explicit external-schema presence check for `invoice_payments`. Post-deploy validation still shows the external adapter cannot execute the payment-ledger checks; this is now treated as a schema/runtime blocker rather than a financial pass. Billing remains incomplete and no payment-ledger data was fabricated. Authenticated staff E2E remains pending.
+- Billing validator schema-gate hardening: corrected the invoice_payments presence check so table existence is a positive assertion rather than an inverted zero-count pass, and made all dependent ledger checks explicitly report schema-unavailable when the external table is absent. This prevents a missing external schema from being misclassified as a financial integrity pass.
 
 - **Billing validator runtime-consistency increment — v383 target:** replaced correlated payment-ledger subqueries with adapter-safe aggregate checks and added an explicit payment-ledger table-access check. This is a diagnostic/safety correction only; Billing remains incomplete until the deployed validator returns clean structural results and authenticated staff E2E passes. Legacy payment-ledger reconciliation remains open.
 

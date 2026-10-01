@@ -33,7 +33,19 @@ export default async function(req,res){
 
   await check("payment_ledger_access",
     "SELECT count(*) AS n FROM information_schema.tables WHERE table_schema='public' AND table_name='invoice_payments'",
-    r=>Number(r[0]?.n||0));
+    r=>Number(r[0]?.n||0) === 1 ? 0 : 1);
+
+  // Do not run dependent ledger checks when the external schema is absent.
+  // This keeps a missing table explicit instead of producing misleading
+  // generic query failures for every downstream ledger invariant.
+  const ledgerReady = checks.find(x=>x.id==="payment_ledger_access")?.pass === true;
+  if(!ledgerReady){
+    for(const id of ["payment_rows_positive","payment_sum_not_above_invoice","payment_sum_not_above_total","payment_invoice_hospital_integrity","legacy_payment_ledger_gap"]){
+      checks.push({id,pass:false,error:"invoice_payments schema is not available through the configured external PostgreSQL adapter"});
+    }
+    const passed=checks.filter(x=>x.pass).length;
+    return res.json({ok:false,passed,total:checks.length,checks,authenticated_e2e_required:true});
+  }
 
   await check("payment_rows_positive",
     "SELECT count(*) AS n FROM invoice_payments WHERE amount <= 0",
