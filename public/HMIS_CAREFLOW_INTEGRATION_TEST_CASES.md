@@ -22,7 +22,7 @@ Reference: HMIS REST API development guide and HMIS FHIR/REST interoperability d
 - TC-INT-018: Duplicate LIS submissions return Duplicate without applying a second result mutation.
 - TC-INT-019: Hospital isolation prevents an integration key from writing to another hospital's lab order.
 - TC-INT-020: Authenticated administrator E2E verifies integration-key rotation, REST/FHIR enablement and real LIS result exchange before the integration gate is complete.
-- TC-INT-021: Capability/discovery documentation must describe FHIR Patient and the planned LIS JSON endpoint without exposing secrets.
+- TC-INT-021: `/api/integration-capabilities` publicly describes the active FHIR Patient capability and the gated/planned LIS contract without exposing secrets.
 - TC-INT-022: Any future HL7/ASTM adapter must terminate at the same validated LIS result boundary and preserve provenance.
 
 Current implementation gate: HMIS REST and LIMS middleware references were reviewed. CareFlow v361 implements a shared hospital-scoped hashed integration key, hospital-scoped FHIR Patient read/search, and HMIS-compatible LIS JSON result intake with lifecycle validation, duplicate protection and audit provenance. Anonymous LIS/FHIR requests are expected to return 401. Authenticated administrator/staff E2E remains open; no clinical result write has been simulated without a verified hospital staff/lab session.

@@ -1,5 +1,9 @@
 # CareFlow Integration API
 
+## Capability discovery
+
+GET `/api/integration-capabilities` returns a non-secret FHIR CapabilityStatement describing the active Patient read/search surface and explicitly marks the LIS result contract as gated until authenticated adapter verification is complete.
+
 Reference: HMIS LIMS REST API and HMIS REST API development patterns.
 
 ## Authentication
