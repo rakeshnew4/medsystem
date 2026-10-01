@@ -12,5 +12,6 @@ export default async function(req,res){
     UNIQUE(hospital_id,department_id,setting_key)
   )`);
   await db.query("CREATE INDEX IF NOT EXISTS idx_hospital_dept_settings_scope ON hospital_department_settings(hospital_id,department_id)");
-  return res.json({ok:true});
+  const check=await db.query("SELECT count(*)::int AS n FROM hospital_department_settings");
+  return res.json({ok:true,rows:check.rows[0]?.n??0});
 }
