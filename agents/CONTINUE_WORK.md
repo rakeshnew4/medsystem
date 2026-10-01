@@ -34,7 +34,7 @@ Use public/HMIS_CAREFLOW_PLAN.md as the source of truth. Prefer the earliest unf
 
 ## Current continuation target
 
-The current workflow is **Theatre / procedures**. The next-task loop is mandatory:
+Theatre / procedures is intentionally parked by user request. The active workflow is now **Inventory / Assets**. The next-task loop is mandatory:
 1. At the beginning of EVERY work turn, re-read this file and public/HMIS_CAREFLOW_PLAN.md.
 2. Before changing any workflow, inspect the relevant hmislk/hmis repository code/design on the development branch and use it as the domain, workflow, UI and data-model reference. Do not invent HMIS-like behavior without checking the repository.
 3. Execute the FIRST unfinished task listed below immediately. Do not stop at a status report when a safe implementation/test task remains.
@@ -43,12 +43,11 @@ The current workflow is **Theatre / procedures**. The next-task loop is mandator
 6. Before any new workflow is started, verify its required CareFlow schema exists in the external PostgreSQL adapter database.
 
 ### NEXT TASK QUEUE — always keep this current
-1. Theatre authenticated E2E gate: doctor/nurse/billing schedule → start → complete → surgical team → ward return → Theatre charge → invoice → payment → Surgery Validation.
-1a. Theatre HMIS-aligned validation: authenticated completion/financial-closure execution, plus verify validated procedures reject further clinical/billing/team additions. v312 server-side lockouts are implemented; HMIS-style separate validation permission is now implemented for billing/admin; authenticated execution remains the next gate.
-2. Theatre authenticated safety tests: role boundaries, invalid transitions, concurrent room overlap, source-charge retry/double-counting, surgical-team mutation, hospital isolation. HMIS-style validation permission boundary is now automated at the authorization-data level; real staff-session execution remains open.
-3. Theatre HMIS gap review: inspect the corresponding HMIS surgery/theatre/inpatient code again and implement the next concrete CareFlow gap found. Latest gap: separate HMIS-style validation-revert control is implemented; continue review after deployment. Do not mark Theatre Complete until the full completion gate passes.
-4. After Theatre completion: begin Inventory / Assets, starting with HMIS repository review of inventory/asset entities, controllers/services, UI pages and persistence behavior.
-5. Then continue in plan order: Staff/Roles → Integrations/REST/FHIR/LIS → Reporting/Analytics, always using the HMIS repository as the design/code reference.
+1. Inventory / Assets: authenticated staff E2E for asset create/search/transfer, plus concurrent transfer and role-boundary safety tests.
+1a. Inventory / Assets schema/application gate: verify the external PostgreSQL schema for fixed assets, then execute authenticated create/search/transfer tests.
+2. Inventory / Assets safety: role boundaries, inactive-asset protection, hospital isolation, concurrent transfer, and transfer-history integrity.
+3. Inventory / Assets HMIS gap review: inspect additional HMIS inventory/store/asset flows and implement the next concrete gap.
+4. Then Staff/Roles → Integrations/REST/FHIR/LIS → Reporting/Analytics, always using the HMIS repository as the design/code reference.
 
 ### Current Theatre status
 - Production validator: 22/22 passed, 0 violations.

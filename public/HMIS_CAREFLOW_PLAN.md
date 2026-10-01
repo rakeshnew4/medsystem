@@ -632,7 +632,9 @@ Theatre remains **In progress** until the authenticated workflow is tested end-t
 
 # 12 — Inventory / assets
 
-Not started.
+Started 2026-10-01 after Theatre was intentionally parked by user request. HMIS review references stock-history/bin-card flows (`StockHistoryController`, `pharmacy_department_stock_history.xhtml`, `bin_card.xhtml`), Store stock/transfer reporting, and the Asset Register / Fixed Asset Issue reports (`asset_register.xhtml`, `fixed_asset_issue.xhtml`, `report_fixed_asset_addition_form.xhtml`). The first CareFlow increment is a hospital-scoped fixed-asset register with purchase price, depreciation metadata, location/custodian, warranty/AMC dates, status, and an atomic transfer history.
+
+Implemented in draft: `migrations/0056_fixed_assets.sql`, `/api/fixed-assets`, `public/HMIS_CAREFLOW_INVENTORY_TEST_CASES.md`. External PostgreSQL schema application and authenticated staff E2E remain pending.
 
 # 13 — Staff / roles / permissions / hospital configuration
 
