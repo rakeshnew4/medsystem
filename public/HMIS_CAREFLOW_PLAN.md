@@ -636,6 +636,8 @@ Not started.
 ## Change log
 
 ### 2026-10-01
+- Deployed CareFlow v291 with HMIS-aligned Theatre encounter validation: admission-linked procedures now require an open IPD encounter matching the hospital and patient; explicitly supplied encounters must also belong to the selected admission. Post-deploy Theatre validator remains 14/14 with zero violations, and anonymous Theatre access remains HTTP 401.
+- Theatre remains In Progress because authenticated doctor/nurse/billing E2E and the remaining role-boundary, invalid-transition, concurrency, retry and payment-continuity gates are still not executable from the available hospital staff session.
 - Deployed CareFlow v287 with extended Theatre production integrity validation. Four additional lifecycle/source invariants were checked directly against the external PostgreSQL adapter before deployment and all returned zero violations: completed procedures without outcomes, scheduled procedures using unavailable rooms, invalid theatre-service sources, and invalid medicine/pharmacy-dispense sources.
 - Theatre remains In Progress pending authenticated doctor/nurse/billing E2E and remaining role-boundary/retry/payment continuity gates.
 - Deployed CareFlow v284 with Theatre scheduling validation: every procedure must use a hospital-scoped available theatre room, and supplied responsible doctors must belong to the same hospital. Existing atomic room-overlap and lifecycle race protections remain active; the Theatre validator continues to pass 8/8 production integrity/isolation checks.
