@@ -95,6 +95,6 @@ FROM dispense d
  if(!r.rows.length)return res.status(409).json({error:"Dispensing could not be completed; stock changed or is no longer available. Please refresh and retry."});
 
  const row=r.rows[0];
- await logWorkflowEvent(ctx,{patientId,encounterId:row.encounter_id||null,eventType:"medicine_dispensed",stage:"pharmacy",entityType:"pharmacy_dispense",entityId:row.dispense_id,metadata:{quantity:Number(row.quantity),stock_batches:row.stock_batches||[],queue_id:row.completed_queue_id||null}});
- return res.json(row);
+ const workflowEvent=await logWorkflowEvent(ctx,{patientId,encounterId:row.encounter_id||null,eventType:"medicine_dispensed",stage:"pharmacy",entityType:"pharmacy_dispense",entityId:row.dispense_id,metadata:{quantity:Number(row.quantity),stock_batches:row.stock_batches||[],queue_id:row.completed_queue_id||null}});
+ return res.json({...row,workflow_event_recorded:workflowEvent?.recorded!==false});
 }

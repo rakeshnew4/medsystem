@@ -450,3 +450,8 @@ Status: Implemented in v451; authenticated staff execution remains pending.
 Route: /api/pharmacy-stock; Method: POST action=receive; Actor: authenticated pharmacy staff.
 Expected: an optional idempotency_key is persisted with the receipt ledger. Reusing the same key cannot add stock a second time; the retry returns HTTP 409. Missing keys preserve the existing receipt behavior.
 Status: Implemented in v452; authenticated execution remains pending.
+
+## TC-PHARMACY-032 — Dispense workflow-event failure is non-fatal and observable
+Route: /api/pharmacy; Method: POST; Actor: authenticated pharmacy staff.
+Expected: the stock/dispense transaction remains the source of truth. If workflow-event persistence fails after the transaction commits, the dispense still returns successfully with workflow_event_recorded=false rather than a misleading 5xx. A client retry of the same dispense remains rejected by the existing duplicate-dispense guard, preventing a second stock deduction; the failed event therefore requires audit repair rather than replaying the clinical mutation.
+Status: Implemented in v453; authenticated fault-injection execution remains pending.
