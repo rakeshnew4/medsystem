@@ -530,3 +530,12 @@ Not started.
 - Updated Queue Board ordering and deployed CareFlow v225.
 - Dry-run passed with no blocking errors; anonymous queue access remained protected.
 - Validated the new atomic SQL path with a no-op candidate test so no real patient was moved without an authenticated staff test session.
+- Hardened Doctor Consultation and deployed CareFlow v233: existing visit completion now closes linked queue/appointment; queue-only completion bypass removed; prescriptions require the active open consultation.
+- Started Laboratory implementation using the HMIS laboratory/LIS workflow as reference.
+- Added protected /api/lab with ordered → sample_collected → processing → verified state transitions, cancellation rules, result verification, encounter/report linkage and doctor notification.
+- Restricted laboratory order creation to doctor/admin and required an active care encounter.
+- Added Doctor Room laboratory investigation ordering.
+- Added HMIS_CAREFLOW_TEST_CASES.md with 20 laboratory test cases and an explicit authenticated E2E completion gate.
+- Preserved legacy lab data: current database inspection found 948 lab orders, including 748 historical records with status completed and 200 ordered records; legacy completed rows are treated as historical terminal data rather than rewritten.
+- Deployed Laboratory foundation as CareFlow v234; dry-run passed with no blocking errors.
+- Automated access checks confirmed anonymous /api/lab access is HTTP 401; authenticated staff-plane E2E remains pending because the available function runner is not logged into the hospital staff auth session.
