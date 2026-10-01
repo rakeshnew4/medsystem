@@ -101,11 +101,11 @@ Status: Implemented.
 
 ## TC-THEATRE-006 — Theatre room overlap
 Overlapping scheduled/in-progress procedures in the same hospital theatre room are rejected.
-Status: Implemented; database overlap invariant checked in production (0 active overlaps). Concurrent authenticated verification remains pending.
+Status: Implemented in v275 with transaction-scoped advisory locking and atomic conflict recheck; production currently has 0 active overlaps. Concurrent authenticated execution remains pending.
 
 ## TC-THEATRE-007 — Lifecycle
 Only scheduled → in_progress → completed and scheduled → cancelled are accepted.
-Status: Implemented.
+Status: Implemented in v275; transition update now requires the expected prior status, preventing stale concurrent updates.
 
 ## TC-THEATRE-008 — Completion requires outcome
 A procedure cannot become completed without an outcome.
@@ -161,7 +161,7 @@ Status: Implemented in v274; production database invariants verified (0 duplicat
 
 ## TC-THEATRE-021 — Charge-to-invoice linkage
 A Theatre charge can be linked once to an invoice belonging to the same patient; linking is idempotency-protected and invoice subtotal/total/status are recalculated.
-Status: Implemented in current draft; authenticated execution pending.
+Status: Implemented in v276; authenticated execution pending.
 
 ## TC-THEATRE-024 — Charge type validation
 Theatre billing accepts only procedure, theatre_service, professional_fee, medicine, or consumable charge categories and rejects arbitrary categories.
@@ -169,7 +169,7 @@ Status: Implemented in v273; public access protection and database uniqueness/in
 
 ## TC-THEATRE-023 — Billing-side Theatre reconciliation
 Billing users can view unbilled Theatre charges, see same-patient recent invoices and link a charge once; linked charges display invoice continuity.
-Status: Implemented in current draft; authenticated execution pending.
+Status: Implemented in current draft; authenticated execution pending. v275 also makes ward return idempotent under concurrent retries.
 
 ## TC-THEATRE-022 — Theatre-to-ward handoff
 Only a completed, not-yet-returned admission-linked procedure can be returned to the ward; the handoff is recorded and the open canonical IPD encounter returns to current_stage=ipd.
