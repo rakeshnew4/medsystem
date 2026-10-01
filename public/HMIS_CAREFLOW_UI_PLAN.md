@@ -123,16 +123,17 @@ HMIS references: pharmacy navigation, transfer request, issue, receive, bin card
 
 ### UI-08 — IPD / Admissions / Beds / Transfers / Discharge
 HMIS reference: inpatient search plus central Admission Profile.
-- [ ] Admission search/worklist
-- [ ] Bed board
-- [ ] Admission profile as central hub
-- [ ] Patient/BHT header
-- [ ] Room/bed actions
-- [ ] Transfer
-- [ ] Nursing/clinical actions
-- [ ] Theatre/procedure entry
-- [ ] Billing/report separation
-- [ ] Discharge workflow
+- [x] Admission search/worklist
+- [x] Bed board
+- [x] Admission profile as central hub through Patient Workspace
+- [x] Patient/BHT header
+- [x] Room/bed actions
+- [x] Transfer
+- [x] Nursing/clinical actions
+- [x] Theatre/procedure entry
+- [x] Billing/report separation
+- [x] Discharge workflow
+- [ ] Authenticated browser E2E for admission/transfer/discharge remains open until a real hospital staff session is available
 
 ### UI-09 — Billing / Charges / Payments
 - [ ] Billing worklist

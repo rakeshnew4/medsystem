@@ -257,7 +257,11 @@
 
 <section id="beds" class="section">
   <div class="card panel">
-    <div class="panel-head"><div><h2 class="panel-title">Beds & IPD admissions</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">IPD occupancy, bed transfers, admission details and discharge history.</div></div><button class="btn primary" onclick="openModal('bedModal')">+ Add bed</button></div>
+    <div class="panel-head"><div><div class="kicker">INPATIENT · ADMISSIONS</div><h2 class="panel-title">Inpatient workbench</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">HMIS-style admission/BHT hub: select the admission first, then manage room, bed, transfer and discharge actions.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="showSection('patients')">Patient lookup</button><button class="btn primary" onclick="openModal('bedModal')">+ Add bed</button></div></div>
+    <div class="queue-toolbar" style="margin-top:12px"><div class="queue-search"><span>⌕</span><input id="ipdSearch" type="search" placeholder="Search patient, UHID, admission or bed…" oninput="renderBeds()"></div><select id="ipdStatusFilter" onchange="renderBeds()" aria-label="Filter inpatient status"><option value="all">All admissions</option><option value="admitted">Admitted</option><option value="discharged">Discharged</option></select><button class="btn" onclick="document.getElementById('ipdSearch').value='';document.getElementById('ipdStatusFilter').value='all';renderBeds()">Clear</button></div>
+    <div id="ipdSummary" class="queue-summary" style="margin-top:12px"></div>
+    <div id="ipdAdmissionWorklist" class="table-wrap" style="margin-top:12px"></div>
+    <div class="panel-head" style="margin-top:16px"><div><h3 class="panel-title">Bed board</h3><div class="record-section-note">Current room/bed occupancy and available beds.</div></div></div>
     <div id="bedsGrid" class="bed-grid"></div>
   </div>
 </section>
@@ -1032,6 +1036,19 @@ async function loadPharmacyBinCard(){
 }
 async function loadPharmacy(){try{state.pharmacy=await api('/pharmacy');state.pharmacyStock=await api('/pharmacy-stock');renderPharmacy();await loadPharmacyStockHistory();await loadPharmacyBinCard();await loadPharmacyClosingStock()}catch(e){if(e.status!==403)alert(e.message)}}
 async function dispenseMedication(id,pid,enc){const p=state.patients.find(x=>Number(x.id)===Number(pid));saveWorkingContext({section:'patients',patientId:Number(pid),patientName:p?.name||'',mode:'clinical',medicationId:Number(id),action:'dispense'});const qty=prompt('Quantity dispensed:','1');if(qty===null)return;try{await api('/pharmacy',{method:'POST',body:JSON.stringify({patient_id:pid,medication_id:id,encounter_id:enc||null,quantity:Number(qty)})});await loadPharmacy();await loadAll()}catch(e){alert(e.message)}}
+function renderIpdAdmissionWorklist(){
+ const host=document.getElementById('ipdAdmissionWorklist');if(!host)return;
+ const term=String(document.getElementById('ipdSearch')?.value||'').trim().toLowerCase();
+ const filter=String(document.getElementById('ipdStatusFilter')?.value||'all');
+ const rows=(state.patients||[]).filter(p=>p.care_type==='ipd').filter(p=>{
+   const active=p.discharged_at?false:true;
+   if(filter==='admitted'&&!active)return false;if(filter==='discharged'&&active)return false;
+   return !term||[p.name,p.uhid,p.phone,p.admission_number,p.bed_number,p.ward].some(v=>String(v||'').toLowerCase().includes(term));
+ }).slice(0,150);
+ const all=(state.patients||[]).filter(p=>p.care_type==='ipd'),active=all.filter(p=>!p.discharged_at).length,discharged=all.length-active;
+ const sum=document.getElementById('ipdSummary');if(sum)sum.innerHTML=[['admitted','Admitted',active],['discharged','Discharged',discharged]].map(([s,l,n])=>'<button class="queue-summary-item '+(filter===s?'is-action':'')+'" onclick="document.getElementById(\'ipdStatusFilter\').value=\''+s+'\';renderIpdAdmissionWorklist()"><strong>'+n+'</strong><span>'+l+'</span></button>').join('')+'<div class="queue-summary-total"><strong>'+rows.length+'</strong><span>Showing</span></div>';
+ host.innerHTML=rows.length?'<table><thead><tr><th>Patient / BHT</th><th>Ward / Bed</th><th>Doctor</th><th>Admission</th><th>Encounter</th><th>Actions</th></tr></thead><tbody>'+rows.map(p=>'<tr><td><button class="record-link" onclick="openPatientWorkspace('+p.id+',\'ipd\')"><strong>'+esc(p.name)+'</strong></button><div style="font-size:11px;color:var(--muted)">'+esc(p.uhid||'')+(p.admission_number?' · '+esc(p.admission_number):'')+'</div></td><td><strong>'+esc(p.ward||'Ward')+' · '+esc(p.bed_number||'Bed not assigned')+'</strong></td><td>'+esc(p.doctor_name||'—')+'</td><td>'+status(p.discharged_at?'discharged':'admitted')+'<small style="display:block;color:var(--muted)">'+esc(p.admission_type||'general')+'</small></td><td>'+esc(prettyStatus(p.queue_stage||'ipd'))+'</td><td><button class="mini primary" onclick="openPatientWorkspace('+p.id+',\'ipd\')">Open admission</button></td></tr>').join('')+'</tbody></table>':'<div class="empty">No inpatient admissions match this search.</div>';
+}
 function renderPharmacy(){
  const rows=state.pharmacy||[],stock=state.pharmacyStock||[];
  const term=String(document.getElementById('pharmacySearch')?.value||'').trim().toLowerCase();
@@ -1079,7 +1096,7 @@ function renderAll(){
  document.getElementById('doctorsTable').innerHTML=table(state.doctors,['Name','Specialty','Phone','Fee'],x=>'<td>'+esc(x.name)+'</td><td>'+esc(x.specialty)+'</td><td>'+esc(x.phone||'—')+'</td><td>'+(x.consultation_fee?'₹'+x.consultation_fee:'—')+'</td>');
  document.getElementById('followupsTable').innerHTML=table(state.followups,['Due','Patient','Doctor','Status'],x=>'<td>'+fmtDate(x.due_date)+'</td><td>'+esc(x.patient_name)+'</td><td>'+esc(x.doctor_name||'—')+'</td><td>'+status(x.status)+'</td>');
  document.getElementById('billingTable').innerHTML=table(state.billing,['Invoice','Date','Patient','Total','Paid','Due','Status'],x=>'<td>'+esc(x.invoice_number)+'</td><td>'+fmtDate(x.created_at)+'</td><td>'+esc(x.patient_name)+'</td><td>₹'+Number(x.total).toFixed(2)+'</td><td>₹'+Number(x.paid).toFixed(2)+'</td><td>₹'+Math.max(0,Number(x.total)-Number(x.paid)).toFixed(2)+'</td><td>'+status(x.status)+' <button class="mini" onclick="saveWorkingContext({section:\'billing\',patientId:'+x.patient_id+',patientName:\''+esc(x.patient_name||'').replace(/'/g,"\\'")+'\',invoiceId:'+x.id+',action:\'invoice\'});window.open(\'/api/invoice-pdf?id='+x.id+'\',\'_blank\')">PDF</button></td>');
- renderQueue();renderBeds();renderStaff();renderLab();renderPharmacy();renderOpsTasks();
+ renderQueue();renderBeds();renderIpdAdmissionWorklist();renderStaff();renderLab();renderPharmacy();renderOpsTasks();
  document.getElementById('hospitalName').value=d.hospital.name||'';document.getElementById('hospitalPhone').value=d.hospital.phone||'';document.getElementById('hospitalAddress').value=d.hospital.address||'';document.getElementById('dateLabel').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
 }
 function doctorRoomAge(dob){if(!dob)return '';const d=new Date(String(dob).slice(0,10)+'T00:00:00'),n=new Date();let a=n.getFullYear()-d.getFullYear();if(n.getMonth()<d.getMonth()||(n.getMonth()===d.getMonth()&&n.getDate()<d.getDate()))a--;return a+' yrs'}
