@@ -4,6 +4,10 @@ Reference: `hmislk/hmis` — `development` branch
 Reference repository: https://github.com/hmislk/hmis
 CareFlow: https://hospital-ai.hatchable.site
 
+## 2026-10-01 hardening increment — v450 target
+
+The discharge checklist mutation path is now transaction-bound to an active admission lock. HMIS nursing-discharge review confirms discharge is a gated inpatient workflow; CareFlow now prevents checklist writes from racing past terminal discharge state. Authenticated staff concurrency execution remains a required open gate.
+
 ## Purpose
 
 Use the HMIS implementation as a domain/workflow reference for CareFlow. We will inspect the real HMIS entities, controllers/services, screens and persistence flows before changing the corresponding CareFlow module.

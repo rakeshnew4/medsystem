@@ -435,3 +435,8 @@ Status: Implemented; authenticated browser verification pending.
 ## TC-THEATRE-028 — Full UI-10 loop access boundary
 The Theatre UI remains backed by protected routes; anonymous GET /api/theatre, /api/theatre-charges, /api/theatre-validate and /api/theatre-validation-revert must not expose protected data or mutations.
 Status: Deployed v421. Dry-run passed with 0 errors; anonymous GET access to /api/theatre, /api/theatre-charges, /api/theatre-validate and /api/theatre-validation-revert returned 401. Authenticated hospital-staff E2E remains pending.
+
+## TC-IPD-020 — Discharge checklist cannot mutate a terminal admission
+Route: /api/discharge; Method: POST/PUT; Actor: authenticated staff.
+Expected: checklist creation/update is bound to an active admission lock. If discharge wins the race and sets discharged_at, a concurrent or already-started checklist mutation returns HTTP 409 and cannot modify the terminal admission's checklist.
+Status: Implemented in v450; authenticated staff concurrency execution remains pending.
