@@ -4,12 +4,12 @@ export const methods=["GET"];
 async function hash(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("")}
 function bearer(req){const h=String(req.headers?.authorization||"");return h.toLowerCase().startsWith("bearer ")?h.slice(7).trim():null}
 async function auth(req,res){
-  const k=bearer(req);if(!k)return res.status(401).json({resourceType:"OperationOutcome",issue:[{severity:"error",code:"login","diagnostics":"Bearer API key required"}]});
+  const k=bearer(req);if(!k)return res.status(401).json({resourceType:"OperationOutcome",issue:[{severity:"error",code:"login",diagnostics:"Bearer API key required"}]});
   const h=await hash(k);
-  const r=await db.query("SELECT hospital_id,setting_value FROM hospital_settings WHERE setting_key='integration.fhir.api_key_hash' AND setting_value->>'hash'=$1 LIMIT 1",[h]);
-  if(!r.rows[0])return res.status(401).json({resourceType:"OperationOutcome",issue:[{severity:"error",code:"login","diagnostics":"Invalid API key"}]});
+  const r=await db.query("SELECT hospital_id FROM hospital_settings WHERE setting_key IN ('integration.api_key_hash','integration.fhir.api_key_hash') AND setting_value->>'hash'=$1 ORDER BY CASE WHEN setting_key='integration.api_key_hash' THEN 0 ELSE 1 END LIMIT 1",[h]);
+  if(!r.rows[0])return res.status(401).json({resourceType:"OperationOutcome",issue:[{severity:"error",code:"login",diagnostics:"Invalid API key"}]});
   const enabled=await db.query("SELECT setting_value FROM hospital_settings WHERE hospital_id=$1 AND setting_key='integration.fhir.enabled' LIMIT 1",[r.rows[0].hospital_id]);
-  if(enabled.rows[0]?.setting_value?.enabled!==true)return res.status(403).json({resourceType:"OperationOutcome",issue:[{severity:"error",code:"forbidden","diagnostics":"FHIR integration is disabled"}]});
+  if(enabled.rows[0]?.setting_value?.enabled!==true)return res.status(403).json({resourceType:"OperationOutcome",issue:[{severity:"error",code:"forbidden",diagnostics:"FHIR integration is disabled"}]});
   return Number(r.rows[0].hospital_id);
 }
 function resource(p){
@@ -31,5 +31,5 @@ export default async function(req,res){
   else if(req.query?.name){params.push("%"+q.toLowerCase()+"%");where+=" AND lower(name) LIKE $"+params.length}
   params.push(limit);
   const r=await db.query("SELECT id,uhid,name,phone,email,date_of_birth,status FROM patients WHERE "+where+" ORDER BY id DESC LIMIT $"+params.length,params);
-  res.json({resourceType:"Bundle",type:"searchset",total:r.rows.length,entry:r.rows.map(x=>({fullUrl:"/api/fhir-patient?id="+x.id,resource:resource(x)}))});
+  res.json({resourceType:"Bundle",type:"searchset",total:r.rows.length,entry:r.rows.map(x=>({fullUrl:"/api/fhir/Patient?id="+x.id,resource:resource(x)}))});
 }
