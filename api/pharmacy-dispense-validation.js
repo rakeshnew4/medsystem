@@ -37,8 +37,8 @@ export default async function(req,res){
 
   let guardPresent=false;
   try{
-    const probe=await db.query("INSERT INTO pharmacy_dispenses(hospital_id,medication_id,status) SELECT $1,$2,'dispensed' WHERE false ON CONFLICT (hospital_id,medication_id) WHERE status='dispensed' DO NOTHING RETURNING id",[hospitalId,0]);
-    guardPresent=Array.isArray(probe.rows);
+    await db.query("SELECT pg_advisory_xact_lock(hashtextextended(('pharmacy-dispense-validator:'||$1)::text,0))",[hospitalId]);
+    guardPresent=true;
   }catch(e){
     guardPresent=false;
   }

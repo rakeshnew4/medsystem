@@ -36,11 +36,20 @@ export default async function(req,res){
  }
 
  const sql=`
-WITH eligible AS (
+WITH dispense_lock AS (
+ SELECT pg_advisory_xact_lock(hashtextextended(('pharmacy-dispense:'||$1||':'||$5)::text,0)) AS locked
+),
+existing_terminal AS (
+ SELECT pd.id
+ FROM pharmacy_dispenses pd, dispense_lock l
+ WHERE pd.hospital_id=$1 AND pd.medication_id=$5 AND pd.status='dispensed'
+ ORDER BY pd.dispensed_at DESC LIMIT 1
+),
+eligible AS (
  SELECT id,quantity,medicine_name,batch_no,expiry_date,
         SUM(quantity) OVER (ORDER BY expiry_date NULLS LAST,id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_qty,
         SUM(quantity) OVER () AS total_qty
- FROM pharmacy_stock
+ FROM pharmacy_stock, dispense_lock
  WHERE hospital_id=$1 AND active=true
    AND LOWER(TRIM(medicine_name))=LOWER(TRIM($2))
    AND (expiry_date IS NULL OR expiry_date>=CURRENT_DATE) AND quantity>0
@@ -58,7 +67,8 @@ deducted AS (
 deducted_summary AS (SELECT COALESCE(SUM(take_qty),0) AS deducted_qty FROM allocation_plan),
 dispense AS (
  INSERT INTO pharmacy_dispenses(hospital_id,patient_id,medication_id,encounter_id,quantity,dispensed_by,status,notes)
- SELECT $1,$4,$5,$6,$3,$7,'dispensed',$8 FROM deducted_summary WHERE deducted_qty >= $3
+ SELECT $1,$4,$5,$6,$3,$7,'dispensed',$8 FROM deducted_summary
+ WHERE deducted_qty >= $3 AND NOT EXISTS (SELECT 1 FROM existing_terminal)
  RETURNING id,patient_id,medication_id,encounter_id,quantity,dispensed_by,status,dispensed_at
 ),
 stock_txn AS (
