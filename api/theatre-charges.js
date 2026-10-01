@@ -61,8 +61,19 @@ export default async function(req,res){
  if(!inv.rows[0])return res.status(404).json({error:"Invoice not found"});
  if(Number(inv.rows[0].patient_id)!==Number(c.rows[0].patient_id))return res.status(409).json({error:"Invoice does not belong to the charge patient"});
  const tx=await db.transaction([
-  {sql:"UPDATE theatre_charges SET invoice_id=$1 WHERE id=$2 AND hospital_id=$3 AND invoice_id IS NULL RETURNING *",params:[invoiceId,id,ctx.hospitalId]},
-  {sql:"INSERT INTO invoice_items(invoice_id,description,quantity,unit_price,amount) SELECT $1,description,quantity,unit_price,amount FROM theatre_charges WHERE id=$2 AND hospital_id=$3 AND invoice_id=$1",params:[invoiceId,id,ctx.hospitalId]},
+  {sql:`WITH claimed AS (
+      UPDATE theatre_charges SET invoice_id=$1
+      WHERE id=$2 AND hospital_id=$3 AND invoice_id IS NULL AND invoice_item_id IS NULL
+      RETURNING *
+    ), item AS (
+      INSERT INTO invoice_items(invoice_id,description,quantity,unit_price,amount)
+      SELECT $1,description,quantity,unit_price,amount FROM claimed
+      RETURNING id
+    )
+    UPDATE theatre_charges c SET invoice_item_id=item.id
+    FROM item, claimed
+    WHERE c.id=claimed.id AND c.hospital_id=$3
+    RETURNING c.*`,params:[invoiceId,id,ctx.hospitalId]},
   {sql:"UPDATE invoices SET subtotal=subtotal+(SELECT amount FROM theatre_charges WHERE id=$1 AND hospital_id=$2),total=GREATEST(0,subtotal+(SELECT amount FROM theatre_charges WHERE id=$1 AND hospital_id=$2)-discount+tax),status=CASE WHEN paid>=GREATEST(0,subtotal+(SELECT amount FROM theatre_charges WHERE id=$1 AND hospital_id=$2)-discount+tax) THEN 'paid' WHEN paid>0 THEN 'partial' ELSE 'unpaid' END,updated_at=now() WHERE id=$3 AND hospital_id=$2 RETURNING *",params:[id,ctx.hospitalId,invoiceId]}
  ]);
  const row=tx.results?.[0]?.rows?.[0];
