@@ -674,7 +674,15 @@ Staff lifecycle/audit increment:
 Remaining Staff/Roles gates:
 - Authenticated staff E2E for role boundaries and department-specific permission precedence.
 - Authenticated staff E2E for staff create/update/activation and permission-audit continuity.
-- Then move to Integrations/REST/FHIR/LIS when authenticated E2E remains the only open Staff gate.
+- Staff session remains unavailable, so Integration work has started without claiming Staff E2E completion.
+
+Integrations / REST / FHIR / LIS increment:
+- HMIS REST API guide reviewed: standard APIs use explicit authentication headers, a consistent response envelope, resource registration/capability documentation, and module-specific AI tooling. HMIS documents FHIR Patient under /fhir/Patient and distinguishes API authentication schemes by module.
+- CareFlow v359 adds administrator-controlled integration settings and one-time FHIR API-key rotation using a stored SHA-256 hash.
+- CareFlow v359 adds hospital-scoped /api/fhir/Patient read/search with Bearer-key authentication, FHIR Patient resources, and Bundle/searchset results. Invalid/absent keys return FHIR OperationOutcome 401; FHIR is disabled unless explicitly enabled for the hospital.
+- Authenticated administrator E2E for integration configuration/key rotation and deeper LIS result exchange remain open.
+
+Next: complete authenticated integration E2E where possible, then implement HMIS-aligned LIS/result interoperability and capability documentation before Reporting/Analytics.
 
 # 14 — Integrations / REST / FHIR / LIS
 
