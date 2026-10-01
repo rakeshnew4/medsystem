@@ -15,6 +15,19 @@ const queueDispatchForRole={
   receptionist:{from:"waiting",to:"vitals"}
 };
 
+// HMIS-style queue state machine for generic stage edits. Role-specific handlers
+// remain authoritative for nursing, doctor, laboratory and pharmacy transitions.
+const allowedQueueTransitions={
+  waiting:new Set(["vitals"]),
+  vitals:new Set(["doctor"]),
+  doctor:new Set(["in_room"]),
+  in_room:new Set(["lab","followup","pharmacy","completed"]),
+  lab:new Set(["followup","completed"]),
+  followup:new Set(["completed"]),
+  pharmacy:new Set(["completed"]),
+  completed:new Set([])
+};
+
 export default async function(req,res){
   const ctx=await requirePermission(req,res,req.method==="GET"?"page.queue":"action.queue.manage");
   if(!ctx)return;
@@ -88,6 +101,15 @@ export default async function(req,res){
       if(ctx.staff.role!=="doctor")return res.status(403).json({error:"Only a doctor can start a consultation"});
       if(!ctx.staff.doctor_id || Number(previous.doctor_id)!==Number(ctx.staff.doctor_id))return res.status(403).json({error:"This patient is not assigned to you"});
       if(previous.stage!=="doctor")return res.status(409).json({error:"Patient must be in the doctor waiting queue before entering the room"});
+    }
+    if(ctx.staff.role!=="admin" && previous.stage!==b.stage){
+      const next=allowedQueueTransitions[previous.stage];
+      if(!next || !next.has(String(b.stage))){
+        return res.status(409).json({error:"Invalid queue transition",from:previous.stage,to:String(b.stage)});
+      }
+    }
+    if(previous.stage==="completed" && b.stage!=="completed"){
+      return res.status(409).json({error:"Completed queue visits are terminal"});
     }
     const r=await db.query(
       "UPDATE queue_entries SET stage=$1,priority=COALESCE($2,priority),doctor_id=COALESCE($3,doctor_id),started_at=CASE WHEN $1 IN ('doctor','in_room','vitals','lab','followup') AND started_at IS NULL THEN now() ELSE started_at END,completed_at=CASE WHEN $1='completed' THEN now() ELSE completed_at END,updated_at=now() WHERE id=$4 AND hospital_id=$5 RETURNING id,patient_id,appointment_id,stage,priority,doctor_id,token,token_date,token_number",
