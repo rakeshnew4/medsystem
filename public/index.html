@@ -315,7 +315,7 @@ function renderRoleWorkspace(){
   el.style.display=buttons?'flex':'none';
 }
 function canSection(id){const p=SECTION_PERMISSIONS[id];return !p||can(p)}
-function showSection(id,updateUrl=true){
+async function showSection(id,updateUrl=true){
   if(!VALID_SECTIONS.includes(id)||!canSection(id))id=roleDefaultSection();
   try{localStorage.setItem(staffStorageKey('lastSection'),id)}catch(e){}
   const section=document.getElementById(id);if(!section)return;
@@ -325,15 +325,15 @@ function showSection(id,updateUrl=true){
   if(updateUrl && location.hash!=='#'+id)history.replaceState(null,'','#'+id);
   updatePinButton();
   renderRoleWorkspace();
-  if(id==='setup' && can('action.setup.manage'))loadHospitalConfig();if(id==='communication' && can('action.communication.use'))loadCommunication();
+  await loadSectionData(id);
 }
-function restoreSection(){
+async function restoreSection(){
   let id=(location.hash||'').slice(1);
   if(!VALID_SECTIONS.includes(id)||!canSection(id)){
     try{id=localStorage.getItem(staffStorageKey('pinnedSection'))||localStorage.getItem(staffStorageKey('lastSection'))||roleDefaultSection()}catch(e){id=roleDefaultSection()}
   }
   if(!VALID_SECTIONS.includes(id)||!canSection(id))id=roleDefaultSection();
-  showSection(id,false);
+  return showSection(id,false);
 }
 window.addEventListener('hashchange',restoreSection);
 function toggleNavGroup(btn){const group=btn.closest('.nav-group');group.classList.toggle('open')}
@@ -356,7 +356,12 @@ function updatePinButton(){
   b.title=on?'This screen is pinned and will open next time':'Pin this screen so it opens next time';
 }
 document.querySelectorAll('.nav-sub button[data-section],.nav-home').forEach(b=>b.onclick=()=>{showSection(b.dataset.section);closeMobileNav()});
-function openModal(id){document.getElementById(id).classList.add('open')} function closeModal(id){document.getElementById(id).classList.remove('open')}
+async function openModal(id){
+  const deps={appointmentModal:['patients','doctors'],followupModal:['patients','doctors'],billingModal:['patients'],queueModal:['patients','doctors'],opdModal:['patients','doctors'],admitModal:['patients','doctors'],staffModal:['doctors']}[id]||[];
+  try{for(const dep of deps)await loadSectionData(dep);populateSelects()}catch(e){console.error(e)}
+  document.getElementById(id)?.classList.add('open')
+}
+function closeModal(id){document.getElementById(id)?.classList.remove('open')}
 function dashboardDateRange(){
   const now=new Date(), today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
   const iso=d=>d.toISOString().slice(0,10);
@@ -437,41 +442,71 @@ async function loadAllWithLoader(){
   showCareFlowLoader('Preparing workspace…');
   try{return await loadAll()}finally{hideCareFlowLoader(true)}
 }
+const sectionLoadState={};
+async function loadSectionData(id,force=false){
+  if(!state.session)return;
+  if(sectionLoadState[id]&&!force)return sectionLoadState[id];
+  const p=state.session.permissions||{};
+  const dr=dashboardDateRange();
+  const loaders={
+    dashboard:async()=>{if(!p['page.dashboard'])return;state.dashboard=await api('/dashboard?from='+encodeURIComponent(dr.from)+'&to='+encodeURIComponent(dr.to));renderAll()},
+    queue:async()=>{if(!p['page.queue'])return;state.queue=await api('/queue');renderQueue();renderAll()},
+    'doctor-room':async()=>{if(!p['action.clinical.view'])return;await loadDoctorRoom()},
+    appointments:async()=>{if(!p['page.appointments'])return;state.appointments=await api('/appointments');renderAll()},
+    patients:async()=>{if(!p['page.patients'])return;state.patients=await api('/patients');renderAll()},
+    doctors:async()=>{if(!p['page.doctors'])return;state.doctors=await api('/doctors');renderAll()},
+    beds:async()=>{if(!p['page.beds'])return;state.beds=await api('/beds');renderAll()},
+    followups:async()=>{if(!p['page.followups'])return;state.followups=await api('/followups');renderAll()},
+    billing:async()=>{if(!p['page.billing'])return;state.billing=await api('/billing');renderAll()},
+    lab:async()=>{if(!p['action.clinical.view'])return;await loadLab();renderAll()},
+    pharmacy:async()=>{if(!p['action.pharmacy.manage'])return;await loadPharmacy();renderAll()},
+    display:async()=>{if(!p['page.setup'])return;await loadDisplayAdmin()},
+    analytics:async()=>{if(!p['page.admin_insights'])return;await loadAnalytics();if(p['page.admin_insights']){state.opsTasks=await api('/ops-tasks').catch(()=>[]);renderOpsTasks()}},
+    staff:async()=>{if(state.session.staff?.role!=='admin')return;state.staff=await api('/team');const pm=await api('/permissions');state.permissionCatalog=pm.permissions;state.rolePermissions=pm.roles;renderPermissionMatrix();renderStaff()},
+    communication:async()=>{if(!p['action.communication.use'])return;await loadCommunication();await loadAvailability()},
+    setup:async()=>{if(!p['action.setup.manage'])return;await loadHospitalConfig()}
+  };
+  const loader=loaders[id];if(!loader)return;
+  showCareFlowLoader('Loading '+(SECTION_TITLES[id]||'section')+'…');
+  try{
+    sectionLoadState[id]=loader();
+    await sectionLoadState[id];
+  }catch(e){
+    delete sectionLoadState[id];
+    if(e.status===401){location.replace('/login?next='+encodeURIComponent(location.pathname));return}
+    if(e.status!==403)console.error(e);
+  }finally{hideCareFlowLoader(true)}
+}
+async function refreshCurrentSection(){
+  const id=document.querySelector('.section.active')?.id||roleDefaultSection();
+  await loadSectionData(id,true);
+}
 async function loadAll(){
   if(!(await checkSession()))return;
+  const active=document.querySelector('.section.active')?.id;
+  if(active&&active!=='dashboard'&&sectionLoadState[active]){
+    return refreshCurrentSection();
+  }
   try{
     const setup=await api('/setup');
-    if(!setup){if(can('page.setup'))showSection('setup');document.getElementById('stats').innerHTML='<div class="card panel empty" style="grid-column:1/-1">Hospital setup is required. Ask the administrator to complete it.</div>';return}
-    const p=state.session.permissions||{};
-    const get=(perm,path,fallback)=>p[perm]?api(path):Promise.resolve(fallback);
-    const dr=dashboardDateRange();
-    [state.dashboard,state.patients,state.doctors,state.appointments,state.followups,state.queue,state.doctorRoom,state.beds,state.billing,state.lab,state.pharmacy,state.displayAdmin]=await Promise.all([
-      get('page.dashboard','/dashboard?from='+encodeURIComponent(dr.from)+'&to='+encodeURIComponent(dr.to),{hospital:setup,stats:{},appointments:[],activeIpd:[],followups:[],enquiries:[],range:dr}),
-      get('page.patients','/patients',[]),
-      get('page.doctors','/doctors',[]),
-      get('page.appointments','/appointments',[]),
-      get('page.followups','/followups',[]),
-      get('page.queue','/queue',[]),
-      get('action.clinical.view','/doctor-room',null),
-      get('page.beds','/beds',[]),
-      get('page.billing','/billing',[]),
-      get('action.clinical.view','/lab',[]),
-      get('action.pharmacy.manage','/pharmacy',[]),get('page.setup','/display-admin',{devices:[],campaigns:[],summary:{}}).catch(()=>({devices:[],campaigns:[],summary:{}}))
-    ]);
-    state.displayAdmin=state.displayAdmin||{devices:[],campaigns:[],summary:{}};
-    state.opsTasks=can('page.admin_insights')?await api('/ops-tasks').catch(()=>[]):[];
-    if(can('page.setup'))renderDisplayAdmin();
-    if(state.session.staff?.role==='admin'){
-      state.staff=await api('/team');
-      const pm=await api('/permissions');state.permissionCatalog=pm.permissions;state.rolePermissions=pm.roles;
-      renderPermissionMatrix();
-    } else {state.staff=[]}
-    syncDashboardRangeControls();renderAll();populateSelects();applyPermissions();renderRoleWorkspace();if(can('page.admin_insights'))loadAnalytics();if(can('page.dashboard')&&can('action.ai.use'))loadAIOpsBrief();if(can('action.communication.use')){loadCommunication();loadAvailability()}if(state.session.staff?.role==='doctor'||state.session.staff?.role==='admin')renderDoctorRoom();
-    restoreSection();
+    if(!setup){
+      if(can('page.setup'))await showSection('setup');
+      document.getElementById('stats').innerHTML='<div class="card panel empty" style="grid-column:1/-1">Hospital setup is required. Ask the administrator to complete it.</div>';
+      return;
+    }
+    syncDashboardRangeControls();
+    await loadSectionData('dashboard',true);
+    applyPermissions();
+    renderRoleWorkspace();
+    await restoreSection();
     const deepPatient=new URLSearchParams(location.search).get('patient_id');
     if(deepPatient&&Number(deepPatient)>0)openClinical(Number(deepPatient));
     else restoreWorkingContext();
-  }catch(e){if(e.status===401){location.replace('/login?next='+encodeURIComponent(location.pathname));return}if(e.status===403){console.error(e);return}console.error(e);alert(e.message)}
+  }catch(e){
+    if(e.status===401){location.replace('/login?next='+encodeURIComponent(location.pathname));return}
+    if(e.status===403){console.error(e);return}
+    console.error(e);alert(e.message)
+  }
 }
 async function loadDisplayAdmin(){return api('/display-admin').then(r=>{state.displayAdmin=r;renderDisplayAdmin()}).catch(e=>{if(e.status!==403)alert(e.message)})}
 function createDisplayDevice(){const name=prompt('Display name:','Reception TV');if(!name)return;const location=prompt('Location:','Reception');if(location===null)return;const token=Number(prompt('Token area percentage (0-100):','50'));const ad=100-token;const seconds=Number(prompt('Advertisement rotation seconds:','10'));api('/display-admin',{method:'POST',body:JSON.stringify({type:'device',name,location,token_percent:token,ad_percent:ad,ad_rotation_seconds:seconds})}).then(loadDisplayAdmin).catch(e=>alert(e.message))}
