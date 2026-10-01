@@ -42,9 +42,11 @@ export default async function(req,res){
      return res.json(r.rows[0]);
    }
    const name=String(b.name||"").trim(); if(!name)return res.status(400).json({error:"Procedure name is required"});
+   const serviceType=String(b.service_type||"procedure");
+   if(!["procedure","theatre_service","professional_fee","medicine"].includes(serviceType))return res.status(400).json({error:"Invalid Theatre service type"});
    const duration=b.default_duration_minutes==null||b.default_duration_minutes===""?null:Number(b.default_duration_minutes);
    if(duration!==null&&(!Number.isFinite(duration)||duration<=0))return res.status(400).json({error:"Invalid default duration"});
-   const r=await db.query("INSERT INTO theatre_procedure_catalog(hospital_id,name,code,default_duration_minutes,service_type,active) VALUES($1,$2,$3,$4,$5,$6) RETURNING *",[ctx.hospitalId,name,String(b.code||"").trim()||null,duration,b.service_type||"procedure",b.active!==false]);
+   const r=await db.query("INSERT INTO theatre_procedure_catalog(hospital_id,name,code,default_duration_minutes,service_type,active) VALUES($1,$2,$3,$4,$5,$6) RETURNING *",[ctx.hospitalId,name,String(b.code||"").trim()||null,duration,serviceType,b.active!==false]);
    return res.json(r.rows[0]);
  }
  if(req.method==="POST"){

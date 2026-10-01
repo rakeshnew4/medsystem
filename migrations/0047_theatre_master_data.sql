@@ -11,4 +11,5 @@ CREATE TABLE IF NOT EXISTS theatre_procedure_catalog (
  UNIQUE(hospital_id,name)
 );
 CREATE INDEX IF NOT EXISTS idx_theatre_catalog_hospital_active ON theatre_procedure_catalog(hospital_id,active,name);
+-- service_type supports procedure, theatre_service, professional_fee and medicine mappings.
 ALTER TABLE theatre_rooms ADD COLUMN IF NOT EXISTS notes TEXT;

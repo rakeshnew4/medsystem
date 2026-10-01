@@ -11,8 +11,9 @@ export default async function(req,res){
   const pid=Number(req.query?.procedure_id||0), patientId=Number(req.query?.patient_id||0);
   const where=pid?"AND c.procedure_id=$2":patientId?"AND c.patient_id=$2":"";
   const params=pid?[ctx.hospitalId,pid]:patientId?[ctx.hospitalId,patientId]:[ctx.hospitalId];
-  const r=await db.query(`SELECT c.*,t.procedure_name,t.status AS procedure_status,i.invoice_number
+  const r=await db.query(`SELECT c.*,t.procedure_name,t.status AS procedure_status,i.invoice_number,cat.name AS catalog_name,cat.service_type AS catalog_service_type
     FROM theatre_charges c JOIN theatre_procedures t ON t.id=c.procedure_id
+    LEFT JOIN theatre_procedure_catalog cat ON cat.id=c.catalog_id AND cat.hospital_id=c.hospital_id
     LEFT JOIN invoices i ON i.id=c.invoice_id AND i.hospital_id=c.hospital_id
     WHERE c.hospital_id=$1 ${where} ORDER BY c.created_at DESC LIMIT 500`,params);
   return res.json(r.rows);
@@ -28,9 +29,25 @@ export default async function(req,res){
   const p=await db.query("SELECT id,patient_id,status FROM theatre_procedures WHERE id=$1 AND hospital_id=$2",[procedureId,ctx.hospitalId]);
   if(!p.rows[0])return res.status(404).json({error:"Theatre procedure not found"});
   const amount=qty*unit;
-  const r=await db.query(`INSERT INTO theatre_charges(hospital_id,procedure_id,patient_id,charge_type,description,quantity,unit_price,amount,created_by)
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-    [ctx.hospitalId,procedureId,p.rows[0].patient_id,chargeType,String(b.description).trim(),qty,unit,amount,ctx.user.email]);
+  const sourceType=b.source_type?String(b.source_type).trim():null;
+  const sourceId=b.source_id?Number(b.source_id):null;
+  const catalogId=b.catalog_id?Number(b.catalog_id):null;
+  if(catalogId){
+    const cat=await db.query("SELECT id,service_type,active FROM theatre_procedure_catalog WHERE id=$1 AND hospital_id=$2",[catalogId,ctx.hospitalId]);
+    if(!cat.rows[0])return res.status(404).json({error:"Theatre billing catalogue entry not found"});
+    if(!cat.rows[0].active)return res.status(409).json({error:"Inactive Theatre billing catalogue entry"});
+    if(!["procedure","theatre_service","professional_fee","medicine"].includes(cat.rows[0].service_type))return res.status(400).json({error:"Catalogue entry is not billable"});
+    if(chargeType!==cat.rows[0].service_type)return res.status(400).json({error:"Charge type does not match Theatre catalogue service type"});
+  }
+  if((sourceType&&!Number.isInteger(sourceId))||(!sourceType&&sourceId))return res.status(400).json({error:"source_type and source_id must be supplied together"});
+  if(sourceType&&!["theatre_service","professional_fee","medicine","pharmacy_dispense"].includes(sourceType))return res.status(400).json({error:"Unsupported Theatre source type"});
+  if(sourceType&&sourceId){
+    const dup=await db.query("SELECT id FROM theatre_charges WHERE hospital_id=$1 AND source_type=$2 AND source_id=$3",[ctx.hospitalId,sourceType,sourceId]);
+    if(dup.rows[0])return res.status(409).json({error:"Source charge is already represented in Theatre billing",charge_id:dup.rows[0].id});
+  }
+  const r=await db.query(`INSERT INTO theatre_charges(hospital_id,procedure_id,patient_id,charge_type,description,quantity,unit_price,amount,source_type,source_id,catalog_id,created_by)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+    [ctx.hospitalId,procedureId,p.rows[0].patient_id,chargeType,String(b.description).trim(),qty,unit,amount,sourceType,sourceId,catalogId,ctx.user.email]);
   await logWorkflowEvent(ctx,{patientId:p.rows[0].patient_id,eventType:"theatre_charge_created",stage:"billing",entityType:"theatre_procedure",entityId:procedureId,metadata:{charge_id:r.rows[0].id,amount,charge_type:chargeType}});
   return res.status(201).json(r.rows[0]);
  }
