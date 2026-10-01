@@ -273,29 +273,30 @@ export default async function(req,res){
       const admissionNumberValue=admissionNumber(admissionId);
       const tx=await db.transaction([
         {
-          sql:"SELECT CASE WHEN EXISTS(SELECT 1 FROM beds WHERE id=$1 AND hospital_id=$2 AND status='available' FOR UPDATE) THEN 1 ELSE CAST('bed_unavailable' AS integer) END AS ready",
+          sql:"SELECT id,status FROM beds WHERE id=$1 AND hospital_id=$2 FOR UPDATE",
           params:[b.bed_id,ctx.hospitalId]
         },
         {
-          sql:"INSERT INTO admissions(id,hospital_id,patient_id,bed_id,admitting_doctor_id,expected_discharge_date,admission_type,notes,admission_number) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+          sql:"INSERT INTO admissions(id,hospital_id,patient_id,bed_id,admitting_doctor_id,expected_discharge_date,admission_type,notes,admission_number) SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9 FROM beds WHERE id=$4 AND hospital_id=$2 AND status='available'",
           params:[admissionId,ctx.hospitalId,b.patient_id,b.bed_id,b.doctor_id||null,b.expected_discharge_date||null,b.admission_type||"general",b.notes||null,admissionNumberValue]
         },
         {
-          sql:"INSERT INTO care_encounters(hospital_id,patient_id,encounter_type,admission_id,doctor_id,status,reason) VALUES($1,$2,'ipd',$3,$4,'open',$5)",
+          sql:"INSERT INTO care_encounters(hospital_id,patient_id,encounter_type,admission_id,doctor_id,status,reason) SELECT $1,$2,'ipd',$3,$4,'open',$5 FROM admissions WHERE id=$3 AND hospital_id=$1",
           params:[ctx.hospitalId,b.patient_id,admissionId,b.doctor_id||null,b.reason||"Inpatient admission"]
         },
         {
-          sql:"INSERT INTO bed_assignments(hospital_id,admission_id,bed_id,reason) VALUES($1,$2,$3,$4)",
+          sql:"INSERT INTO bed_assignments(hospital_id,admission_id,bed_id,reason) SELECT $1,$2,$3,$4 FROM admissions WHERE id=$2 AND hospital_id=$1",
           params:[ctx.hospitalId,admissionId,b.bed_id,"Initial admission"]
         },
         {
-          sql:"UPDATE beds SET status='occupied',updated_at=now() WHERE id=$1 AND hospital_id=$2",
-          params:[b.bed_id,ctx.hospitalId]
+          sql:"UPDATE beds SET status='occupied',updated_at=now() WHERE id=$1 AND hospital_id=$2 AND EXISTS (SELECT 1 FROM admissions WHERE id=$3 AND hospital_id=$2)",
+          params:[b.bed_id,ctx.hospitalId,admissionId]
         }
       ]);
+      const admission=await db.query("SELECT * FROM admissions WHERE id=$1 AND hospital_id=$2",[admissionId,ctx.hospitalId]);
+      if(!admission.rows[0])return res.status(409).json({error:"Bed is no longer available; admission was not created"});
       const encounter=await db.query("SELECT id FROM care_encounters WHERE admission_id=$1 AND hospital_id=$2 ORDER BY id DESC LIMIT 1",[admissionId,ctx.hospitalId]);
       await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId:encounter.rows[0]?.id||null,eventType:"ipd_admitted",stage:"ipd",entityType:"admission",entityId:admissionId,metadata:{bed_id:b.bed_id,admission_type:b.admission_type||"general"}});
-      const admission=await db.query("SELECT * FROM admissions WHERE id=$1 AND hospital_id=$2",[admissionId,ctx.hospitalId]);
       return res.json({...admission.rows[0],admission_number:admissionNumberValue,encounter_id:encounter.rows[0]?.id||null});
     }
 
