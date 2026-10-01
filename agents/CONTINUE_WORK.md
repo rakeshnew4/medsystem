@@ -57,11 +57,19 @@ LOOP STATE (mandatory): After each UI increment, mark only verified checklist it
 
 ### Current Theatre status
 - Production validator: 22/22 passed, 0 violations.
-- UI-10 procedure worklist: deployed in v417 with search, status/date filters and patient/admission context.
-- NEXT Theatre UI increment: room schedule presentation using the existing theatre room/procedure data contract.
-- Anonymous Theatre access: 401.
-- Authenticated hospital-staff E2E: still open because the available execution environment has not established a real staff session.
-- Theatre remains In progress until the authenticated completion gate passes.
+- UI-10 procedure worklist: deployed in v417 with HMIS-aligned search, status/date filters, patient/UHID/admission context and existing lifecycle actions.
+- **UI-10 LOOP QUEUE — process strictly in order; after completing one item, update this file and continue with the next unfinished item:**
+  1. [x] Procedure worklist — deployed v417.
+  2. [ ] Room schedule — **NEXT ACTIVE TASK**; use existing theatre room/procedure data only, preserve authorization, and do not invent scheduling mutations.
+  3. [ ] Patient/procedure header — selected procedure context with patient, UHID/BHT, admission, procedure, surgeon/doctor, room and lifecycle state.
+  4. [ ] Surgical team — present existing team/doctor/assistant/anesthesia data only if the verified backend contract exposes it; otherwise document the contract gap.
+  5. [ ] Lifecycle controls — expose only existing protected Theatre transitions with confirmation and clear state feedback.
+  6. [ ] Theatre charges — present existing protected charge workflow and link it to procedure/invoice context; preserve financial authorization.
+  7. [ ] Ward return — expose the existing protected completed-procedure ward-return transition with admission context.
+  8. [ ] Validation/revert — surface existing validation/revert state and results without bypassing server validation.
+  9. [ ] Clinical/financial closure presentation — combine completion, ward return, charges and audit/history without inventing clinical or financial transitions.
+- **LOOP RULE:** For every item: inspect relevant HMIS surgery/theatre/inpatient reference; inspect current CareFlow contract; implement the smallest safe UI increment; dry-run; deploy; perform access-boundary checks where possible; update the UI plan and test cases; mark only verified items complete; then set the next unfinished item here. Never leave the queue stale or empty.
+- Authenticated hospital-staff E2E remains open because the available execution environment has not established a real staff session.
 
 ### HMIS reference rule
 For every Theatre increment, inspect at minimum the relevant HMIS surgery/theatre/inpatient pages/controllers/services and persistence model; current references include surgery_add.xhtml, surgery_edit.xhtml, SurgeryBillController, surgery_clinical_details.xhtml, patient_surgery.xhtml, and the inpatient Theatre workflow. For future domains, replace these with that domain's actual HMIS repository code before implementation.
