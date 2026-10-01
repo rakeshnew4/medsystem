@@ -6,7 +6,8 @@ function bearer(req){const h=String(req.headers?.authorization||"");return h.toL
 async function auth(req,res){
   const k=bearer(req);if(!k)return res.status(401).json({resourceType:"OperationOutcome",issue:[{severity:"error",code:"login",diagnostics:"Bearer API key required"}]});
   const h=await hash(k);
-  const r=await db.query("SELECT hospital_id FROM hospital_settings WHERE setting_key IN ('integration.api_key_hash','integration.fhir.api_key_hash') AND setting_value->>'hash'=$1 ORDER BY CASE WHEN setting_key='integration.api_key_hash' THEN 0 ELSE 1 END LIMIT 1",[h]);
+  let r=await db.query("SELECT hospital_id FROM hospital_settings WHERE setting_key='integration.api_key_hash' AND setting_value->>'hash'=$1 LIMIT 1",[h]);
+  if(!r.rows[0])r=await db.query("SELECT hospital_id FROM hospital_settings WHERE setting_key='integration.fhir.api_key_hash' AND setting_value->>'hash'=$1 LIMIT 1",[h]);
   if(!r.rows[0])return res.status(401).json({resourceType:"OperationOutcome",issue:[{severity:"error",code:"login",diagnostics:"Invalid API key"}]});
   const enabled=await db.query("SELECT setting_value FROM hospital_settings WHERE hospital_id=$1 AND setting_key='integration.fhir.enabled' LIMIT 1",[r.rows[0].hospital_id]);
   if(enabled.rows[0]?.setting_value?.enabled!==true)return res.status(403).json({resourceType:"OperationOutcome",issue:[{severity:"error",code:"forbidden",diagnostics:"FHIR integration is disabled"}]});
