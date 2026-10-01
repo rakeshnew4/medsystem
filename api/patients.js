@@ -19,14 +19,15 @@ export default async function(req,res){
   // HMIS-aligned registration guard: review likely existing identities before creating another record.
   // Current CareFlow identity fields support exact phone matching and name+DOB matching.
   const dup=await db.query(
-   "SELECT id,name,uhid,phone,email,date_of_birth,status FROM patients WHERE hospital_id=$1 AND ((NULLIF($2,'') IS NOT NULL AND regexp_replace(COALESCE(phone,''),'\\\\D','','g')=regexp_replace($2,'\\\\D','','g')) OR (LOWER(TRIM(name))=LOWER(TRIM($3)) AND $4::date IS NOT NULL AND date_of_birth=$4::date)) ORDER BY created_at DESC LIMIT 10",
-   [hid,phone,name,b.date_of_birth||null]
+   "SELECT p.id,p.name,p.uhid,p.phone,p.email,p.date_of_birth,p.status FROM patients p LEFT JOIN patient_identity pi ON pi.patient_id=p.id AND pi.hospital_id=p.hospital_id WHERE p.hospital_id=$1 AND ((NULLIF($2,'') IS NOT NULL AND regexp_replace(COALESCE(p.phone,''),'\\\\D','','g')=regexp_replace($2,'\\\\D','','g')) OR (LOWER(TRIM(p.name))=LOWER(TRIM($3)) AND $4::date IS NOT NULL AND p.date_of_birth=$4::date) OR (NULLIF($5,'') IS NOT NULL AND LOWER(COALESCE(pi.nic_passport,''))=LOWER($5))) ORDER BY p.created_at DESC LIMIT 10",
+   [hid,phone,name,b.date_of_birth||null,String(b.nic_passport||"").trim()]
   );
   if(dup.rows.length)return res.status(409).json({error:"Possible existing patient found",code:"POSSIBLE_DUPLICATE",matches:dup.rows});
 
   const inserted=await db.query("INSERT INTO patients(hospital_id,name,phone,email,date_of_birth,notes,status) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id",[hid,name,phone||null,b.email||null,b.date_of_birth||null,b.notes||null,b.status||"active"]);
   const patientId=inserted.rows[0].id;
-  const r=await db.query("UPDATE patients SET uhid=COALESCE(NULLIF(uhid,''),'UHID-'||lpad(id::text,6,'0')) WHERE id=$1 AND hospital_id=$2 RETURNING id,name,uhid,phone,email,date_of_birth,notes,status,created_at",[patientId,hid]);
+  const r=await db.query("UPDATE patients SET uhid=COALESCE(NULLIF(uhid,''),'UHID-'||lpad(id::text,6,'0')),registration_source=$3,registration_source_locked=true WHERE id=$1 AND hospital_id=$2 RETURNING id,name,uhid,phone,email,date_of_birth,notes,status,created_at",[patientId,hid,String(b.source||"staff")]);
+  await db.query("INSERT INTO patient_identity(hospital_id,patient_id,title,sex,nic_passport,alternate_phone,address,area,blood_group,occupation,emergency_contact) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT(patient_id) DO UPDATE SET title=EXCLUDED.title,sex=EXCLUDED.sex,nic_passport=EXCLUDED.nic_passport,alternate_phone=EXCLUDED.alternate_phone,address=EXCLUDED.address,area=EXCLUDED.area,blood_group=EXCLUDED.blood_group,occupation=EXCLUDED.occupation,emergency_contact=EXCLUDED.emergency_contact,updated_at=now()",[hid,patientId,b.title||null,b.sex||null,b.nic_passport||null,b.alternate_phone||null,b.address||null,b.area||null,b.blood_group||null,b.occupation||null,b.emergency_contact||null]);
   await logWorkflowEvent(ctx,{patientId,eventType:"patient_registered",stage:"registration",entityType:"patient",entityId:patientId,metadata:{source:b.source||"staff"}});
   return res.json(r.rows[0]);
  }

@@ -259,11 +259,18 @@ Implemented in CareFlow:
 - The existing single REGISTER kiosk entry point and OPD/admission destination choices are preserved.
 
 Remaining identity-model work:
-- Person/patient separation and richer demographic schema.
-- Immutable registration-source field in the patient data model.
-- Broader identifier model (NIC/passport, PHN, patient code, etc.).
+- Person/patient separation as a full shared demographic model.
+- Broader identifier model (PHN, patient code, external identifiers, etc.).
 - Merge/retirement semantics and audit metadata.
+- More admission-specific identity verification and mandatory-field rules.
 - Truly appointment-free direct admission flow.
+
+Advanced identity foundation now added:
+- Dedicated patient_identity record for optional demographic/identity details.
+- Title, sex, NIC/passport, alternate phone, address, area, blood group, occupation and emergency contact.
+- Registration source is persisted and locked after creation.
+- Reception can reveal advanced fields without slowing normal OPD registration.
+- Admission-oriented workflows can use the same patient identity with richer details.
 
 HMIS inspection completed for:
 
