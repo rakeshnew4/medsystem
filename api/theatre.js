@@ -62,14 +62,24 @@ export default async function(req,res){
      const e=await db.query("SELECT id FROM care_encounters WHERE admission_id=$1 AND hospital_id=$2 AND status='open' ORDER BY created_at DESC LIMIT 1",[admissionId,ctx.hospitalId]);
      if(!encounterId&&e.rows[0])encounterId=e.rows[0].id;
    }
+   const roomId=Number(b.theatre_room_id||0);
+   if(!roomId)return res.status(400).json({error:"Theatre room is required"});
+   const room=await db.query("SELECT id,status FROM theatre_rooms WHERE id=$1 AND hospital_id=$2",[roomId,ctx.hospitalId]);
+   if(!room.rows[0])return res.status(404).json({error:"Theatre room not found"});
+   if(room.rows[0].status!=="available")return res.status(409).json({error:"Theatre room is not available"});
+   let doctorId=b.doctor_id?Number(b.doctor_id):null;
+   if(doctorId){
+     const doctor=await db.query("SELECT id FROM doctors WHERE id=$1 AND hospital_id=$2",[doctorId,ctx.hospitalId]);
+     if(!doctor.rows[0])return res.status(409).json({error:"Responsible doctor does not belong to this hospital"});
+   }
    const start=iso(b.scheduled_start),end=iso(b.scheduled_end);
    if(start&&isNaN(start))return res.status(400).json({error:"Invalid scheduled_start"});
    if(end&&isNaN(end))return res.status(400).json({error:"Invalid scheduled_end"});
    if(start&&end&&end<=start)return res.status(400).json({error:"scheduled_end must be after scheduled_start"});
-   const r=await db.query("WITH lock AS (SELECT pg_advisory_xact_lock(hashtextextended(('theatre-room:'||$1||':'||$2)::text,0))), conflict AS (SELECT id FROM theatre_procedures WHERE hospital_id=$1 AND theatre_room_id=$2 AND status IN ('scheduled','in_progress') AND scheduled_start IS NOT NULL AND ($3::timestamptz < COALESCE(scheduled_end,scheduled_start+interval '1 hour')) AND ($4::timestamptz > scheduled_start) LIMIT 1) INSERT INTO theatre_procedures (hospital_id,patient_id,admission_id,encounter_id,doctor_id,theatre_room_id,procedure_name,status,scheduled_start,scheduled_end,clinical_notes,created_by) SELECT $1,$5,$6,$7,$8,$2,$9,'scheduled',$3,$4,$10,$11 FROM lock WHERE NOT EXISTS (SELECT 1 FROM conflict) RETURNING *", [ctx.hospitalId,b.theatre_room_id,start,end,b.patient_id,admissionId,encounterId,b.doctor_id||null,String(b.procedure_name).trim(),b.clinical_notes||null,ctx.user.email]);
+   const r=await db.query("WITH lock AS (SELECT pg_advisory_xact_lock(hashtextextended(('theatre-room:'||$1||':'||$2)::text,0))), conflict AS (SELECT id FROM theatre_procedures WHERE hospital_id=$1 AND theatre_room_id=$2 AND status IN ('scheduled','in_progress') AND scheduled_start IS NOT NULL AND ($3::timestamptz < COALESCE(scheduled_end,scheduled_start+interval '1 hour')) AND ($4::timestamptz > scheduled_start) LIMIT 1) INSERT INTO theatre_procedures (hospital_id,patient_id,admission_id,encounter_id,doctor_id,theatre_room_id,procedure_name,status,scheduled_start,scheduled_end,clinical_notes,created_by) SELECT $1,$5,$6,$7,$8,$2,$9,'scheduled',$3,$4,$10,$11 FROM lock WHERE NOT EXISTS (SELECT 1 FROM conflict) RETURNING *", [ctx.hospitalId,roomId,start,end,b.patient_id,admissionId,encounterId,doctorId,String(b.procedure_name).trim(),b.clinical_notes||null,ctx.user.email]);
    if(!r.rows[0])return res.status(409).json({error:"Theatre room is already scheduled for another procedure"});
    const row=r.rows[0];
-   await logWorkflowEvent(ctx,{patientId:b.patient_id,eventType:"procedure_scheduled",stage:"theatre",entityType:"theatre_procedure",entityId:row.id,metadata:{procedure_name:row.procedure_name,admission_id:admissionId,theatre_room_id:b.theatre_room_id||null}});
+   await logWorkflowEvent(ctx,{patientId:b.patient_id,eventType:"procedure_scheduled",stage:"theatre",entityType:"theatre_procedure",entityId:row.id,metadata:{procedure_name:row.procedure_name,admission_id:admissionId,theatre_room_id:roomId}});
    return res.json(row);
  }
  if(req.method==="PUT" && ["room","procedure_master"].includes(String(b.action||""))){
