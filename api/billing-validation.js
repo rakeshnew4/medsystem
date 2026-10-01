@@ -47,6 +47,12 @@ export default async function(req,res){
     "SELECT count(*) AS n FROM invoice_payments p LEFT JOIN invoices i ON i.id=p.invoice_id AND i.hospital_id=p.hospital_id WHERE i.id IS NULL",
     r=>Number(r[0]?.n||0));
 
+  // Legacy balances are deliberately reported separately: they predate the immutable
+  // payment ledger and cannot be safely reconstructed without source payment metadata.
+  await check("legacy_payment_ledger_gap",
+    "SELECT count(*) AS n FROM invoices i WHERE i.paid > 0 AND NOT EXISTS (SELECT 1 FROM invoice_payments p WHERE p.invoice_id=i.id)",
+    r=>Number(r[0]?.n||0));
+
   const passed=checks.filter(x=>x.pass).length;
   res.json({ok:passed===checks.length,passed,total:checks.length,checks,authenticated_e2e_required:true});
 }

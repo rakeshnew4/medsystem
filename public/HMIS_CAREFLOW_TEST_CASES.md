@@ -267,7 +267,11 @@ Status: Open. The current automated runner cannot establish the hospital staff a
 
 ## TC-BILL-019 — Production billing integrity validator
 The owner-only validator audits invoice paid/status bounds, invoice-item arithmetic, invoice subtotal continuity, payment positivity and bounds, and payment/invoice hospital integrity.
-Status: Automated validator added; authenticated billing E2E remains required and this validator is not a substitute for staff-session testing.
+Status: Automated production audit rechecked on 2026-10-01: 0 structural financial violations; 946 legacy invoices with positive paid balances have no payment-ledger rows. Authenticated billing E2E remains required and this validator is not a substitute for staff-session testing.
+
+## TC-BILL-020 — Legacy payment-ledger reconciliation gate
+Audit all pre-ledger invoices with positive invoices.paid and no invoice_payments row. Do not fabricate payment method, reference, receiver or timestamp data. Any reconciliation must preserve the authoritative invoice total/paid balance and be idempotent.
+Status: Open. Production audit currently reports 946 invoices totaling ₹491,500 requiring source-backed reconciliation.
 
 ## Billing completion gate
 Billing is marked Complete only after authenticated invoice/payment E2E, role boundaries, invalid financial inputs, invoice continuity and workflow audit events pass.
