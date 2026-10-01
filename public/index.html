@@ -6,7 +6,7 @@
 <script src="/qrcode.min.js"></script>
 <link rel="stylesheet" href="/theme.css">
 <style>
-.ai-assistant-ball{position:fixed;right:28px;bottom:28px;width:62px;height:62px;border:0;border-radius:50%;background:linear-gradient(145deg,#12866f,#075c4d);color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 12px 30px rgba(7,92,77,.30);cursor:pointer;z-index:1500;animation:none}
+.ai-assistant-ball{position:fixed;right:28px;bottom:28px;width:62px;height:62px;border:0;border-radius:50%;background:linear-gradient(145deg,#12866f,#075c4d);color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 12px 30px rgba(7,92,77,.30);cursor:grab;z-index:1500;animation:none;touch-action:none;user-select:none;-webkit-user-select:none}.ai-assistant-ball.dragging{cursor:grabbing;transform:scale(1.04);box-shadow:0 16px 38px rgba(7,92,77,.38)}
 .ai-assistant-ball.ai-ball-enter{animation:aiBallDropV2 2s cubic-bezier(.16,.78,.24,1) both}.ai-assistant-ball:hover{transform:scale(1.05)}
 .ai-assistant-ball .ai-ball-dot{position:absolute;right:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#ffd45a;border:2px solid #fff}
 @keyframes aiBallDropV2{0%{transform:translateY(-110vh) rotate(-140deg);opacity:0}70%{transform:translateY(16px) rotate(5deg);opacity:1}88%{transform:translateY(-5px) rotate(-1deg);opacity:1}100%{transform:translateY(0) rotate(0);opacity:1}}
@@ -1579,6 +1579,50 @@ async function sendAIChat(e){
   }finally{send.disabled=false;input.focus()}
 }
 async function askAI(){openAIChat()}
+function initAIBallDrag(){
+  const ball=document.getElementById('aiAssistantBall');if(!ball||ball.dataset.dragReady)return;
+  ball.dataset.dragReady='1';
+  let dragging=false,moved=false,startX=0,startY=0,startLeft=0,startTop=0;
+  const clamp=()=>{
+    const r=ball.getBoundingClientRect(),pad=8;
+    const left=Math.max(pad,Math.min(r.left,window.innerWidth-r.width-pad));
+    const top=Math.max(pad,Math.min(r.top,window.innerHeight-r.height-pad));
+    ball.style.left=left+'px';ball.style.top=top+'px';ball.style.right='auto';ball.style.bottom='auto';
+  };
+  try{
+    const saved=JSON.parse(localStorage.getItem('careflowAIBallPosition')||'null');
+    if(saved&&Number.isFinite(saved.left)&&Number.isFinite(saved.top)){
+      ball.style.left=saved.left+'px';ball.style.top=saved.top+'px';ball.style.right='auto';ball.style.bottom='auto';clamp();
+    }
+  }catch(_){}
+  ball.addEventListener('pointerdown',e=>{
+    if(e.button!==undefined&&e.button!==0)return;
+    const r=ball.getBoundingClientRect();
+    dragging=true;moved=false;startX=e.clientX;startY=e.clientY;startLeft=r.left;startTop=r.top;
+    ball.classList.add('dragging');ball.setPointerCapture?.(e.pointerId);e.preventDefault();
+  });
+  ball.addEventListener('pointermove',e=>{
+    if(!dragging)return;
+    const dx=e.clientX-startX,dy=e.clientY-startY;
+    if(Math.abs(dx)>4||Math.abs(dy)>4)moved=true;
+    const r=ball.getBoundingClientRect(),pad=8;
+    const left=Math.max(pad,Math.min(startLeft+dx,window.innerWidth-r.width-pad));
+    const top=Math.max(pad,Math.min(startTop+dy,window.innerHeight-r.height-pad));
+    ball.style.left=left+'px';ball.style.top=top+'px';ball.style.right='auto';ball.style.bottom='auto';
+  });
+  const end=e=>{
+    if(!dragging)return;
+    dragging=false;ball.classList.remove('dragging');ball.releasePointerCapture?.(e.pointerId);
+    if(moved){
+      const r=ball.getBoundingClientRect();
+      localStorage.setItem('careflowAIBallPosition',JSON.stringify({left:r.left,top:r.top}));
+      ball.dataset.suppressClick='1';setTimeout(()=>delete ball.dataset.suppressClick,120);
+    }
+  };
+  ball.addEventListener('pointerup',end);ball.addEventListener('pointercancel',end);
+  ball.addEventListener('click',e=>{if(ball.dataset.suppressClick==='1'){e.preventDefault();e.stopPropagation()}});
+  window.addEventListener('resize',()=>{if(ball.style.left)clamp()});
+}
 async function loadAIOpsBrief(){const el=document.getElementById('aiOpsBrief');if(!el||!can('action.ai.use'))return;el.innerHTML='<div class="empty">Generating operational brief…</div>';try{const r=await api('/ai-ops-brief',{method:'POST',body:'{}'});el.innerHTML='<div style="white-space:pre-wrap;line-height:1.6">'+esc(r.brief||'No brief generated.')+'</div>'}catch(e){el.innerHTML='<div class="empty">AI brief unavailable: '+esc(e.message||'Unknown error')+'</div>'}}
 async function draftAppointmentMessage(id){const a=state.appointments.find(x=>Number(x.id)===Number(id));if(!a)return;openAIChat();try{const r=await api('/ai-message-draft',{method:'POST',body:JSON.stringify({kind:'appointment_reminder',patient_name:a.patient_name,hospital_name:state.dashboard?.hospital?.name||'Hospital',doctor_name:a.doctor_name,date:a.appointment_date,time:a.appointment_time})});const box=document.getElementById('aiChatMessages');box.insertAdjacentHTML('beforeend',aiChatMessageHtml({role:'assistant',body:r.message||'No draft generated.',created_at:new Date().toISOString()}));box.scrollTop=box.scrollHeight}catch(e){}}
 async function loadCommunication(){if(!can('action.communication.use'))return;try{state.communication=await api('/staff-communication');renderCommunication()}catch(e){console.error(e)}}
@@ -1751,7 +1795,7 @@ function patientCareTeamActions(p,s){
 // but every staff-facing patient link resolves to the same Patient Workspace.
 async function openClinical(pid,action){return openPatientWorkspace(pid,action||'workspace')}
 window.addEventListener('DOMContentLoaded',()=>{
-  loadAllWithLoader();setTimeout(pollNotifications,1200);setTimeout(()=>document.getElementById('aiAssistantBall')?.classList.add('ai-ball-enter'),180);
+  loadAllWithLoader();setTimeout(pollNotifications,1200);setTimeout(()=>document.getElementById('aiAssistantBall')?.classList.add('ai-ball-enter'),180);setTimeout(initAIBallDrag,250);
   updateReceptionClock();setInterval(updateReceptionClock,1000);
   document.addEventListener('keydown',e=>{
     if(state.session?.staff?.role!=='receptionist')return;
