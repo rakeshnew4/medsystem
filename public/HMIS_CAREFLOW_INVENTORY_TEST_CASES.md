@@ -48,7 +48,7 @@ TC-ASSET-023 Closing-stock report: hospital-scoped batch balances can be generat
 
 TC-ASSET-024 Closing-stock balance source: where a ledger snapshot exists on/before the as-of date, the report uses quantity_after; otherwise it explicitly identifies the current-stock fallback.
 
-Production validation: `/api/pharmacy-stock-validation` returned 0 violations across all 8 ledger/balance checks after the external schema update. Authenticated staff E2E remains the final workflow gate; the available test runner currently has no hospital staff session.
+Production validation: `/api/pharmacy-stock-validation` now returns 0 violations across all 11 ledger/balance/transfer checks after applying the external pharmacy transfer schema. Anonymous transfer access returns 401 and the unsigned app-user path is rejected by `requireStaff()`. Authenticated staff E2E remains the final workflow gate; the available test runner currently has no hospital staff session.
 
 TC-ASSET-025 No-op transfer rejection: transferring an active asset to the exact same location and custodian is rejected with HTTP 409 and creates no transfer-history row or workflow event. The check is performed inside the transfer transaction so a concurrent update cannot turn a real transfer into a false success.
 
