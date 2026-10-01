@@ -59,14 +59,15 @@ HMIS references: OPD patient lookup, token, queue, OPD billing.
 - [ ] Authenticated browser E2E for booking/check-in/cancel/no-show remains open until a real hospital staff session is available
 
 ### UI-03 — Queue / Token / Reception
-- [ ] Queue board by operational stage
-- [ ] Priority visibility
-- [ ] Call-next controls
-- [ ] Token display
-- [ ] Reception kiosk
-- [ ] Exception/manual transition UI
-- [ ] Public token tracking
-- [ ] Back-to-home navigation
+- [x] Queue board by operational stage
+- [x] Priority visibility
+- [x] Call-next controls
+- [x] Token display entry point
+- [x] Reception kiosk
+- [x] Exception/manual transition UI through constrained queue moves / drag-and-drop
+- [x] Public token tracking entry point
+- [x] Back-to-home navigation
+- [ ] Authenticated browser E2E for queue dispatch/call-next and reception execution remains open until a real hospital staff session is available
 
 ### UI-04 — Nursing / Vitals / Triage
 HMIS reference: nursing workbench and inpatient dashboard.
