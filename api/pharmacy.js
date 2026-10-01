@@ -73,10 +73,16 @@ queue_candidate AS (
 queue_done AS (
  UPDATE queue_entries q SET stage='completed',completed_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP
  FROM queue_candidate c WHERE q.id=c.id AND EXISTS (SELECT 1 FROM dispense) RETURNING q.id
+),
+encounter_done AS (
+ UPDATE care_encounters ce SET status='completed',current_stage='completed',ended_at=COALESCE(ce.ended_at,CURRENT_TIMESTAMP),updated_at=CURRENT_TIMESTAMP
+ WHERE ce.hospital_id=$1 AND ce.id=$6 AND EXISTS (SELECT 1 FROM queue_done)
+ RETURNING ce.id
 )
 SELECT d.id AS dispense_id,d.patient_id,d.medication_id,d.encounter_id,d.quantity,d.dispensed_by,d.status,d.dispensed_at,
  COALESCE((SELECT json_agg(json_build_object('stock_id',ds.id,'batch_no',ds.batch_no,'expiry_date',ds.expiry_date,'remaining_quantity',ds.quantity) ORDER BY ds.expiry_date NULLS LAST,ds.id) FROM deducted ds),'[]'::json) AS stock_batches,
- (SELECT id FROM queue_done LIMIT 1) AS completed_queue_id
+ (SELECT id FROM queue_done LIMIT 1) AS completed_queue_id,
+ (SELECT id FROM encounter_done LIMIT 1) AS completed_encounter_id
 FROM dispense d
 `;
  const r=await db.query(sql,[ctx.hospitalId,med.rows[0].medicine_name,quantity,patientId,medicationId,med.rows[0].encounter_id||null,ctx.user.email,b.notes||null]);
