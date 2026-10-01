@@ -1623,7 +1623,7 @@ async function returnTheatreToWard(id){
 }
 async function addTheatreCharge(procedureId){
  const description=prompt('Charge description','Theatre procedure service');if(!description)return;
- const chargeType=prompt('Charge type: procedure / theatre_service / professional_fee / medicine','procedure')||'procedure';
+ const chargeType=prompt('Charge type: procedure / theatre_service / professional_fee / medicine / consumable','procedure')||'procedure';
  const qty=prompt('Quantity','1');const price=prompt('Unit price (INR)','0');
  const q=Number(qty),u=Number(price);if(!Number.isFinite(q)||q<=0||!Number.isFinite(u)||u<0)return alert('Invalid quantity or unit price');
  try{const r=await api('/theatre-charges',{method:'POST',body:JSON.stringify({procedure_id:Number(procedureId),charge_type:chargeType,description,quantity:q,unit_price:u})});alert('Theatre charge created: ₹'+Number(r.amount||0).toFixed(2)+'. Link it to the patient invoice from billing.');}catch(e){alert(e.message)}

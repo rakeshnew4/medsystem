@@ -22,13 +22,16 @@ export default async function(req,res){
   const b=req.body||{}, procedureId=Number(b.procedure_id||0), qty=Number(b.quantity||1), unit=Number(b.unit_price);
   if(!procedureId||!String(b.description||"").trim())return res.status(400).json({error:"Procedure and charge description are required"});
   if(!Number.isFinite(qty)||qty<=0||!Number.isFinite(unit)||unit<0)return res.status(400).json({error:"Invalid quantity or unit price"});
+  const allowedTypes=["procedure","theatre_service","professional_fee","medicine","consumable"];
+  const chargeType=String(b.charge_type||"procedure");
+  if(!allowedTypes.includes(chargeType))return res.status(400).json({error:"Unsupported Theatre charge type"});
   const p=await db.query("SELECT id,patient_id,status FROM theatre_procedures WHERE id=$1 AND hospital_id=$2",[procedureId,ctx.hospitalId]);
   if(!p.rows[0])return res.status(404).json({error:"Theatre procedure not found"});
   const amount=qty*unit;
   const r=await db.query(`INSERT INTO theatre_charges(hospital_id,procedure_id,patient_id,charge_type,description,quantity,unit_price,amount,created_by)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-    [ctx.hospitalId,procedureId,p.rows[0].patient_id,String(b.charge_type||"procedure"),String(b.description).trim(),qty,unit,amount,ctx.user.email]);
-  await logWorkflowEvent(ctx,{patientId:p.rows[0].patient_id,eventType:"theatre_charge_created",stage:"billing",entityType:"theatre_procedure",entityId:procedureId,metadata:{charge_id:r.rows[0].id,amount,charge_type:b.charge_type||"procedure"}});
+    [ctx.hospitalId,procedureId,p.rows[0].patient_id,chargeType,String(b.description).trim(),qty,unit,amount,ctx.user.email]);
+  await logWorkflowEvent(ctx,{patientId:p.rows[0].patient_id,eventType:"theatre_charge_created",stage:"billing",entityType:"theatre_procedure",entityId:procedureId,metadata:{charge_id:r.rows[0].id,amount,charge_type:chargeType}});
   return res.status(201).json(r.rows[0]);
  }
  if(ctx.staff.role!=="billing"&&ctx.staff.role!=="admin")return res.status(403).json({error:"Only billing staff or administrators can link Theatre charges"});

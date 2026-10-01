@@ -163,6 +163,10 @@ Status: Implemented in current draft; authenticated execution pending.
 A Theatre charge can be linked once to an invoice belonging to the same patient; linking is idempotency-protected and invoice subtotal/total/status are recalculated.
 Status: Implemented in current draft; authenticated execution pending.
 
+## TC-THEATRE-024 — Charge type validation
+Theatre billing accepts only procedure, theatre_service, professional_fee, medicine, or consumable charge categories and rejects arbitrary categories.
+Status: Implemented in v269; authenticated execution pending.
+
 ## TC-THEATRE-023 — Billing-side Theatre reconciliation
 Billing users can view unbilled Theatre charges, see same-patient recent invoices and link a charge once; linked charges display invoice continuity.
 Status: Implemented in current draft; authenticated execution pending.
