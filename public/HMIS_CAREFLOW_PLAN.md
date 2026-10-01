@@ -633,6 +633,10 @@ Not started.
 
 Not started.
 
+## Billing integrity validation increment
+
+Added owner-only `/api/billing-validation` to audit production financial invariants without mutating financial data. Checks cover invoice paid/status bounds, invoice-item arithmetic, invoice subtotal continuity, payment positivity/bounds, and payment/invoice hospital linkage. This is a safety layer only; it does not count as authenticated billing E2E.
+
 ## Change log
 
 ### 2026-10-01

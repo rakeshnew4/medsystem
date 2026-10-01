@@ -261,5 +261,9 @@ Status: Production audit found 946 legacy invoices requiring reconciliation; mut
 The automated end-to-end harness must establish a real CareFlow hospital staff session before executing billing mutations; an app-user session that is rejected by `requireStaff()` does not count as authenticated hospital-staff E2E.
 Status: Open. The current automated runner cannot establish the hospital staff auth/role session; no authenticated billing completion is claimed.
 
+## TC-BILL-019 — Production billing integrity validator
+The owner-only validator audits invoice paid/status bounds, invoice-item arithmetic, invoice subtotal continuity, payment positivity and bounds, and payment/invoice hospital integrity.
+Status: Automated validator added; authenticated billing E2E remains required and this validator is not a substitute for staff-session testing.
+
 ## Billing completion gate
 Billing is marked Complete only after authenticated invoice/payment E2E, role boundaries, invalid financial inputs, invoice continuity and workflow audit events pass.
