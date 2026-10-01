@@ -189,11 +189,11 @@ Status: Implemented in the current increment; concurrent authenticated execution
 
 ## TC-THEATRE-029 — Surgical team continuity
 HMIS surgery_clinical_details.xhtml records surgical team members by role against the surgery. CareFlow must allow only active same-hospital staff to be attached to a Theatre procedure, prevent duplicate staff+role assignments, record add/remove workflow events, and expose the team in Patient Workspace.
-Status: Implemented in current increment; authenticated mutation/role test pending.
+Status: Implemented in v305; external schema applied and Patient Workspace/API exposure verified. Authenticated mutation/role test pending.
 
 ## TC-THEATRE-030 — Theatre lifecycle timestamp integrity
 A procedure in progress must have started_at; a completed procedure must have both started_at and completed_at with completed_at >= started_at; a cancelled procedure must have cancelled_at. Scheduled timing must never have end <= start.
-Status: Automated production invariant added; authenticated transition execution pending.
+Status: Automated production invariant added and passed; authenticated transition execution pending.
 
 ## TC-THEATRE-025 — Production Theatre integrity validation
 Verify Theatre procedure states, completed-outcome requirements, ward-return state, admission/encounter continuity, active room overlap, duplicate source-charge protection, duplicate invoice-item linkage, linked-charge invoice-line continuity, room availability, source-record validity, and completed-procedure billing continuity directly against the production database.
