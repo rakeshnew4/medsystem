@@ -85,7 +85,13 @@ SELECT d.id AS dispense_id,d.patient_id,d.medication_id,d.encounter_id,d.quantit
  (SELECT id FROM encounter_done LIMIT 1) AS completed_encounter_id
 FROM dispense d
 `;
- const r=await db.query(sql,[ctx.hospitalId,med.rows[0].medicine_name,quantity,patientId,medicationId,med.rows[0].encounter_id||null,ctx.user.email,b.notes||null]);
+ let r;
+ try{
+  r=await db.query(sql,[ctx.hospitalId,med.rows[0].medicine_name,quantity,patientId,medicationId,med.rows[0].encounter_id||null,ctx.user.email,b.notes||null]);
+ }catch(e){
+  if(e?.code==="23505")return res.status(409).json({error:"This prescription has already been dispensed; refresh the pharmacy queue."});
+  throw e;
+ }
  if(!r.rows.length)return res.status(409).json({error:"Dispensing could not be completed; stock changed or is no longer available. Please refresh and retry."});
 
  const row=r.rows[0];
