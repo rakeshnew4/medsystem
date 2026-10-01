@@ -64,8 +64,9 @@ export default async function(req,res){
     const b=req.body||{};
 
     if(b.action==="checkin" || b.action==="move"){
-      const q=await db.query("SELECT patient_id,doctor_id,reason FROM appointments WHERE id=$1 AND hospital_id=$2",[b.id,hid]);
+      const q=await db.query("SELECT patient_id,doctor_id,reason,status,consultation_type FROM appointments WHERE id=$1 AND hospital_id=$2",[b.id,hid]);
       if(!q.rows[0])return res.status(404).json({error:"Appointment not found"});
+      if(["cancelled","no_show","completed"].includes(String(q.rows[0].status)))return res.status(409).json({error:"This appointment cannot be checked in",code:"APPOINTMENT_NOT_ACTIVE",status:q.rows[0].status});
 
       const existing=await db.query("SELECT id,token,token_date,token_number,stage FROM queue_entries WHERE hospital_id=$1 AND appointment_id=$2 AND completed_at IS NULL LIMIT 1",[hid,b.id]);
       const stage=b.stage||"waiting";
