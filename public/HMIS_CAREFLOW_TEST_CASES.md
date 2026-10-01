@@ -357,4 +357,10 @@ Status: Open.
 
 # Completion gates
 
-Authenticated staff/pharmacist/doctor/nurse/admin E2E remains required before marking the corresponding workflow complete. The current harness does not provide a genuine hospital staff browser session; APP END USER or collaborator sessions must not be counted as staff E2E.
+Demo-mode E2E is now available through the explicit CARE_FLOW_DEMO_MODE secret. It may be used to exercise application workflows, role boundaries, invalid transitions, retries and concurrency without real OTP authentication, and all results must be labeled demo E2E.
+
+Genuine hospital-staff OTP/browser E2E remains a separate production-authentication gate and must not be marked complete from demo mode. APP END USER or collaborator sessions must not be counted as genuine staff E2E.
+
+Current master E2E queue: E2E-AUTH → E2E-RECEPTION → E2E-QUEUE → E2E-NURSING → E2E-DOCTOR → E2E-LAB → E2E-PHARMACY → E2E-BILLING → E2E-IPD → E2E-THEATRE (only when requested) → E2E-INVENTORY → E2E-STAFF → E2E-INTEGRATIONS → E2E-REPORTING → E2E-CROSSCUT → E2E-RELEASE.
+
+Safety gates remain: Billing legacy reconciliation, authenticated LIS result-write, genuine hospital-staff OTP E2E, and physical-device mobile verification.

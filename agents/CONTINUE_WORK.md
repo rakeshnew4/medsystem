@@ -42,6 +42,27 @@ Theatre / procedures is now the active UI workstream. **The active implementatio
 5. If authenticated staff E2E is unavailable, leave that gate open but continue the next safe automated/invariant/API work; never claim E2E completion.
 6. Before any new workflow is started, verify its required CareFlow schema exists in the external PostgreSQL adapter database.
 
+### MASTER E2E LOOP QUEUE — added 2026-10-02
+Run this queue top-to-bottom. A checkbox is marked complete only after the deployed behavior has actually been exercised and the expected result observed. Demo-mode execution counts as application E2E for workflow/permission behavior, but is explicitly labeled demo E2E and does not replace the real OTP/staff-production gate.
+
+1. [ ] E2E-AUTH — verify CARE_FLOW_DEMO_MODE=true harness; verify all 8 roles (admin, receptionist, nurse, doctor, lab, pharmacy, billing, store); verify role selection; verify false/unset restores OTP; verify demo identity never becomes a real staff account.
+2. [ ] E2E-RECEPTION — Receptionist: Hospital Home → Patient Workspace → search/select existing patient → register new patient → duplicate protection → UHID/source → appointment → check-in → token → queue; verify restricted actions return expected denial.
+3. [ ] E2E-QUEUE — queue ordering/priority → call-next → concurrent call-next → valid forward transitions → invalid transition 409 → terminal completion → patient context continuity.
+4. [ ] E2E-NURSING — Nurse: patient workspace → vitals → triage → red flags → nursing handoff → queue progression; validate invalid vitals and role boundaries.
+5. [ ] E2E-DOCTOR — Doctor: queue patient → Doctor Room → encounter continuity → history/vitals → consultation → clinical note → prescription → lab order → follow-up → completion; verify consultation/queue/encounter closure and doctor assignment boundary. Diagnosis remains open unless a verified mutation contract exists.
+6. [ ] E2E-LAB — Lab: worklist → sample collection → processing → result entry → verification → report → doctor notification; validate invalid transitions, duplicate/retry behavior and hospital isolation.
+7. [ ] E2E-PHARMACY — Pharmacy: prescription → stock/batch selection → FEFO dispense → multi-batch → ledger → queue completion → duplicate/concurrent retry protection → insufficient/expired stock → transfer issue/receive/cancel → receipt idempotency → event-failure boundary.
+8. [ ] E2E-BILLING — Billing: invoice read/create contract → charge grouping → payment → partial/full status → overrun/duplicate/retry → PDF → financial audit; preserve 13 legacy ledger gaps and never synthesize payment history.
+9. [ ] E2E-IPD — admission → bed allocation → occupied-bed rejection → transfer atomicity → discharge checklist → discharge → bed release → re-admission → encounter continuity; include terminal checklist mutation protection.
+10. [ ] E2E-THEATRE — only when requested/needed: procedure → room conflict → team → lifecycle → validation/revert → charges → ward return; preserve authenticated Theatre gate.
+11. [ ] E2E-INVENTORY — assets/search/detail/transfer/history → no-op/duplicate protection → pharmacy issue/receive/cancel → stock/transfer concurrency and role boundaries.
+12. [ ] E2E-STAFF — admin staff lifecycle → departments → roles → role permissions → global/department overrides → effective permissions → audit → hospital configuration/validation.
+13. [ ] E2E-INTEGRATIONS — capability discovery → integration settings/key boundary → FHIR auth/isolation → LIS verified sample contract → idempotency → HL7/ASTM boundary; never enable unverified clinical result writes.
+14. [ ] E2E-REPORTING — reporting/analytics scope, role authorization, filters, cross-module continuity and restricted-data checks.
+15. [ ] E2E-CROSSCUT — for every role: navigation, Patient Workspace, direct API access, invalid IDs/transitions, duplicate/retry/concurrency, audit/event continuity, mobile behavior and cross-hospital isolation.
+16. [ ] E2E-RELEASE — unexpected 5xx review, protected-route 401/403 review, financial/clinical data-integrity review, final browser E2E, physical-device mobile verification and deployment verification.
+Safety gates that remain explicitly open until their evidence exists: genuine hospital-staff OTP E2E, Billing legacy reconciliation, LIS authenticated write path, and physical-device mobile verification.
+
 ### NEXT TASK QUEUE — always keep this current
 UI workstream is now the active implementation focus requested by the user. Execute UI-00 then UI-01 onward from public/HMIS_CAREFLOW_UI_PLAN.md, while preserving the backend safety gates below.
 UI-00 current: module launcher/navigation regrouping and the global patient-context foundation are deployed; shared legacy-control cleanup is complete, with module-specific cleanup continuing inside each module.
