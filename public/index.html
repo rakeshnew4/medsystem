@@ -28,10 +28,10 @@
 @media(max-width:700px){.ai-assistant-ball{right:18px;bottom:18px;width:58px;height:58px}.ai-chat-modal{right:12px;bottom:88px;width:calc(100vw - 24px);height:calc(100vh - 120px);border-radius:16px}}
 .care-team-flow{display:flex;flex-direction:column;gap:10px}.patient-workspace-action-area{display:flex;flex-direction:column;gap:12px;margin:12px 0}.care-team-group{border:1px solid var(--border);border-radius:12px;padding:14px 16px;background:var(--surface-soft,#f8faf9);position:relative}.care-team-group.current-role{border-color:var(--primary);box-shadow:0 0 0 1px rgba(25,135,113,.12)}.care-team-group.current-role:before{content:'';position:absolute;left:-1px;top:0;bottom:0;width:4px;background:var(--primary);border-radius:12px 0 0 12px}.care-team-group-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}.care-team-group-head>div{display:flex;align-items:center;gap:9px}.care-team-group-head>span{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.05em}.care-team-step{display:inline-flex!important;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--border);font-size:10px!important;color:var(--muted)!important}.care-team-group.current-role .care-team-step{background:var(--primary);color:#fff!important}.care-team-group-head strong{font-size:16px}.care-team-action{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 0;border-top:1px solid var(--border)}.care-team-action>div{min-width:0}.care-team-action strong{display:block;font-size:13px}.care-team-action span{display:block;font-size:11px;color:var(--muted);margin-top:3px}.care-team-action.action-ready{background:rgba(25,135,113,.04);margin:0 -8px;padding:11px 8px;border-radius:8px}.care-team-action .mini{flex:0 0 auto;min-width:72px}.care-team-hint{white-space:nowrap;font-size:10px!important;color:var(--muted)!important}.care-team-action.current-role strong{font-weight:700}.care-team-role-desc{font-size:11px;color:var(--muted);margin:0 0 9px 33px}.care-team-buttons{display:flex;flex-wrap:wrap;gap:7px;margin-left:33px}.care-team-buttons .mini{min-height:34px}.care-team-buttons .mini:disabled{opacity:.48;cursor:not-allowed}.role-pill{font-size:11px;font-weight:800;text-transform:capitalize;padding:5px 9px;border-radius:999px;background:var(--surface-soft,#f3f7f5);color:var(--primary)}@media(max-width:700px){.care-team-action{align-items:flex-start}.care-team-action .mini{flex:0 0 auto}.care-team-role-desc{margin-left:0}.care-team-buttons{margin-left:0}.care-team-buttons .mini{flex:1 1 calc(50% - 7px);min-width:120px}}
 /* CareFlow loading state — shared by initial page loads and foreground API work. */
-.cf-loader{position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;background:rgba(12,18,17,.78);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .16s ease,visibility .16s ease}.cf-loader.show{opacity:1;visibility:visible;pointer-events:auto}.cf-loader-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;min-width:0;min-height:0;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none}.cf-loader-mark{position:relative;width:72px;height:72px;border:4px solid rgba(255,255,255,.18);border-top-color:#12866f;border-right-color:#075c4d;border-radius:50%;animation:cfSpin .55s linear infinite;filter:drop-shadow(0 4px 12px rgba(0,0,0,.35))}.cf-loader-mark:before,.cf-loader-mark:after{content:'';position:absolute;left:50%;top:50%;background:linear-gradient(180deg,#27b59a,#08715f);border-radius:5px;transform:translate(-50%,-50%)}.cf-loader-mark:before{width:9px;height:42px}.cf-loader-mark:after{width:42px;height:9px}.cf-loader-core{position:absolute;left:50%;top:50%;width:11px;height:11px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 0 0 3px rgba(39,181,154,.2)}.cf-loader-label,.cf-loader-sub{display:none}@keyframes cfSpin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.cf-loader-mark{animation-duration:2.5s}}</style>
+.cf-loader{position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;background:rgba(12,18,17,.78);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .16s ease,visibility .16s ease}.cf-loader.show{opacity:1;visibility:visible;pointer-events:auto}.cf-loader-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:min(320px,calc(100vw - 48px));padding:24px 26px;background:rgba(10,30,26,.72);border:1px solid rgba(255,255,255,.12);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.28);backdrop-filter:blur(12px)}.cf-loader-mark{position:relative;width:64px;height:64px;border:4px solid rgba(255,255,255,.18);border-top-color:#12866f;border-right-color:#075c4d;border-radius:50%;animation:cfSpin .55s linear infinite;filter:drop-shadow(0 4px 12px rgba(0,0,0,.35))}.cf-loader-mark:before,.cf-loader-mark:after{content:'';position:absolute;left:50%;top:50%;background:linear-gradient(180deg,#27b59a,#08715f);border-radius:5px;transform:translate(-50%,-50%)}.cf-loader-mark:before{width:8px;height:36px}.cf-loader-mark:after{width:36px;height:8px}.cf-loader-core{position:absolute;left:50%;top:50%;width:10px;height:10px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 0 0 3px rgba(39,181,154,.2)}.cf-loader-label{display:block;color:#fff;font-size:15px;font-weight:800;letter-spacing:.02em}.cf-loader-sub{display:block;width:100%;color:rgba(255,255,255,.72);font-size:11px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cf-loader-progress{width:100%;height:5px;overflow:hidden;border-radius:999px;background:rgba(255,255,255,.14)}.cf-loader-progress-bar{height:100%;width:8%;border-radius:999px;background:linear-gradient(90deg,#27b59a,#8be3d1);box-shadow:0 0 12px rgba(39,181,154,.45);transition:width .28s ease;position:relative}.cf-loader-progress-bar:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-100%);animation:cfProgressShimmer 1.1s ease-in-out infinite}.cf-loader-percent{font-size:10px;color:rgba(255,255,255,.58);font-variant-numeric:tabular-nums}@keyframes cfSpin{to{transform:rotate(360deg)}}@keyframes cfProgressShimmer{to{transform:translateX(100%)}}@media(prefers-reduced-motion:reduce){.cf-loader-mark{animation-duration:2.5s}.cf-loader-progress-bar:after{animation:none}}</style>
 </head>
 <body>
-<div id="careFlowLoader" class="cf-loader" role="status" aria-live="polite" aria-label="Loading CareFlow"><div class="cf-loader-card"><div class="cf-loader-mark"><span class="cf-loader-core"></span></div><div class="cf-loader-label">CareFlow</div><div class="cf-loader-sub">Preparing workspace...</div></div></div>
+<div id="careFlowLoader" class="cf-loader" role="status" aria-live="polite" aria-label="Loading CareFlow"><div class="cf-loader-card"><div class="cf-loader-mark"><span class="cf-loader-core"></span></div><div class="cf-loader-label">CareFlow</div><div class="cf-loader-sub">Preparing workspace...</div><div class="cf-loader-progress" aria-hidden="true"><div id="cfLoaderProgressBar" class="cf-loader-progress-bar"></div></div><div id="cfLoaderPercent" class="cf-loader-percent">8%</div></div></div>
 <div class="mobile-backdrop" id="mobileBackdrop" onclick="closeMobileNav()"></div>
 <div class="app-shell">
 <aside class="sidebar" id="appSidebar">
@@ -248,15 +248,27 @@ let state={dashboardRange:{preset:'today',from:'',to:''},dashboard:null,patients
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtTime=t=>t?String(t).slice(0,5):'';
 const fmtDate=d=>d?new Date(String(d).slice(0,10)+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
-let cfLoadingCount=0,cfLoadingTimer=null,cfLoadingStarted=0,cfLoadingFailsafe=null;
+let cfLoadingCount=0,cfLoadingTimer=null,cfLoadingStarted=0,cfLoadingFailsafe=null,cfLoadingProgressTimer=null,cfLoadingProgress=8;
+function setCareFlowProgress(value){
+  cfLoadingProgress=Math.max(0,Math.min(100,value));
+  const bar=document.getElementById('cfLoaderProgressBar'),pct=document.getElementById('cfLoaderPercent');
+  if(bar)bar.style.width=cfLoadingProgress+'%';
+  if(pct)pct.textContent=Math.round(cfLoadingProgress)+'%';
+}
 function showCareFlowLoader(label='Loading…'){
   const el=document.getElementById('careFlowLoader');if(!el)return;
   const sub=el.querySelector('.cf-loader-sub');if(sub)sub.textContent=label;
   if(cfLoadingCount===0){
     cfLoadingStarted=Date.now();
+    cfLoadingProgress=8;
+    setCareFlowProgress(8);
     clearTimeout(cfLoadingTimer);
     clearTimeout(cfLoadingFailsafe);
+    clearInterval(cfLoadingProgressTimer);
     el.classList.add('show');
+    cfLoadingProgressTimer=setInterval(()=>{
+      if(cfLoadingProgress<88)setCareFlowProgress(cfLoadingProgress+(cfLoadingProgress<45?4:2));
+    },180);
     cfLoadingFailsafe=setTimeout(()=>hideCareFlowLoader(true),12000);
   }
   cfLoadingCount++;
@@ -267,8 +279,10 @@ function hideCareFlowLoader(force=false){
   if(cfLoadingCount===0){
     clearTimeout(cfLoadingTimer);
     clearTimeout(cfLoadingFailsafe);
-    const wait=Math.max(0,850-(Date.now()-cfLoadingStarted));
-    cfLoadingTimer=setTimeout(()=>{if(cfLoadingCount===0)el.classList.remove('show')},wait);
+    clearInterval(cfLoadingProgressTimer);
+    setCareFlowProgress(100);
+    const wait=Math.max(180,Math.min(850,850-(Date.now()-cfLoadingStarted)));
+    cfLoadingTimer=setTimeout(()=>{if(cfLoadingCount===0){el.classList.remove('show');setCareFlowProgress(8)}},wait);
   }
 }
 async function api(path,opts={}){
