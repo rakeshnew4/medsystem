@@ -289,7 +289,25 @@ CareFlow changes have NOT yet been made from this review. The next implementatio
 
 # 02 — Appointment / OPD
 
-Not started.
+**In progress — appointment integrity foundation implemented and tested at the API level.**
+
+HMIS review confirms appointment creation is a workflow boundary connecting patient identity, appointment/session, billing and subsequent OPD processing. CareFlow already has the corresponding appointment, availability, patient, encounter and queue primitives.
+
+Implemented this run:
+- Staff appointment creation now rejects an active appointment conflict for the same doctor/date/time before creating a new appointment.
+- Cancelled/no-show appointments do not block reuse of a slot.
+- Existing CareFlow search-first patient registration and appointment → queue/encounter linkage remain the foundation for the OPD flow.
+
+Verification:
+- Public OPD hospital discovery endpoint returns the configured hospital and active doctors successfully.
+- Staff appointment/patient endpoints remain protected by CareFlow staff authorization; direct anonymous execution is correctly rejected.
+- Deployment dry-run and live deployment are required before this change is considered shipped.
+
+Next appointment/OPD work:
+- Verify the staff appointment UI end-to-end with an authenticated staff session.
+- Verify appointment creation → check-in → token → encounter linkage.
+- Review appointment status transitions and cancellation/no-show semantics against HMIS workflow.
+- Review OPD billing/session linkage and appointment search/filter behavior.
 
 # 03 — Encounter model
 

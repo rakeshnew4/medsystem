@@ -29,6 +29,13 @@ export default async function(req,res){
     if(apDate===today&&p&&["lunch","outside","meeting","unavailable","off_duty","custom"].includes(p.status)){const until=p.expected_until?new Date(p.expected_until):null;if(!until||new Date(apDate+"T"+apTime+":00")<until)open=false}
     if(!open)return res.status(409).json({error:"Doctor is not available for this time slot"});
 
+    // HMIS-aligned appointment guard: never allow two active appointments for the same doctor/time.
+    const conflict=await db.query(
+      "SELECT id,patient_id,status FROM appointments WHERE hospital_id=$1 AND doctor_id=$2 AND appointment_date=$3 AND appointment_time=$4 AND status NOT IN ('cancelled','no_show') LIMIT 1",
+      [hid,b.doctor_id,apDate,apTime]
+    );
+    if(conflict.rows[0])return res.status(409).json({error:"That doctor slot is already booked",code:"APPOINTMENT_CONFLICT",appointment_id:conflict.rows[0].id,status:conflict.rows[0].status});
+
     let patient=null;
     if(b.patient_id){
       const r=await db.query("SELECT id,name,uhid,phone FROM patients WHERE hospital_id=$1 AND id=$2",[hid,b.patient_id]);
