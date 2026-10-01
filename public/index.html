@@ -599,7 +599,6 @@ async function showSection(id,updateUrl=true){
 }
 async function restoreSection(){
   let id=(location.hash||'').slice(1);
-  if(state.session?.staff?.role==='receptionist')id='reception-desk';
   if(!VALID_SECTIONS.includes(id)||!canSection(id)){
     try{id=localStorage.getItem(staffStorageKey('pinnedSection'))||localStorage.getItem(staffStorageKey('lastSection'))||roleDefaultSection()}catch(e){id=roleDefaultSection()}
   }
@@ -847,11 +846,8 @@ async function loadAll(){
     syncDashboardRangeControls();
     applyPermissions();
     renderRoleWorkspace();
-    if(state.session?.staff?.role==='receptionist'){
-      await loadSectionData('reception-desk',true);
-      await showSection('reception-desk',false);
-      return;
-    }
+    // All staff, including receptionists, enter through the normal hospital overview.
+    // The role-specific reception kiosk is opened explicitly from the Patient Workspace.
     await loadSectionData('dashboard',true);
     await restoreSection();
     const deepPatient=new URLSearchParams(location.search).get('patient_id');
