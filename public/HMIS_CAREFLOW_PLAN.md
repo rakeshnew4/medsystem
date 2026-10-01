@@ -48,7 +48,7 @@ For each domain:
 - **Staff landing/navigation correction completed:** aligned the CareFlow staff shell with the HMIS-style workflow separation so authentication lands on the normal hospital home rather than forcing the receptionist operational screen.
 - Receptionists now default to `dashboard` on a fresh authenticated entry, even if an older receptionist-specific last/pinned screen exists in browser storage.
 - Reception workflow remains available from Patient Workspace, where the logged-in role can select the appropriate operational action/screen for the patient.
-- Verification target for the next run: authenticated receptionist browser flow → normal home → Patient Workspace → Reception action → return/back to normal home.
+- Verification: deployed in v371 and the navigation source now resolves receptionist default entry to `dashboard`; the existing Patient Workspace Reception actions and Reception Desk back-to-home flow remain in place. Full authenticated browser verification is still the next test step because the automation session cannot establish a staff browser login.
 - Known unrelated production issue still visible in logs: `/api/lis/test-results` is returning HTTP 500 against the external DB adapter and should be handled in the Laboratory iteration.
 
 ---
