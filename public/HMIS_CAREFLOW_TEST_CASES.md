@@ -199,8 +199,13 @@ Status: Automated production invariant added and passed; authenticated transitio
 Verify Theatre procedure states, completed-outcome requirements, ward-return state, admission/encounter continuity, active room overlap, duplicate source-charge protection, duplicate invoice-item linkage, linked-charge invoice-line continuity, room availability, source-record validity, and completed-procedure billing continuity directly against the production database.
 Status: Automated production invariant check passed: the original eight integrity/isolation checks returned zero violations; v287 added four additional checks (completed-without-outcome, scheduled-on-unavailable-room, invalid theatre-service source, invalid medicine/pharmacy-dispense source), all zero against the external PostgreSQL database; v288 added invoice-item identity/amount continuity and charge-patient continuity checks, also zero. The current HMIS-aligned increment also audits completed procedures with unlinked Theatre charges; authenticated execution remains pending.
 
+## TC-THEATRE-031 — HMIS-aligned Surgery Validation / financial closure
+Route: /api/theatre-validate; Method: POST; Actor: doctor/admin with Theatre manage permission.
+Expected: only a completed, unvalidated procedure can be validated; every Theatre charge must already have both invoice_id and invoice_item_id; validation records validated_at/validated_by and creates a theatre_procedure_validated workflow event.
+Status: Implemented in v310; anonymous access returns HTTP 401. Authenticated execution pending.
+
 ## Theatre completion gate
-Do not mark Theatre Complete until authenticated happy-path E2E, role boundaries, invalid transitions, overlap protection, encounter continuity, workflow events and billing continuity pass.
+Do not mark Theatre Complete until authenticated happy-path E2E, role boundaries, invalid transitions, overlap protection, encounter continuity, workflow events and billing continuity pass. HMIS-aligned Surgery Validation is now an additional financial-closure gate.
 
 # Billing / charges / payments
 
