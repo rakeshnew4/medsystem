@@ -190,8 +190,7 @@ HMIS references: `Privileges.java`, `UserPrivilageController.java`, `ConfigOptio
 - [x] U12-09 Inherit / Allow / Deny UX — v430 draft: Inherit removes the stored override; Allow/Deny persist boolean overrides.
 - [x] U12-10 Effective permission view — v430 draft: selected staff access source is shown as department override, global override or role baseline using verified precedence.
 - [x] U12-11 Permission safety/authorization feedback — v430 draft: administrator-only controls, server error feedback and explicit scope/precedence messaging.
-- [ ] U12-12 Staff audit/history — searchable read-only lifecycle/permission audit history.
-- [ ] U12-12 Staff audit/history — searchable read-only lifecycle/permission audit history with actor, action, target, timestamp and before/after details.
+- [x] U12-12 Staff audit/history — v431: dedicated administrator-only read-only audit worklist over the existing hospital-scoped /api/staff-audit contract, with staff/action/search filters and recorded audit details; HMIS audit reference uses date-filtered history and paginated read-only presentation.
 - [ ] U12-13 Staff availability — work status, schedule, exceptions and doctor availability context using the existing availability contract.
 - [ ] U12-14 Hospital profile/configuration — hospital identity, contact, timezone and core setup grouped as administrator configuration.
 - [ ] U12-15 Hospital modules/features/settings — module enablement, feature flags and operational defaults presented with safe save/feedback states.
