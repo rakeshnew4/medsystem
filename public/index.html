@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CareFlow — Hospital Operations</title>
+<script src="/qrcode.min.js"></script>
 <link rel="stylesheet" href="/theme.css">
 <style>
 .ai-assistant-ball{position:fixed;right:28px;bottom:28px;width:62px;height:62px;border:0;border-radius:50%;background:linear-gradient(145deg,#12866f,#075c4d);color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 12px 30px rgba(7,92,77,.30);cursor:pointer;z-index:1500;animation:none}
@@ -1323,7 +1324,42 @@ async function openClinicalFollowup(pid){return workspaceFollowupForm(pid)}/* co
  // removed legacy line
  // removed legacy line
 /* extra brace removed */
-async function updateAppointmentStatus(id,status){try{await api('/appointments',{method:'PUT',body:JSON.stringify({id,status})});await loadAll()}catch(e){alert(e.message)}}
+async function showAppointmentPaymentQr(appointment){
+    const id=Number(appointment?.id||0);
+    if(!id)return;
+    try{
+      const r=await api('/payment-qr?appointment_id='+encodeURIComponent(id),{loading:true});
+      let box=document.getElementById('cfPaymentQrModal');
+      if(!box){
+        box=document.createElement('div');
+        box.id='cfPaymentQrModal';
+        box.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(9,28,24,.58);backdrop-filter:blur(8px)';
+        document.body.appendChild(box);
+      }
+      box.innerHTML='<div style="width:min(430px,100%);background:#fff;border:1px solid #dce8e3;border-radius:24px;box-shadow:0 24px 80px rgba(0,0,0,.22);padding:24px;text-align:center">'+
+        '<div style="font-size:11px;font-weight:800;letter-spacing:.12em;color:#087f6a;text-transform:uppercase">Appointment registered</div>'+
+        '<h2 style="margin:8px 0 4px;color:#17352f">Payment QR</h2>'+
+        '<div style="font-size:13px;color:#6b7d77;margin-bottom:16px">'+esc(r.patient_name||'Patient')+' · '+esc(r.doctor_name||'Doctor')+'</div>'+
+        '<div id="cfPaymentQrCanvas" style="display:inline-flex;padding:14px;background:#fff;border:1px solid #e1e8e5;border-radius:18px;min-width:260px;min-height:260px;align-items:center;justify-content:center"></div>'+
+        '<div style="font-size:26px;font-weight:900;color:#17352f;margin:14px 0 2px">₹'+Number(r.amount||0).toFixed(2)+'</div>'+
+        '<div style="font-size:11px;color:#6b7d77;margin-bottom:16px">Reference: '+esc(r.reference||('CF-APT-'+id))+'</div>'+
+        '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">'+
+        '<button type="button" class="btn primary" onclick="this.closest(\'#cfPaymentQrModal\').remove()">DONE</button>'+
+        '<button type="button" class="btn" onclick="window.print()">PRINT QR</button>'+
+        '</div></div>';
+      const qrHost=document.getElementById('cfPaymentQrCanvas');
+      if(!qrHost||typeof qrcode!=='function')throw new Error('QR library is unavailable');
+      const qr=qrcode(0,'M');
+      qr.addData(String(r.payload||''));
+      qr.make();
+      qrHost.innerHTML=qr.createSvgTag({cellSize:5,margin:2,scalable:true});
+      const svg=qrHost.querySelector('svg');
+      if(svg){svg.style.width='260px';svg.style.height='260px';svg.setAttribute('role','img');svg.setAttribute('aria-label','Appointment payment QR code');}
+    }catch(e){
+      alert('Appointment was registered, but the payment QR could not be generated: '+(e.message||'Payment QR is not configured.'));
+    }
+  }
+  async function updateAppointmentStatus(id,status){try{await api('/appointments',{method:'PUT',body:JSON.stringify({id,status})});await loadAll()}catch(e){alert(e.message)}}
 async function checkInAppointment(id){try{const r=await api('/appointments',{method:'PUT',body:JSON.stringify({id,action:'checkin',stage:'waiting'})});await loadAll();showSection('queue');alert('OPD token issued: '+(r.queue?.token||'Token assigned'));}catch(e){alert(e.message)}}
 function openOpdRegistration(pid){const p=state.patients.find(x=>Number(x.id)===Number(pid));if(!p)return;document.getElementById('opdPatientId').value=p.id;document.getElementById('opdPatientLabel').textContent=(p.uhid||'No UHID')+' · '+p.name+(p.phone?' · '+p.phone:'');document.getElementById('opdDoctor').value='';document.getElementById('opdDoctorSearch').value='';document.getElementById('opdPriority').value='normal';document.getElementById('opdReason').value='';openModal('opdModal')}
 async function openStaffVideo(id){window.open('/opd/video-staff/?appointment_id='+encodeURIComponent(id),'_blank');}
@@ -1478,7 +1514,7 @@ function renderHospitalConfig(){const c=state.hospitalConfig;if(!c)return;
  hospitalName.value=c.hospital?.name||'';hospitalPhone.value=c.hospital?.phone||'';hospitalAddress.value=c.hospital?.address||'';hospitalTimezone.value=c.hospital?.timezone||'Asia/Kolkata';
  document.getElementById('hospitalModules').innerHTML=c.modules.map(m=>'<label class="permission-row"><input type="checkbox" '+(m.enabled?'checked':'')+' onchange="saveHospitalModule(\''+esc(m.module_key)+'\',this.checked)"><span><strong>'+esc(m.display_name||m.module_key)+'</strong><small>'+esc(m.module_key)+'</small></span></label>').join('');
  document.getElementById('hospitalFeatures').innerHTML=c.features.map(f=>'<label class="permission-row"><input type="checkbox" '+(f.enabled?'checked':'')+' onchange="saveHospitalFeature(\''+esc(f.feature_key)+'\',this.checked)"><span><strong>'+esc(f.feature_key.replaceAll('_',' '))+'</strong></span></label>').join('');
- const settingDefs=[['appointments','default_duration_minutes','Default appointment duration (minutes)',15],['appointments','booking_window_days','Booking window (days)',30],['queue','token_prefix','Queue token prefix','T'],['billing','default_tax_rate','Default tax rate (%)',0]];
+ const settingDefs=[['appointments','default_duration_minutes','Default appointment duration (minutes)',15],['appointments','booking_window_days','Booking window (days)',30],['queue','token_prefix','Queue token prefix','T'],['billing','default_tax_rate','Default tax rate (%)',0],['billing','payment_gateway','Payment gateway','upi'],['billing','upi_id','Payment UPI ID',''],['billing','merchant_name','Payment merchant name',''],['billing','payment_url_template','Payment gateway URL template','']];
  document.getElementById('hospitalSettings').innerHTML=settingDefs.map(([cat,key,label,def])=>{const s=c.settings.find(x=>x.setting_key===cat);const v=s?.setting_value?.[key]??def;return '<div class="field" style="margin-bottom:10px"><label>'+esc(label)+'</label><input value="'+esc(v)+'" onchange="updateNestedSetting(\''+cat+'\',\''+key+'\',this.value)"></div>'}).join('');
  document.getElementById('hospitalLabels').innerHTML=c.labels.map(l=>'<div class="field" style="margin-bottom:10px"><label>'+esc(l.label_key)+'</label><input value="'+esc(l.label_value)+'" onchange="saveHospitalLabel(\''+esc(l.label_key)+'\',this.value)"></div>').join('');
  document.getElementById('hospitalServices').innerHTML=table(c.services,['Service','Type','Price','Duration','Status'],s=>'<td><strong>'+esc(s.name)+'</strong><div class="muted">'+esc(s.service_code||'')+'</div></td><td>'+esc(s.service_type)+'</td><td>'+esc(s.price??'—')+'</td><td>'+esc(s.duration_minutes??'—')+' min</td><td>'+status(s.active?'active':'inactive')+'</td>');
@@ -1493,7 +1529,7 @@ document.getElementById('patientForm').onsubmit=async e=>{e.preventDefault();try
 document.getElementById('patientRegisterForm').onsubmit=async e=>{e.preventDefault();try{const p=await api('/patients',{method:'POST',body:JSON.stringify({name:registerPatientName.value,phone:registerPatientPhone.value,date_of_birth:registerPatientDob.value,notes:registerPatientNotes.value,source:'reception'})});closeModal('patientRegisterModal');e.target.reset();await loadAll();alert('Patient registered. UHID: '+(p.uhid||('UHID-'+String(p.id).padStart(6,'0')))+'\nRegister the patient for OPD to issue today\'s token.');openOpdRegistration(p.id)}catch(x){alert(x.message)}};
 document.getElementById('opdForm').onsubmit=async e=>{e.preventDefault();try{const r=await api('/queue',{method:'POST',body:JSON.stringify({patient_id:opdPatientId.value,doctor_id:opdDoctor.value,stage:'waiting',priority:opdPriority.value,reason:opdReason.value})});closeModal('opdModal');e.target.reset();await loadAll();showSection('queue');alert('OPD token issued: '+r.token?.token+'\\nPatient: '+(r.token?.tokenDate||'')+(r.public_token?'\\n\\nPatient tracking: '+location.origin+'/opd/token/?token='+r.public_token:''));}catch(x){alert(x.message)}};
 document.getElementById('doctorForm').onsubmit=async e=>{e.preventDefault();try{await api('/doctors',{method:'POST',body:JSON.stringify({name:doctorName.value,specialty:doctorSpecialty.value,phone:doctorPhone.value,consultation_fee:doctorFee.value,display_room:doctorRoomName.value})});closeModal('doctorModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}};
-document.getElementById('appointmentForm').onsubmit=async e=>{e.preventDefault();try{const r=await api('/appointments',{method:'POST',body:JSON.stringify({patient_name:apptPatientName.value,patient_phone:apptPatientPhone.value,doctor_id:apptDoctor.value,appointment_date:apptDate.value,appointment_time:apptTime.value,reason:apptReason.value,consultation_type:apptConsultationType.value})});closeModal('appointmentModal');e.target.reset();alert('Appointment booked successfully. Refreshing the clinic workspace…');window.location.reload()}catch(x){alert(x.message)}};
+document.getElementById('appointmentForm').onsubmit=async e=>{e.preventDefault();try{const r=await api('/appointments',{method:'POST',body:JSON.stringify({patient_name:apptPatientName.value,patient_phone:apptPatientPhone.value,doctor_id:apptDoctor.value,appointment_date:apptDate.value,appointment_time:apptTime.value,reason:apptReason.value,consultation_type:apptConsultationType.value})});closeModal('appointmentModal');e.target.reset();await showAppointmentPaymentQr(r);await loadAll()}catch(x){alert(x.message)}};
 document.getElementById('followupForm').onsubmit=async e=>{e.preventDefault();try{await api('/followups',{method:'POST',body:JSON.stringify({patient_id:followPatient.value,doctor_id:followDoctor.value,due_date:followDate.value,notes:followNotes.value})});closeModal('followupModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}};
 document.getElementById('queueForm').onsubmit=async e=>{e.preventDefault();try{const r=await api('/queue',{method:'POST',body:JSON.stringify({patient_id:queuePatient.value,doctor_id:queueDoctor.value||null,stage:'waiting',priority:queuePriority.value,reason:queueReason.value,notes:queueNotes.value})});closeModal('queueModal');e.target.reset();await loadAll();showSection('queue');alert('OPD token issued: '+(r.token?.token||r.token||'assigned')+(r.public_token?'\\n\\nPatient tracking: '+location.origin+'/opd/token/?token='+r.public_token:''));}catch(x){alert(x.message)}};
 document.getElementById('vitalsForm').onsubmit=async e=>{e.preventDefault();try{await api('/vitals',{method:'POST',body:JSON.stringify({patient_id:vitalsPatient.value,queue_entry_id:e.target.dataset.queue,blood_pressure_systolic:vitalsSbp.value,blood_pressure_diastolic:vitalsDbp.value,pulse:vitalsPulse.value,temperature:vitalsTemp.value,weight_kg:vitalsWeight.value,height_cm:vitalsHeight.value,spo2:vitalsSpo2.value,respiratory_rate:vitalsResp.value,notes:vitalsNotes.value})});closeModal('vitalsModal');e.target.reset();await loadAll()}catch(x){alert(x.message)}};
