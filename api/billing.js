@@ -54,7 +54,8 @@ export default async function(req,res){
    const r=await db.query("SELECT i.*,p.name AS patient_name,p.phone,p.uhid FROM invoices i JOIN patients p ON p.id=i.patient_id WHERE i.id=$1 AND i.hospital_id=$2",[Number(req.query.id),ctx.hospitalId]);
    if(!r.rows[0])return res.status(404).json({error:"Invoice not found"});
    const payments=await db.query("SELECT id,amount,payment_method,reference,received_by,created_at FROM invoice_payments WHERE invoice_id=$1 AND hospital_id=$2 ORDER BY created_at",[Number(req.query.id),ctx.hospitalId]);
-   return res.json({...r.rows[0],payments:payments.rows});
+   const items=await db.query("SELECT id,description,quantity,unit_price,amount FROM invoice_items WHERE invoice_id=$1 ORDER BY id",[Number(req.query.id)]);
+   return res.json({...r.rows[0],items:items.rows,payments:payments.rows});
  }
  const r=await db.query("SELECT i.*,p.name AS patient_name,p.phone,p.uhid FROM invoices i JOIN patients p ON p.id=i.patient_id WHERE i.hospital_id=$1 ORDER BY i.created_at DESC LIMIT 300",[ctx.hospitalId]);res.json(r.rows);
 }

@@ -332,11 +332,11 @@ Status: Open. Production audit currently reports 946 invoices totaling ₹491,50
 ## TC-BILL-021 — Validator/runtime consistency
 The owner-only production validator must agree with direct read-only checks against the external PostgreSQL adapter.
 Expected: no validator runtime query failures; any discrepancy blocks release validation.
-Status: Open. Direct adapter checks are healthy, but the deployed validator currently reports failures in its ledger-related checks. See public/HMIS_BILLING_GATE_STATUS.md.
+Status: Reworked in v408 to avoid the adapter's unreliable information_schema table probe; the validator now probes the actual invoice_payments relation read-only. Post-deploy execution of the owner-only validator is still restricted by the available automation safety harness, so authenticated/owner validation remains an explicit gate.
 
 ## TC-BILL-022 — Payment-ledger validator adapter compatibility
 The owner-only billing integrity validator must execute every payment-ledger query successfully through CareFlow's configured external PostgreSQL adapter. Adapter-safe aggregate queries must not be treated as financial passes unless the query itself executes; any runtime query error keeps the validator gate failed.
-Status: Implemented in v383/v384. Post-deploy validation still fails at the external payment-ledger schema/runtime boundary; this blocks Billing validation. Authenticated Billing E2E remains required.
+Status: v408 hardens schema detection by querying the actual invoice_payments relation through the configured adapter instead of information_schema. Anonymous billing access is 401; the available signed-in app-user harness reaches requireStaff() and is also rejected. Hospital-staff authenticated E2E remains required.
 
 ## TC-BILL-022 — Payment-ledger validator adapter compatibility
 The owner-only billing integrity validator must execute every payment-ledger query successfully through CareFlow's configured external PostgreSQL adapter. Adapter-safe aggregate queries must not be treated as financial passes unless the query itself executes; any runtime query error keeps the validator gate failed.
@@ -348,11 +348,31 @@ Status: Implemented in the current increment; deployment and post-deploy validat
 
 ## TC-BILL-024 — Billing worklist UI search/filter
 Billing worklist exposes invoice, patient, UHID and phone search plus unpaid/partial/paid filters; filtering is client-side over the already hospital-scoped billing response and does not bypass server authorization.
-Status: UI implemented in current draft; deployment blocked by runtime safety gate; browser verification pending.
+Status: Deployed in v408; authenticated browser verification remains pending.
 
 ## TC-BILL-025 — Billing patient context UI
 Selecting a patient from the billing worklist opens the existing Patient Workspace context without changing invoice/payment state.
-Status: UI implemented in current draft; deployment blocked by runtime safety gate; browser verification pending.
+Status: Deployed in v408; authenticated browser verification remains pending.
+
+## TC-BILL-026 — Billing unauthenticated boundary
+GET /api/billing as anonymous must return HTTP 401, and a signed-in app-user session that is not registered as hospital staff must not reach billing data or mutations.
+Status: Verified in v408 for anonymous GET (401) and the available signed-in app-user harness (401 from requireStaff). This does not satisfy hospital-staff E2E.
+
+## TC-BILL-027 — Billing financial transition safety
+A hospital-staff E2E fixture must prove unpaid → partial → paid, reject overpayment/negative payment, preserve payment history, and reject concurrent over-settlement without invoice or ledger corruption.
+Status: Open — real hospital-staff session unavailable.
+
+## TC-BILL-028 — Invoice detail charge grouping
+GET /api/billing?id=<invoice> returns existing invoice line items; the UI groups them by operational charge category without changing financial totals.
+Status: Implemented in v409; authenticated browser verification remains pending.
+
+## TC-BILL-029 — Invoice payment history presentation
+Invoice detail shows each recorded payment with date, amount, method, reference and receiver, plus outstanding balance.
+Status: Implemented in v409; authenticated browser verification remains pending.
+
+## TC-BILL-030 — Billing payment entry contract
+Invoice detail submits incremental payment amounts through the existing PUT /api/billing contract; no UI-side total replacement is used.
+Status: Implemented in v409; authenticated billing-staff execution remains pending.
 
 ## Billing completion gate
 Billing is marked Complete only after authenticated invoice/payment E2E, role boundaries, invalid financial inputs, invoice continuity and workflow audit events pass.

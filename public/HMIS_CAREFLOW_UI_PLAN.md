@@ -137,12 +137,12 @@ HMIS reference: inpatient search plus central Admission Profile.
 
 ### UI-09 — Billing / Charges / Payments
 - [x] Billing worklist — searchable by invoice/patient/UHID/phone with payment-state filter and outstanding-balance summary
-- [x] Patient/invoice context — invoice rows open the selected patient's workspace while preserving financial context
-- [ ] Charge grouping
+- [x] Patient/invoice context — invoice rows open invoice detail or the selected patient's workspace while preserving financial context
+- [x] Charge grouping — invoice line items are grouped into HMIS-style operational charge categories in read-only invoice detail
 - [ ] Invoice editor
-- [ ] Payment history
-- [ ] Payment entry
-- [ ] Outstanding/paid states
+- [x] Payment history — invoice-level payment ledger is presented with date, amount, method, reference and receiver
+- [x] Payment entry — existing protected incremental-payment transition is exposed through invoice detail
+- [x] Outstanding/paid states — unpaid/partial/paid counts and outstanding amount are visible in the billing worklist
 - [ ] Insurance
 - [ ] PDF/print actions
 - [ ] Financial audit/history
@@ -229,5 +229,5 @@ A module is UI-complete only when the UI reflects the verified HMIS workflow, al
 - 2026-10-01: UI-01 increment started: Patient Lookup redesigned as a lookup-first workspace with prominent New Patient action, search/filter toolbar and clearer patient-record selection hierarchy. Existing backend/API behavior preserved.
 - 2026-10-01: UI-01 increment deployed as v399: selected-patient identity/context bar added with UHID/PHN and OPD/IPD/admission state; Patient Workspace now separates operational Actions from Reports & History. No backend workflow transitions changed.
 - 2026-10-01: UI-00 baseline cleanup: shared legacy controls now have consistent focus-visible, disabled, action-row, table-hover and error/loading presentation.
-- 2026-10-01: UI-09 increment prepared: Billing is now a searchable/filterable financial worklist with explicit outstanding-balance summary and patient/UHID/phone context; existing billing mutation contracts are unchanged. Dry-run passed with 0 errors, but deployment was blocked by the runtime safety gate, so production remains v407. Next UI-09 task after publication: charge grouping and invoice detail/payment-history presentation.
+- 2026-10-01: UI-09 increment deployed as v408: Billing is a searchable/filterable financial worklist with explicit outstanding-balance summary and patient/UHID/phone context; existing billing mutation contracts are unchanged. Dry-run passed with 0 errors. Anonymous billing access remains protected and the available signed-in app-user harness is rejected by hospital-staff authorization. Next UI-09 task: charge grouping and invoice detail/payment-history presentation; authenticated billing E2E remains open.
 - 2026-10-01: UI-00 baseline cleanup increment: normalized shared legacy controls with consistent focus-visible treatment, disabled-state behavior, action-row alignment, table hover feedback and common error/loading presentation. No workflow or backend behavior changed. Next UI target: UI-01 identifier search coverage.
