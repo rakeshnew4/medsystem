@@ -39,11 +39,11 @@ Status: Requires authenticated staff session.
 
 ## TC-IPD-009 — Transfer bed
 Expected: old assignment is released, new available bed becomes occupied, admission points to new bed, new assignment is recorded and bed_transferred event is emitted.
-Status: Requires authenticated staff session.
+Status: Requires authenticated staff session. The transfer is now one transactional CTE with deterministic bed locking.
 
 ## TC-IPD-010 — Transfer to unavailable bed is rejected
 Expected: HTTP 409 and no change to current bed assignment.
-Status: Requires authenticated staff session.
+Status: Requires authenticated staff session. Availability is checked while the destination bed is locked, before any source-bed release.
 
 ## TC-IPD-011 — Discharge checklist blocks incomplete discharge
 Expected: patient cannot be discharged until clinical clearance, reports, medication reconciliation, billing clearance and final payment/approval are satisfied.

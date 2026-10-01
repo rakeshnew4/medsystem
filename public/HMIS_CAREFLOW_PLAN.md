@@ -528,7 +528,8 @@ Implemented now:
 
 Remaining IPD work:
 - Hardened the admission mutation in v245: selected bed is row-locked and admission + IPD encounter + bed assignment + occupancy update commit together.
-- Remaining: harden transfer and discharge mutations as fully atomic state transitions under concurrent requests.
+- Bed transfer is now transactionally hardened: both beds are locked deterministically and source release, admission update, new assignment and destination occupancy are gated and committed together.
+- Remaining: harden discharge mutation as a fully atomic state transition under concurrent requests.
 - Run authenticated nurse/admin/receptionist/doctor role-boundary tests.
 - Verify occupied-bed race, transfer race, discharge checklist enforcement and encounter continuity with synthetic fixtures.
 - Verify full OPD → IPD → transfer → discharge journey in browser E2E.

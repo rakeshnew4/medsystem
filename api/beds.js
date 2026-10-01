@@ -91,17 +91,69 @@ export default async function(req,res){
       );
       if(!a.rows[0])return res.status(404).json({error:"Active admission not found"});
       const admission=a.rows[0];
-      const bed=await db.query("SELECT id,status FROM beds WHERE id=$1 AND hospital_id=$2",[b.new_bed_id,ctx.hospitalId]);
-      if(!bed.rows[0])return res.status(404).json({error:"New bed not found"});
-      if(bed.rows[0].status!=="available")return res.status(409).json({error:"New bed is not available"});
-
-      if(admission.bed_id){
-        await db.query("UPDATE bed_assignments SET released_at=now(),reason=$1 WHERE admission_id=$2 AND bed_id=$3 AND released_at IS NULL",[b.reason||"Bed transfer",admission.id,admission.bed_id]);
-        await db.query("UPDATE beds SET status='available',updated_at=now() WHERE id=$1 AND hospital_id=$2",[admission.bed_id,ctx.hospitalId]);
+      if(Number(admission.bed_id||0)===Number(b.new_bed_id)){
+        return res.status(409).json({error:"Patient is already assigned to this bed"});
       }
-      await db.query("UPDATE admissions SET bed_id=$1,updated_at=now() WHERE id=$2 AND hospital_id=$3",[b.new_bed_id,admission.id,ctx.hospitalId]);
-      await db.query("INSERT INTO bed_assignments(hospital_id,admission_id,bed_id,reason) VALUES($1,$2,$3,$4)",[ctx.hospitalId,admission.id,b.new_bed_id,b.reason||"Bed transfer"]);
-      await db.query("UPDATE beds SET status='occupied',updated_at=now() WHERE id=$1 AND hospital_id=$2",[b.new_bed_id,ctx.hospitalId]);
+
+      // Perform the entire room change in one transaction. The CTE first locks
+      // both beds in deterministic order, then every mutation is gated by the
+      // new bed being available. If it is not available, zero rows are changed.
+      const transfer=await db.transaction([{
+        sql:`WITH locked AS (
+          SELECT id,status
+          FROM beds
+          WHERE hospital_id=$1 AND id IN ($2,$3)
+          ORDER BY id
+          FOR UPDATE
+        ),
+        guard AS (
+          SELECT 1
+          FROM locked
+          WHERE id=$3 AND status='available'
+        ),
+        released_assignment AS (
+          UPDATE bed_assignments
+          SET released_at=now(),reason=$4
+          WHERE admission_id=$5 AND hospital_id=$1 AND bed_id=$2 AND released_at IS NULL
+            AND EXISTS (SELECT 1 FROM guard)
+          RETURNING id
+        ),
+        released_bed AS (
+          UPDATE beds
+          SET status='available',updated_at=now()
+          WHERE id=$2 AND hospital_id=$1
+            AND EXISTS (SELECT 1 FROM guard)
+          RETURNING id
+        ),
+        changed_admission AS (
+          UPDATE admissions
+          SET bed_id=$3,updated_at=now()
+          WHERE id=$5 AND hospital_id=$1 AND discharged_at IS NULL
+            AND EXISTS (SELECT 1 FROM guard)
+          RETURNING id
+        ),
+        new_assignment AS (
+          INSERT INTO bed_assignments(hospital_id,admission_id,bed_id,reason)
+          SELECT $1,$5,$3,$4
+          WHERE EXISTS (SELECT 1 FROM guard)
+          RETURNING id
+        ),
+        occupied_bed AS (
+          UPDATE beds
+          SET status='occupied',updated_at=now()
+          WHERE id=$3 AND hospital_id=$1
+            AND EXISTS (SELECT 1 FROM guard)
+          RETURNING id
+        )
+        SELECT
+          (SELECT COUNT(*) FROM locked) AS locked_count,
+          (SELECT COUNT(*) FROM guard) AS available_count,
+          (SELECT COUNT(*) FROM new_assignment) AS assignment_count`,
+        params:[ctx.hospitalId,admission.bed_id,b.new_bed_id,b.reason||"Bed transfer",admission.id]
+      }]);
+      const result=transfer.results?.[0]?.rows?.[0]||{};
+      if(Number(result.locked_count||0)<(admission.bed_id?2:1))return res.status(404).json({error:"New bed not found"});
+      if(Number(result.available_count||0)!==1)return res.status(409).json({error:"New bed is not available"});
       await logWorkflowEvent(ctx,{patientId:admission.patient_id,eventType:"bed_transferred",stage:"ipd",entityType:"admission",entityId:admission.id,metadata:{from_bed_id:admission.bed_id,to_bed_id:b.new_bed_id,reason:b.reason||"Bed transfer"}});
       return res.json({id:admission.id,bed_id:b.new_bed_id,patient_id:admission.patient_id});
     }
