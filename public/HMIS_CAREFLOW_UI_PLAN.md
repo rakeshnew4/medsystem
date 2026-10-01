@@ -38,7 +38,7 @@ UI changes must never bypass server authorization or invent workflow states.
 ### UI-01 — Patient Registration & Patient Search
 HMIS references: OPD Patient Lookup/Registration, EMR patient lookup, patient profile.
 - [x] Search-first patient lookup UI.
-- [ ] Search by UHID/PHN/name/phone/NIC where available — UI accepts identifier search text; backend identifier coverage remains to be expanded.
+- [x] Search by UHID/PHN/name/phone/NIC where available — v449 extends the protected patient lookup to hospital-scoped UHID/name/phone/alternate-phone/NIC-passport matching, including normalized phone digits; PHN remains represented by the available UHID/identifier field rather than inventing a separate unsupported column.
 - [x] Duplicate-review flow is surfaced in the existing registration flow.
 - [x] New patient registration entry point retained and made prominent.
 - [x] Advanced demographics are already supported by the existing registration workflow.

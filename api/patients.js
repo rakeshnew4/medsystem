@@ -43,11 +43,21 @@ export default async function(req,res){
  const search=String(req.query?.search||"").trim();
  if(search){
   const r=await db.query(
-   `SELECT id,name,uhid,phone,email,date_of_birth,notes,status,created_at
-    FROM patients
-    WHERE hospital_id=$1
-      AND (LOWER(name) LIKE LOWER($2) OR COALESCE(phone,'') LIKE $2 OR COALESCE(uhid,'') ILIKE $2)
-    ORDER BY created_at DESC
+   `SELECT p.id,p.name,p.uhid,p.phone,p.email,p.date_of_birth,p.notes,p.status,p.created_at,
+           pi.nic_passport,pi.alternate_phone
+    FROM patients p
+    LEFT JOIN patient_identity pi ON pi.patient_id=p.id AND pi.hospital_id=p.hospital_id
+    WHERE p.hospital_id=$1
+      AND (
+        LOWER(p.name) LIKE LOWER($2)
+        OR COALESCE(p.phone,'') LIKE $2
+        OR regexp_replace(COALESCE(p.phone,''),'\\D','','g')=regexp_replace($2::text,'\\D','','g')
+        OR COALESCE(pi.alternate_phone,'') LIKE $2
+        OR regexp_replace(COALESCE(pi.alternate_phone,''),'\\D','','g')=regexp_replace($2::text,'\\D','','g')
+        OR COALESCE(p.uhid,'') ILIKE $2
+        OR LOWER(COALESCE(pi.nic_passport,'')) LIKE LOWER($2)
+      )
+    ORDER BY p.created_at DESC
     LIMIT 20`,
    [hid,"%"+search+"%"]
   );
