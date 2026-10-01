@@ -434,8 +434,8 @@ async function openReceptionPanel(mode){
   const titles={register:'Register · OPD / Admission',walkin:'OPD · Walk-in registration',queue:'Appointments · Offline / Online',billing:'Billing · Patient account',followup:'Follow-up · Schedule',admission:'Admission · Start IPD',patient:'Patients · Search / Open',search:'Search patient',edit:'Edit patient'};
   kicker.textContent='RECEPTION';title.textContent=titles[mode]||'Reception';
   if(mode==='register'){
-    body.innerHTML='<form id="receptionRegisterForm" class="reception-form kiosk-form"><div class="reception-form-grid"><div class="field full"><label>Patient name</label><input id="receptionRegPatient" required placeholder="Search existing patient or enter new name" autofocus></div><div class="field"><label>Phone</label><input id="receptionRegPhone" type="tel" placeholder="+91 98765 43210"></div><div class="field"><label>Date of birth</label><input id="receptionRegDob" type="date"></div><div class="field"><label>Doctor</label><select id="receptionRegDoctor" required></select></div><div class="field"><label>Date</label><input id="receptionRegDate" type="date" required></div><div class="field"><label>Time</label><input id="receptionRegTime" type="time" required></div><div class="field"><label>Consultation</label><select id="receptionRegType"><option value="in_person">Offline · In-person</option><option value="online">Online · Video</option></select></div><div class="field"><label>Registration</label><select id="receptionRegDestination"><option value="opd">OPD · Outpatient</option><option value="admission">Direct admission · IPD</option></select></div><div class="field full"><label>Reason</label><input id="receptionRegReason" placeholder="Consultation, follow-up, review"></div></div><button class="reception-submit" type="submit">REGISTER → CONTINUE TO OPD / ADMISSION</button></form>';
-    renderReceptionDesk();document.getElementById('receptionRegisterForm').addEventListener('submit',e=>submitReceptionRegistration(e).catch(x=>alert(x.message)));
+    body.innerHTML='<form id="receptionRegisterForm" class="reception-form kiosk-form"><div class="reception-form-grid"><div class="field full"><label>Patient identity</label><input id="receptionRegPatient" required placeholder="Search name, phone or UHID" autocomplete="off" autofocus><div id="receptionRegMatches" class="reception-lookup-results" style="margin-top:8px"></div><div id="receptionRegIdentityState" class="reception-action-intro" style="display:none;margin-top:8px"></div></div><div class="field"><label>Phone</label><input id="receptionRegPhone" type="tel" placeholder="+91 98765 43210"></div><div class="field"><label>Date of birth</label><input id="receptionRegDob" type="date"></div><div class="field"><label>Doctor</label><select id="receptionRegDoctor" required></select></div><div class="field"><label>Date</label><input id="receptionRegDate" type="date" required></div><div class="field"><label>Time</label><input id="receptionRegTime" type="time" required></div><div class="field"><label>Consultation</label><select id="receptionRegType"><option value="in_person">Offline · In-person</option><option value="online">Online · Video</option></select></div><div class="field"><label>Registration</label><select id="receptionRegDestination"><option value="opd">OPD · Outpatient</option><option value="admission">Direct admission · IPD</option></select></div><div class="field full"><label>Reason</label><input id="receptionRegReason" placeholder="Consultation, follow-up, review"></div></div><button class="reception-submit" type="submit">REGISTER → CONTINUE TO OPD / ADMISSION</button></form>';
+    renderReceptionDesk();initReceptionRegistration();document.getElementById('receptionRegisterForm').addEventListener('submit',e=>submitReceptionRegistration(e).catch(x=>alert(x.message)));
   }else if(mode==='walkin'){
     body.innerHTML='<form id="receptionWalkinForm" class="reception-form kiosk-form"><div class="reception-form-grid"><div class="field full"><label>Patient</label><input id="receptionPatientSearch" required placeholder="Name, phone or UHID" autofocus></div><div class="field"><label>Phone</label><input id="receptionPatientPhone" type="tel" placeholder="+91 98765 43210"></div><div class="field"><label>Date of birth</label><input id="receptionPatientDob" type="date"></div><div class="field"><label>Doctor</label><select id="receptionDoctor" required></select></div><div class="field"><label>Priority</label><select id="receptionPriority"><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option></select></div><div class="field full"><label>Reason</label><input id="receptionReason" placeholder="General consultation"></div></div><button class="reception-submit" type="submit">ISSUE TOKEN → WAITING</button></form>';
     renderReceptionDesk();document.getElementById('receptionWalkinForm').addEventListener('submit',e=>submitReceptionWalkin(e).catch(x=>alert(x.message)));
@@ -484,14 +484,64 @@ async function submitReceptionWalkin(e){
   const box=document.getElementById('receptionDeskResult');box.innerHTML='<strong>Token '+esc(q.token?.token||q.token||'—')+'</strong><span>'+esc(r.name||name)+' · '+esc(r.uhid||'')+' · Waiting for vitals</span>';
   e.target.reset();document.getElementById('receptionDoctor').value='';closeReceptionPanel();setTimeout(()=>box.innerHTML='',5000);
 }
+let receptionRegSearchTimer=null;
+let receptionRegSelectedPatient=null;
+function initReceptionRegistration(){
+  receptionRegSelectedPatient=null;
+  const input=document.getElementById('receptionRegPatient');
+  const phone=document.getElementById('receptionRegPhone');
+  const dob=document.getElementById('receptionRegDob');
+  const matches=document.getElementById('receptionRegMatches');
+  const stateEl=document.getElementById('receptionRegIdentityState');
+  if(!input)return;
+  const renderMatches=rows=>{
+    if(!matches)return;
+    if(!rows.length){matches.innerHTML='<div class="reception-empty-hint">No existing patient found. Complete the details below to register a new identity.</div>';return}
+    matches.innerHTML='<div class="reception-empty-hint" style="margin-bottom:6px">Existing patient matches — select one instead of creating a duplicate.</div>'+rows.map(p=>'<button type="button" class="reception-lookup-row" style="width:100%;text-align:left;cursor:pointer" onclick="selectReceptionRegistrationPatient('+Number(p.id)+')"><div><strong>'+esc(p.name||'Patient')+'</strong><span>'+esc(p.uhid||'No UHID')+(p.phone?' · '+esc(p.phone):'')+(p.date_of_birth?' · DOB '+fmtDate(p.date_of_birth):'')+'</span></div><b>SELECT</b></button>').join('');
+  };
+  const search=async()=>{
+    const q=input.value.trim();
+    if(!q){if(matches)matches.innerHTML='';return}
+    try{const r=await api('/patients?search='+encodeURIComponent(q));renderMatches(r||[])}catch(e){if(matches)matches.innerHTML='<div class="reception-empty-hint">Patient search unavailable. You can still continue with the entered details.</div>'}
+  };
+  input.oninput=()=>{
+    receptionRegSelectedPatient=null;
+    if(stateEl){stateEl.style.display='none';stateEl.innerHTML='';}
+    clearTimeout(receptionRegSearchTimer);
+    receptionRegSearchTimer=setTimeout(search,220);
+  };
+  phone?.addEventListener('input',()=>{if(!input.value.trim()&&phone.value.trim()){clearTimeout(receptionRegSearchTimer);receptionRegSearchTimer=setTimeout(()=>{input.value=phone.value.trim();search()},220)}});
+  dob?.addEventListener('change',()=>{if(receptionRegSelectedPatient&&String(receptionRegSelectedPatient.date_of_birth||'').slice(0,10)!==String(dob.value||''))receptionRegSelectedPatient=null});
+}
+function selectReceptionRegistrationPatient(pid){
+  const p=(state.patients||[]).find(x=>Number(x.id)===Number(pid))||null;
+  if(!p)return;
+  receptionRegSelectedPatient=p;
+  const input=document.getElementById('receptionRegPatient'),phone=document.getElementById('receptionRegPhone'),dob=document.getElementById('receptionRegDob'),matches=document.getElementById('receptionRegMatches'),stateEl=document.getElementById('receptionRegIdentityState');
+  if(input)input.value=p.name||'';
+  if(phone)phone.value=p.phone||'';
+  if(dob)dob.value=p.date_of_birth?String(p.date_of_birth).slice(0,10):'';
+  if(matches)matches.innerHTML='';
+  if(stateEl){stateEl.style.display='block';stateEl.innerHTML='<strong>Existing patient selected</strong><span>'+esc(p.uhid||'No UHID')+' · The appointment will be linked to this patient record.</span>';}
+}
 async function submitReceptionRegistration(e){
   e.preventDefault();
   const name=document.getElementById('receptionRegPatient').value.trim(),phone=document.getElementById('receptionRegPhone').value.trim(),dob=document.getElementById('receptionRegDob').value,doctor=document.getElementById('receptionRegDoctor').value,date=document.getElementById('receptionRegDate').value,time=document.getElementById('receptionRegTime').value,type=document.getElementById('receptionRegType').value,destination=document.getElementById('receptionRegDestination').value,reason=document.getElementById('receptionRegReason').value.trim();
   if(!name||!doctor||!date||!time)return;
-  const r=await api('/appointments',{method:'POST',body:JSON.stringify({patient_name:name,patient_phone:phone||null,doctor_id:Number(doctor),appointment_date:date,appointment_time:time,reason:reason||null,consultation_type:type,source:'reception'})});
+  let r;
+  try{
+    r=await api('/appointments',{method:'POST',body:JSON.stringify({patient_id:receptionRegSelectedPatient?.id||null,patient_name:name,patient_phone:phone||null,doctor_id:Number(doctor),appointment_date:date,appointment_time:time,reason:reason||null,consultation_type:type,source:'reception'})});
+  }catch(x){
+    if(x.status===409&&x.data?.matches?.length){
+      const m=x.data.matches[0];
+      selectReceptionRegistrationPatient(Number(m.id));
+      throw new Error('Possible existing patient found. The matching patient has been selected; submit again to continue.');
+    }
+    throw x;
+  }
   await showAppointmentPaymentQr(r);
   const box=document.getElementById('receptionDeskResult');box.innerHTML='<strong>'+esc(destination==='admission'?'Patient registered · Direct admission':'Patient registered · OPD')+'</strong><span>'+esc(r.patient?.name||name)+' · '+esc(date)+' · '+esc(time)+' · '+esc(type==='online'?'Online':'Offline')+'</span>';
-  e.target.reset();document.getElementById('receptionRegDate').value=new Date().toISOString().slice(0,10);
+  e.target.reset();receptionRegSelectedPatient=null;document.getElementById('receptionRegDate').value=new Date().toISOString().slice(0,10);
   closeReceptionPanel();
   if(destination==='admission'&&r.patient?.id)setTimeout(()=>receptionContinueWithPatient('admission',r.patient.id),80);
   setTimeout(()=>box.innerHTML='',5000);

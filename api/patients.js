@@ -12,8 +12,19 @@ export default async function(req,res){
 
  if(req.method==="POST"){
   const b=req.body||{};
-  if(!b.name||!String(b.name).trim())return res.status(400).json({error:"Patient name is required"});
-  const inserted=await db.query("INSERT INTO patients(hospital_id,name,phone,email,date_of_birth,notes,status) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id",[hid,String(b.name).trim(),b.phone||null,b.email||null,b.date_of_birth||null,b.notes||null,b.status||"active"]);
+  const name=String(b.name||"").trim();
+  const phone=String(b.phone||"").trim();
+  if(!name)return res.status(400).json({error:"Patient name is required"});
+
+  // HMIS-aligned registration guard: review likely existing identities before creating another record.
+  // Current CareFlow identity fields support exact phone matching and name+DOB matching.
+  const dup=await db.query(
+   "SELECT id,name,uhid,phone,email,date_of_birth,status FROM patients WHERE hospital_id=$1 AND ((NULLIF($2,'') IS NOT NULL AND regexp_replace(COALESCE(phone,''),'\\\\D','','g')=regexp_replace($2,'\\\\D','','g')) OR (LOWER(TRIM(name))=LOWER(TRIM($3)) AND $4::date IS NOT NULL AND date_of_birth=$4::date)) ORDER BY created_at DESC LIMIT 10",
+   [hid,phone,name,b.date_of_birth||null]
+  );
+  if(dup.rows.length)return res.status(409).json({error:"Possible existing patient found",code:"POSSIBLE_DUPLICATE",matches:dup.rows});
+
+  const inserted=await db.query("INSERT INTO patients(hospital_id,name,phone,email,date_of_birth,notes,status) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id",[hid,name,phone||null,b.email||null,b.date_of_birth||null,b.notes||null,b.status||"active"]);
   const patientId=inserted.rows[0].id;
   const r=await db.query("UPDATE patients SET uhid=COALESCE(NULLIF(uhid,''),'UHID-'||lpad(id::text,6,'0')) WHERE id=$1 AND hospital_id=$2 RETURNING id,name,uhid,phone,email,date_of_birth,notes,status,created_at",[patientId,hid]);
   await logWorkflowEvent(ctx,{patientId,eventType:"patient_registered",stage:"registration",entityType:"patient",entityId:patientId,metadata:{source:b.source||"staff"}});
@@ -24,6 +35,22 @@ export default async function(req,res){
   const b=req.body||{};
   const r=await db.query("UPDATE patients SET name=$1,phone=$2,email=$3,date_of_birth=$4,notes=$5,status=$6,updated_at=now() WHERE id=$7 AND hospital_id=$8 RETURNING id,name,uhid,phone,email,date_of_birth,notes,status",[b.name,b.phone||null,b.email||null,b.date_of_birth||null,b.notes||null,b.status||"active",b.id,hid]);
   return res.json(r.rows[0]||{error:"Patient not found"});
+ }
+
+ // Search-first registration support. This keeps the receptionist flow close to HMIS:
+ // search an existing identity before creating a new one.
+ const search=String(req.query?.search||"").trim();
+ if(search){
+  const r=await db.query(
+   `SELECT id,name,uhid,phone,email,date_of_birth,notes,status,created_at
+    FROM patients
+    WHERE hospital_id=$1
+      AND (LOWER(name) LIKE LOWER($2) OR COALESCE(phone,'') LIKE $2 OR COALESCE(uhid,'') ILIKE $2)
+    ORDER BY created_at DESC
+    LIMIT 20`,
+   [hid,"%"+search+"%"]
+  );
+  return res.json(r.rows);
  }
 
  // Hospital timezone is read in the same SQL request as the patient list.

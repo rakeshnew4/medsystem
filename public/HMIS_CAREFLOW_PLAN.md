@@ -27,7 +27,7 @@ For each domain:
 ## Overall sequence
 
 - [x] Architecture reconnaissance
-- [ ] 01 Patient registration
+- [x] 01 Patient registration
 - [ ] 02 Appointment / OPD
 - [ ] 03 Encounter model
 - [ ] 04 Queue / token
@@ -248,7 +248,22 @@ Direct admission should ultimately create an admission workflow without creating
 
 ## Current implementation status
 
-**Patient registration: IN REVIEW**
+**Patient registration: IMPLEMENTED — foundation**
+
+Implemented in CareFlow:
+- Reception REGISTER now performs a search-first identity lookup by name, phone or UHID.
+- Existing patient matches can be selected and the appointment is linked to the selected patient ID.
+- New patient creation is guarded by duplicate checks for exact phone or name + DOB.
+- Duplicate matches return a reviewable response instead of silently creating another patient.
+- Registration continues to record the existing workflow event source.
+- The existing single REGISTER kiosk entry point and OPD/admission destination choices are preserved.
+
+Remaining identity-model work:
+- Person/patient separation and richer demographic schema.
+- Immutable registration-source field in the patient data model.
+- Broader identifier model (NIC/passport, PHN, patient code, etc.).
+- Merge/retirement semantics and audit metadata.
+- Truly appointment-free direct admission flow.
 
 HMIS inspection completed for:
 
@@ -334,3 +349,5 @@ Not started.
 - Verified duplicate-patient detection support.
 - Verified kiosk self-registration flow.
 - Compared these concepts with the current CareFlow patient API/registration flow.
+- Implemented search-first patient registration and duplicate-review protection.
+- Preserved existing patient/OPD/admission UX while linking appointments to selected existing identities.
