@@ -405,6 +405,29 @@ button:disabled,.btn:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:900px){.care-team-role-layout{grid-template-columns:1fr;gap:12px}.care-team-actions-side{border-left:0;border-top:1px solid var(--border);padding:12px 0 0}.care-team-group + .patient-action-panel{margin:-3px 0 4px 18px}}
 @media(max-width:560px){.care-team-actions-card{padding:13px}.care-team-group{padding:15px;min-height:0}.care-team-group-head{align-items:flex-start}.care-team-group-head>div{min-width:0}.care-team-group-head strong{font-size:15px}.care-team-patient-name{font-size:16px}.care-team-buttons{display:grid;grid-template-columns:1fr 1fr}.care-team-buttons .mini{width:100%;min-width:0}.care-team-group + .patient-action-panel{margin-left:10px}}
 
+/* Larger, easier-to-scan care-team cards and touch-friendly actions */
+.care-team-group{padding:22px 22px;min-height:176px;border-radius:16px}
+.care-team-group-head{margin-bottom:16px}
+.care-team-step,.care-team-role-icon{width:34px;height:34px;border-radius:9px}
+.care-team-group-head strong{font-size:18px}
+.care-team-role-layout{gap:28px}
+.care-team-actions-side{padding-left:26px;gap:12px}
+.care-team-actions-title{font-size:10px;line-height:1.45}
+.care-team-buttons{gap:9px}
+.care-team-buttons .mini{min-height:42px;padding:10px 13px;border-radius:9px;font-size:11px;font-weight:700}
+.care-team-patient-details.compact{min-height:52px;justify-content:center}
+.care-team-patient-tag{font-size:10px;padding:5px 9px}
+@media(max-width:900px){
+  .care-team-group{padding:20px;min-height:170px}
+  .care-team-actions-side{padding:15px 0 0}
+}
+@media(max-width:560px){
+  .care-team-group{padding:18px;min-height:0}
+  .care-team-group-head strong{font-size:17px}
+  .care-team-buttons{grid-template-columns:1fr 1fr;gap:8px}
+  .care-team-buttons .mini{min-height:44px;padding:10px 9px;font-size:11px}
+}
+
 /* Enterprise shell / compact mobile header */
 .sidebar-footer{padding:14px 8px 8px}
 .sidebar-account{padding:10px 10px 12px;border:1px solid rgba(255,255,255,.10);border-radius:10px;background:rgba(255,255,255,.05);margin-bottom:8px}
