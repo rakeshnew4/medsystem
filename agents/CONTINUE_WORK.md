@@ -44,7 +44,7 @@ Theatre / procedures is intentionally parked by user request. The active workflo
 
 ### NEXT TASK QUEUE — always keep this current
 1. Inventory / Assets: authenticated staff E2E for asset create/search/transfer, plus concurrent transfer and role-boundary safety tests.
-1a. Inventory / Assets schema/application gate: verify the external PostgreSQL schema for fixed assets, then execute authenticated create/search/transfer tests.
+1a. Inventory / Assets schema gate is satisfied. Next: authenticated create/search/transfer tests using the real hospital staff session.
 2. Inventory / Assets safety: role boundaries, inactive-asset protection, hospital isolation, concurrent transfer, and transfer-history integrity.
 3. Inventory / Assets HMIS gap review: inspect additional HMIS inventory/store/asset flows and implement the next concrete gap.
 4. Then Staff/Roles → Integrations/REST/FHIR/LIS → Reporting/Analytics, always using the HMIS repository as the design/code reference.
