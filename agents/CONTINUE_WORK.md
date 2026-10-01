@@ -98,19 +98,19 @@ Inventory backend safety was already verified before this UI pass: fixed-asset v
 9. [x] U12-09 Inherit / Allow / Deny UX — v430 draft: Inherit deletes the stored override; Allow/Deny persist boolean values.
 10. [x] U12-10 Effective permission view — v430 draft: selected staff effective state shows role baseline, global override and department override source using verified server precedence.
 11. [x] U12-11 Permission safety/authorization feedback — v430 draft: admin-only controls, server-authoritative errors and clear scope/precedence messaging.
-12. [ ] U12-12 Staff audit/history.
-13. [ ] U12-13 Staff availability.
-14. [ ] U12-14 Hospital profile/configuration.
-15. [ ] U12-15 Hospital modules/features/settings.
-16. [ ] U12-16 Department configuration.
-17. [ ] U12-17 Services/working hours/labels.
-18. [ ] U12-18 Configuration validation.
-19. [ ] U12-19 Responsive/mobile administration.
-20. [ ] U12-20 HMIS comparison pass.
+12. [x] U12-12 Staff audit/history — v431.
+13. [x] U12-13 Staff availability — v431.
+14. [x] U12-14 Hospital profile/configuration — v431.
+15. [x] U12-15 Hospital modules/features/settings — v431.
+16. [x] U12-16 Department configuration — v431.
+17. [x] U12-17 Services/working hours/labels — v431.
+18. [x] U12-18 Configuration validation — v431, 7/7 checks and 0 violations.
+19. [x] U12-19 Responsive/mobile administration — v431.
+20. [x] U12-20 HMIS comparison pass — v431.
 21. [ ] U12-21 Documentation/test pass.
 22. [ ] U12-22 Automated access/contract verification.
 23. [ ] U12-23 Authenticated administrator/staff E2E — intentionally deferred until a genuine staff session is available.
-NEXT concrete implementation target: U12-12 Staff audit/history.
+NEXT concrete implementation target: U12-21 Documentation/test pass.
 
 ### HMIS reference rule
 For every U12 increment, inspect the relevant HMIS staff/privilege/configuration/audit code before implementation. Current references include `Privileges.java`, `UserPrivilageController.java`, `ConfigOption.java`, `ConfigOptionController.java`, `AuditEventController.java`, and `all_audit_events.xhtml`. Do not invent privilege categories, configuration semantics or audit behavior without checking the repository.
