@@ -30,7 +30,8 @@ export default async function(req,res){
      WHERE t.hospital_id=$1 ORDER BY COALESCE(t.scheduled_start,t.created_at) DESC LIMIT 300`,[ctx.hospitalId]);
    const rooms=await db.query("SELECT id,name,code,status,notes FROM theatre_rooms WHERE hospital_id=$1 ORDER BY name",[ctx.hospitalId]);
    const catalog=await db.query("SELECT id,name,code,default_duration_minutes,service_type,active FROM theatre_procedure_catalog WHERE hospital_id=$1 ORDER BY active DESC,name",[ctx.hospitalId]);
-   return res.json({procedures:r.rows,rooms:rooms.rows,catalog:catalog.rows});
+   const team=await db.query("SELECT pt.id,pt.procedure_id,pt.staff_id,pt.team_role,pt.notes,pt.created_by,pt.created_at,s.display_name,s.email,s.role AS staff_role,d.name AS doctor_name FROM theatre_procedure_team pt JOIN staff_profiles s ON s.id=pt.staff_id AND s.hospital_id=pt.hospital_id LEFT JOIN doctors d ON d.id=s.doctor_id WHERE pt.hospital_id=$1 ORDER BY pt.created_at",[ctx.hospitalId]);
+   return res.json({procedures:r.rows,rooms:rooms.rows,catalog:catalog.rows,team:team.rows});
  }
 
  const b=req.body||{};
@@ -47,6 +48,22 @@ export default async function(req,res){
    const duration=b.default_duration_minutes==null||b.default_duration_minutes===""?null:Number(b.default_duration_minutes);
    if(duration!==null&&(!Number.isFinite(duration)||duration<=0))return res.status(400).json({error:"Invalid default duration"});
    const r=await db.query("INSERT INTO theatre_procedure_catalog(hospital_id,name,code,default_duration_minutes,service_type,active) VALUES($1,$2,$3,$4,$5,$6) RETURNING *",[ctx.hospitalId,name,String(b.code||"").trim()||null,duration,serviceType,b.active!==false]);
+   return res.json(r.rows[0]);
+ }
+ if(req.method==="POST" && b.action==="team_add"){
+   const procedureId=Number(b.procedure_id||0);
+   const staffId=Number(b.staff_id||0);
+   const teamRole=String(b.team_role||"").trim();
+   const allowedTeamRoles=["surgeon","assistant_surgeon","anesthetist","nurse","technician","other"];
+   if(!procedureId||!staffId||!allowedTeamRoles.includes(teamRole))return res.status(400).json({error:"Procedure, staff and a valid surgical team role are required"});
+   const proc=await db.query("SELECT id,patient_id,status FROM theatre_procedures WHERE id=$1 AND hospital_id=$2",[procedureId,ctx.hospitalId]);
+   if(!proc.rows[0])return res.status(404).json({error:"Procedure not found"});
+   if(proc.rows[0].status==="cancelled")return res.status(409).json({error:"Cancelled procedures cannot receive surgical team members"});
+   const staff=await db.query("SELECT id,display_name,email,role FROM staff_profiles WHERE id=$1 AND hospital_id=$2 AND active=true",[staffId,ctx.hospitalId]);
+   if(!staff.rows[0])return res.status(404).json({error:"Active staff member not found"});
+   const r=await db.query("INSERT INTO theatre_procedure_team(hospital_id,procedure_id,staff_id,team_role,notes,created_by) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(hospital_id,procedure_id,staff_id,team_role) DO NOTHING RETURNING *",[ctx.hospitalId,procedureId,staffId,teamRole,String(b.notes||"").trim()||null,ctx.user.email]);
+   if(!r.rows[0])return res.status(409).json({error:"This staff member is already assigned to the procedure in this role"});
+   await logWorkflowEvent(ctx,{patientId:proc.rows[0].patient_id,eventType:"theatre_team_member_added",stage:"theatre",entityType:"theatre_procedure",entityId:procedureId,metadata:{staff_id:staffId,team_role:teamRole}});
    return res.json(r.rows[0]);
  }
  if(req.method==="POST"){
@@ -101,6 +118,14 @@ export default async function(req,res){
    const r=await db.query("UPDATE theatre_procedure_catalog SET name=COALESCE(NULLIF($1,''),name),code=$2,default_duration_minutes=$3,service_type=$4,active=$5,updated_at=now() WHERE id=$6 AND hospital_id=$7 RETURNING *",[String(b.name||"").trim(),String(b.code||"").trim()||null,duration,b.service_type||"procedure",b.active!==false,id,ctx.hospitalId]);
    if(!r.rows[0])return res.status(404).json({error:"Procedure master record not found"});
    return res.json(r.rows[0]);
+ }
+ if(req.method==="PUT" && b.action==="team_remove"){
+   const id=Number(b.id||0);
+   if(!id)return res.status(400).json({error:"Team member id is required"});
+   const r=await db.query("DELETE FROM theatre_procedure_team pt USING theatre_procedures t WHERE pt.id=$1 AND pt.procedure_id=t.id AND pt.hospital_id=$2 AND t.hospital_id=$2 AND t.status NOT IN ('completed','cancelled') RETURNING pt.*,t.patient_id",[id,ctx.hospitalId]);
+   if(!r.rows[0])return res.status(404).json({error:"Team member not found or procedure is already closed"});
+   await logWorkflowEvent(ctx,{patientId:r.rows[0].patient_id,eventType:"theatre_team_member_removed",stage:"theatre",entityType:"theatre_procedure",entityId:r.rows[0].procedure_id,metadata:{team_member_id:id}});
+   return res.json({ok:true,id});
  }
  if(req.method==="PUT" && b.action==="ward_return"){
    const id=Number(b.id||0); if(!id)return res.status(400).json({error:"Procedure id is required"});

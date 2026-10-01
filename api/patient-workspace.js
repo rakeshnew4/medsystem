@@ -45,8 +45,9 @@ export default async function(req,res){
     canTheatre ? Promise.all([
       db.query("SELECT t.*,r.name AS theatre_room_name,d.name AS doctor_name FROM theatre_procedures t LEFT JOIN theatre_rooms r ON r.id=t.theatre_room_id LEFT JOIN doctors d ON d.id=t.doctor_id WHERE t.hospital_id=$1 AND t.patient_id=$2 ORDER BY COALESCE(t.scheduled_start,t.created_at) DESC LIMIT 30",[ctx.hospitalId,pid]),
       db.query("SELECT id,name,code,status FROM theatre_rooms WHERE hospital_id=$1 ORDER BY name",[ctx.hospitalId]),
-      db.query("SELECT id,name,code,default_duration_minutes,service_type,active FROM theatre_procedure_catalog WHERE hospital_id=$1 AND active=true ORDER BY name",[ctx.hospitalId])
-    ]).then(x=>({procedures:x[0].rows,rooms:x[1].rows,catalog:x[2].rows})) : Promise.resolve({procedures:[],rooms:[]})
+      db.query("SELECT id,name,code,default_duration_minutes,service_type,active FROM theatre_procedure_catalog WHERE hospital_id=$1 AND active=true ORDER BY name",[ctx.hospitalId]),
+      db.query("SELECT pt.*,s.display_name,s.email,s.role AS staff_role,d.name AS doctor_name FROM theatre_procedure_team pt JOIN theatre_procedures t ON t.id=pt.procedure_id AND t.hospital_id=pt.hospital_id JOIN staff_profiles s ON s.id=pt.staff_id AND s.hospital_id=pt.hospital_id LEFT JOIN doctors d ON d.id=s.doctor_id WHERE pt.hospital_id=$1 AND t.patient_id=$2 ORDER BY pt.created_at DESC",[ctx.hospitalId,pid])
+    ]).then(x=>({procedures:x[0].rows,rooms:x[1].rows,catalog:x[2].rows,team:x[3].rows})) : Promise.resolve({procedures:[],rooms:[],catalog:[],team:[]})
   ]);
 
   const permissions={clinical:canClinical,billing:canBilling,pharmacy:canPharmacy,theatre:canTheatre};

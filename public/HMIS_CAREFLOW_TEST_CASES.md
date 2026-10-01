@@ -187,6 +187,14 @@ Status: Implemented in the current increment; production validator added, authen
 Scheduling rechecks the theatre room's available state inside the same transaction that takes the room overlap lock, preventing a room-status race between initial validation and insertion.
 Status: Implemented in the current increment; concurrent authenticated execution pending.
 
+## TC-THEATRE-029 — Surgical team continuity
+HMIS surgery_clinical_details.xhtml records surgical team members by role against the surgery. CareFlow must allow only active same-hospital staff to be attached to a Theatre procedure, prevent duplicate staff+role assignments, record add/remove workflow events, and expose the team in Patient Workspace.
+Status: Implemented in current increment; authenticated mutation/role test pending.
+
+## TC-THEATRE-030 — Theatre lifecycle timestamp integrity
+A procedure in progress must have started_at; a completed procedure must have both started_at and completed_at with completed_at >= started_at; a cancelled procedure must have cancelled_at. Scheduled timing must never have end <= start.
+Status: Automated production invariant added; authenticated transition execution pending.
+
 ## TC-THEATRE-025 — Production Theatre integrity validation
 Verify Theatre procedure states, completed-outcome requirements, ward-return state, admission/encounter continuity, active room overlap, duplicate source-charge protection, duplicate invoice-item linkage, linked-charge invoice-line continuity, room availability, source-record validity, and completed-procedure billing continuity directly against the production database.
 Status: Automated production invariant check passed: the original eight integrity/isolation checks returned zero violations; v287 added four additional checks (completed-without-outcome, scheduled-on-unavailable-room, invalid theatre-service source, invalid medicine/pharmacy-dispense source), all zero against the external PostgreSQL database; v288 added invoice-item identity/amount continuity and charge-patient continuity checks, also zero. The current HMIS-aligned increment also audits completed procedures with unlinked Theatre charges; authenticated execution remains pending.
