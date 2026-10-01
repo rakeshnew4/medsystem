@@ -163,6 +163,10 @@ Status: Implemented in current draft; authenticated execution pending.
 A Theatre charge can be linked once to an invoice belonging to the same patient; linking is idempotency-protected and invoice subtotal/total/status are recalculated.
 Status: Implemented in current draft; authenticated execution pending.
 
+## TC-THEATRE-023 — Billing-side Theatre reconciliation
+Billing users can view unbilled Theatre charges, see same-patient recent invoices and link a charge once; linked charges display invoice continuity.
+Status: Implemented in current draft; authenticated execution pending.
+
 ## TC-THEATRE-022 — Theatre-to-ward handoff
 Only a completed, not-yet-returned admission-linked procedure can be returned to the ward; the handoff is recorded and the open canonical IPD encounter returns to current_stage=ipd.
 Status: Implemented in current draft; authenticated execution pending.

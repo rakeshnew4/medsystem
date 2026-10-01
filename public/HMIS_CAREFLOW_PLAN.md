@@ -595,9 +595,9 @@ Remaining:
 - Theatre room and procedure master-data administration implemented in **v265** with administrator-only mutations and hospital isolation.
 - Admission-profile Theatre entry point implemented in **v265**.
 - Added Theatre billing-charge foundation: charges are tied to procedures/patients, can be linked once to a same-patient invoice, and invoice subtotal/total/status are recalculated transactionally.
-- Remaining: richer procedure/service/professional/pharmacy charge mapping and billing UI, without double-counting.
+- Billing-side Theatre charge reconciliation UI implemented in the current iteration: billing users can review unbilled charges and link them once to same-patient invoices.
 - Theatre-to-ward handoff/return implemented in current iteration: completed admission-linked procedures can be returned once, with ward notes, actor and IPD encounter stage restoration.
-- Remaining: richer charge mapping/billing UI and authenticated doctor/nurse/billing E2E with role boundaries and concurrency/overlap verification.
+- Remaining: richer theatre-service/professional-fee/medicine charge mapping and authenticated doctor/nurse/billing E2E with role boundaries and concurrency/overlap verification.
 
 Theatre remains **In progress** until the authenticated workflow is tested end-to-end.
 

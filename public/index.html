@@ -196,7 +196,7 @@
 </section>
 <section id="doctors" class="section"><div class="card panel"><div class="panel-head"><h2 class="panel-title">Doctors</h2><button class="btn primary" onclick="openModal('doctorModal')">+ Add doctor</button></div><div id="doctorsTable" class="table-wrap"></div></div></section>
 <section id="followups" class="section"><div class="card panel"><div class="panel-head"><h2 class="panel-title">Follow-ups</h2><button class="btn primary" onclick="openModal('followupModal')">+ Add follow-up</button></div><div id="followupsTable" class="table-wrap"></div></div></section>
-<section id="billing" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Billing & payments</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Simple invoice, paid/partial/unpaid tracking and outstanding dues.</div></div><button class="btn primary" onclick="openModal('billingModal')">+ New invoice</button></div><div id="billingTable" class="table-wrap"></div></div></section>
+<section id="billing" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Billing & payments</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Simple invoice, paid/partial/unpaid tracking and outstanding dues.</div></div><button class="btn primary" onclick="openModal('billingModal')">+ New invoice</button></div><div id="billingTable" class="table-wrap"></div></div><div class="card panel" style="margin-top:16px"><div class="panel-head"><div><h3 class="panel-title">Theatre charges awaiting invoice linkage</h3><div style="font-size:12px;color:var(--muted);margin-top:4px">Procedure, theatre-service and professional charges are kept separate until billing links them to the patient's invoice.</div></div><button class="btn" onclick="loadTheatreCharges()">Refresh</button></div><div id="theatreChargesTable" class="table-wrap" style="margin-top:12px"></div></div></section>
 <section id="analytics" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Admin insights</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Hospital-level operational dashboard. Find bottlenecks, affected patients and actions.</div></div><button class="btn" onclick="loadAnalytics()">Refresh</button></div><div id="analyticsContent" style="margin-top:16px"></div></div><div class="card panel" style="margin-top:16px"><div class="panel-head"><div><h2 class="panel-title">Operations action queue</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Turn a bottleneck into an assigned action and measure whether it is resolved.</div></div><button class="btn primary" onclick="createOpsTask()">+ Assign action</button></div><div id="opsTasks" class="table-wrap"></div></div></section>
 <section id="lab" class="section"><div class="card panel"><div class="panel-head"><div><h2 class="panel-title">Lab investigations</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Order → payment → sample → processing → verification → doctor review.</div></div><button class="btn" onclick="loadLab()">Refresh</button></div><div id="labTable" class="table-wrap" style="margin-top:12px"></div></div></section>
 <section id="theatre" class="section">
@@ -278,7 +278,7 @@
 <script src="/analytics.js"></script>
 <script>
 const API='/api';
-let state={dashboardRange:{preset:'today',from:'',to:''},dashboard:null,patients:[],doctors:[],appointments:[],followups:[],queue:[],beds:[],billing:[],lab:[],theatre:{procedures:[],rooms:[],catalog:[]},pharmacy:[],pharmacyStock:[],opsTasks:[],staff:[],permissionCatalog:[],rolePermissions:[],queueView:'kanban',queueTimer:null,session:null,doctorRoom:null,doctorRoomTab:'waiting',doctorRoomPatient:null,hospitalConfig:null,displayAdmin:{devices:[],campaigns:[],summary:{}},communication:null,activeConversation:null,callPeer:null,callId:null,callTimer:null};
+let state={dashboardRange:{preset:'today',from:'',to:''},dashboard:null,patients:[],doctors:[],appointments:[],followups:[],queue:[],beds:[],billing:[],lab:[],theatre:{procedures:[],rooms:[],catalog:[]},theatreCharges:[],pharmacy:[],pharmacyStock:[],opsTasks:[],staff:[],permissionCatalog:[],rolePermissions:[],queueView:'kanban',queueTimer:null,session:null,doctorRoom:null,doctorRoomTab:'waiting',doctorRoomPatient:null,hospitalConfig:null,displayAdmin:{devices:[],campaigns:[],summary:{}},communication:null,activeConversation:null,callPeer:null,callId:null,callTimer:null};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtTime=t=>t?String(t).slice(0,5):'';
 const fmtDate=d=>d?new Date(String(d).slice(0,10)+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
@@ -812,7 +812,7 @@ async function loadSectionData(id,force=false){
     doctors:async()=>{if(!p['page.doctors'])return;state.doctors=await api('/doctors');renderAll()},
     beds:async()=>{if(!p['page.beds'])return;state.beds=await api('/beds');renderAll()},
     followups:async()=>{if(!p['page.followups'])return;state.followups=await api('/followups');renderAll()},
-    billing:async()=>{if(!p['page.billing'])return;state.billing=await api('/billing');renderAll()},
+    billing:async()=>{if(!p['page.billing'])return;state.billing=await api('/billing');await loadTheatreCharges();renderAll()},
     lab:async()=>{if(!p['action.clinical.view'])return;await loadLab();renderAll()},
     theatre:async()=>{if(!p['action.theatre.manage'])return;await loadTheatre();renderAll()},
     pharmacy:async()=>{if(!p['action.pharmacy.manage'])return;await loadPharmacy();renderAll()},
@@ -1577,6 +1577,25 @@ async function callNextForMyRole(){
 async function moveQueue(id,stage){try{await api('/queue',{method:'PUT',body:JSON.stringify({id:Number(id),stage})});await loadAll()}catch(e){alert(e.message)}}
 function openVitals(qid,pid){openPatientWorkspace(pid,'vitals')}
 
+async function loadTheatreCharges(){
+ if(!can('page.billing'))return;
+ try{state.theatreCharges=await api('/theatre-charges');renderTheatreCharges();}catch(e){if(e.status!==403)console.warn(e)}
+}
+function renderTheatreCharges(){
+ const el=document.getElementById('theatreChargesTable');if(!el)return;
+ const rows=state.theatreCharges||[];
+ el.innerHTML=rows.length?'<table><thead><tr><th>Procedure</th><th>Patient</th><th>Charge</th><th>Amount</th><th>Invoice</th><th></th></tr></thead><tbody>'+rows.map(x=>{
+  const link=x.invoice_id?'<span class="status paid">'+esc(x.invoice_number||('Invoice #'+x.invoice_id))+'</span>':'<button class="mini primary" onclick="linkTheatreCharge('+x.id+','+x.patient_id+')">Link invoice</button>';
+  return '<tr><td><strong>'+esc(x.procedure_name||'Procedure')+'</strong><div style="font-size:11px;color:var(--muted)">'+esc(x.charge_type||'procedure')+'</div></td><td>'+esc(x.patient_name||'Patient')+'</td><td>'+esc(x.description)+'</td><td>₹'+Number(x.amount||0).toFixed(2)+'</td><td>'+link+'</td><td>'+(!x.invoice_id?'<span class="status pending">Unbilled</span>':'')+'</td></tr>';
+ }).join('')+'</tbody></table>':'<div class="empty">No Theatre charges awaiting billing linkage.</div>';
+}
+async function linkTheatreCharge(id,patientId){
+ const matches=(state.billing||[]).filter(x=>Number(x.patient_id)===Number(patientId));
+ const hint=matches.slice(0,5).map(x=>x.id+': '+x.invoice_number+' · ₹'+Number(x.total||0).toFixed(2)).join('\n');
+ const invoiceId=Number(prompt('Enter same-patient invoice ID'+(hint?'\n\nRecent invoices:\n'+hint:''),''));
+ if(!invoiceId)return;
+ try{await api('/theatre-charges',{method:'PUT',body:JSON.stringify({id:Number(id),invoice_id:invoiceId})});await loadTheatreCharges();state.billing=await api('/billing');renderAll();alert('Theatre charge linked to invoice #'+invoiceId+'.');}catch(e){alert(e.message)}
+}
 async function loadTheatre(){
  try{
   const r=await api('/theatre');
