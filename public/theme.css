@@ -1031,3 +1031,14 @@ td{font-size:13px}
 .receptionist-mode .main{
   padding:0!important;
 }
+/* Sidebar navigation: keep hospital modules visible by default. Groups remain collapsible when the user taps the heading. */
+@media(min-width:761px){
+  .sidebar .nav{display:grid!important;visibility:visible!important;opacity:1!important}
+  .sidebar .nav-group{display:grid!important;visibility:visible!important}
+  .sidebar .nav-sub{display:grid!important;visibility:visible!important}
+}
+@media(max-width:760px){
+  .sidebar .nav{display:flex!important;visibility:visible!important;opacity:1!important}
+  .sidebar .nav-group{display:grid!important;visibility:visible!important}
+  .sidebar .nav-sub{display:grid!important;visibility:visible!important}
+}
