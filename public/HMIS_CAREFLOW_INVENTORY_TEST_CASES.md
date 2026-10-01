@@ -30,4 +30,10 @@ TC-ASSET-014 Depreciation/register report: calculated depreciation honors method
 
 TC-ASSET-015 Adjacent inventory gap: HMIS pharmacy/store stock history and bin-card reporting must be assessed against CareFlow pharmacy_stock_transactions before the Inventory workflow is moved onward.
 
+TC-ASSET-016 Stock-history schema gate: external PostgreSQL must contain pharmacy_stock and pharmacy_stock_transactions; direct production verification passed after applying the existing migration, with zero pre-existing rows.
+
+TC-ASSET-017 Stock-history isolation: the read-only history report must filter by current hospital and optional date/medicine criteria and never expose another hospital's ledger.
+
+TC-ASSET-018 Stock-history continuity: receipts and dispensing create transaction rows tied to the hospital-scoped stock record.
+
 Authenticated staff E2E remains the final workflow gate; the available test runner currently has no hospital staff session.
