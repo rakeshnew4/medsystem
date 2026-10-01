@@ -204,11 +204,12 @@ HMIS references: `Privileges.java`, `UserPrivilageController.java`, `ConfigOptio
 - [ ] U12-23 Authenticated administrator/staff E2E — real staff session coverage for staff lifecycle, permissions, audit and configuration; this remains a separate final gate and can be completed later as requested.
 
 ### UI-13 — Integrations / REST / FHIR / LIS
-- [ ] Integration capabilities
-- [ ] Integration settings
-- [ ] Connection/status views
-- [ ] Key management UX
-- [ ] LIS/HL7/ASTM status and diagnostics
+- [x] Integration capabilities — v436: published non-secret CapabilityStatement and HMIS-aligned LIS contract description.
+- [x] Integration settings — v436: hospital-scoped REST/FHIR enablement flags use the existing protected settings contract.
+- [x] Connection/status views — v436: capability/configuration state and credential presence are shown without exposing secrets.
+- [x] Key management UX — v436: administrator setup exposes one-time integration-key rotation through the existing hashed-key contract; plaintext is never returned by GET.
+- [x] LIS/HL7/ASTM status and diagnostics — v436: read-only diagnostics identify the HMIS `/api/lims`, `/api/middleware`, `/api/limsmw` boundary and explicitly keep result mutations gated pending authenticated adapter/session verification.
+- [ ] Authenticated integration E2E — genuine staff/integration-client execution remains open.
 
 ### UI-14 — Reporting / Analytics
 - [ ] Report index

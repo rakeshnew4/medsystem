@@ -110,7 +110,7 @@ Inventory backend safety was already verified before this UI pass: fixed-asset v
 21. [ ] U12-21 Documentation/test pass.
 22. [x] U12-22 Automated access/contract verification — v435: 14 staff/permission/hospital configuration invariants all returned 0 violations; protected-route access evidence remains 401 for anonymous callers.
 23. [ ] U12-23 Authenticated administrator/staff E2E — intentionally deferred until a genuine staff session is available.
-NEXT concrete implementation target: U12-23 Authenticated administrator/staff E2E (deferred gate; do not claim complete without a genuine staff session). Billing remains a parallel release gate: v433 repaired the external invoice_payments schema and validator now runs 9/10, with 13 legacy ledger gaps plus authenticated hospital-staff E2E still open. Do not mark Billing complete while either gate is open.
+NEXT concrete implementation target: U13 authenticated integration E2E is deferred until a genuine staff/integration-client session is available; continue immediately with U14 Reporting/Analytics UI. U12-23 staff E2E, U11 E2E, U10 Theatre E2E and Billing E2E remain explicit deferred gates. Billing v433 repair is verified at 9/10 with 13 legacy ledger gaps; do not mark Billing complete.
 
 ### HMIS reference rule
 For every U12 increment, inspect the relevant HMIS staff/privilege/configuration/audit code before implementation. Current references include `Privileges.java`, `UserPrivilageController.java`, `ConfigOption.java`, `ConfigOptionController.java`, `AuditEventController.java`, and `all_audit_events.xhtml`. Do not invent privilege categories, configuration semantics or audit behavior without checking the repository.
