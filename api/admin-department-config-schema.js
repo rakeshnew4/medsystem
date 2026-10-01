@@ -1,5 +1,6 @@
 import { db } from "../lib/db.js";
 export const access="admin";
+// Temporary external-schema initializer; remove after the schema is verified.
 export const methods=["POST"];
 export default async function(req,res){
   await db.query(`CREATE TABLE IF NOT EXISTS hospital_department_settings (
