@@ -116,20 +116,37 @@ export default async function(req,res){
       if(!check.rows[0])return res.status(404).json({error:"Bed not found"});
       if(check.rows[0].status!=="available")return res.status(409).json({error:"Bed is not available"});
 
-      const r=await db.query(
-        "INSERT INTO admissions(hospital_id,patient_id,bed_id,admitting_doctor_id,expected_discharge_date,admission_type,notes) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *",
-        [ctx.hospitalId,b.patient_id,b.bed_id,b.doctor_id||null,b.expected_discharge_date||null,b.admission_type||"general",b.notes||null]
-      );
-      const admission=r.rows[0];
-      await db.query("UPDATE admissions SET admission_number=$1 WHERE id=$2 AND hospital_id=$3",[admissionNumber(admission.id),admission.id,ctx.hospitalId]);
-      const encounter=await db.query(
-        "INSERT INTO care_encounters(hospital_id,patient_id,encounter_type,admission_id,doctor_id,status,reason) VALUES($1,$2,'ipd',$3,$4,'open',$5) RETURNING id",
-        [ctx.hospitalId,b.patient_id,admission.id,b.doctor_id||null,b.reason||"Inpatient admission"]
-      );
-      await db.query("INSERT INTO bed_assignments(hospital_id,admission_id,bed_id,reason) VALUES($1,$2,$3,$4)",[ctx.hospitalId,admission.id,b.bed_id,"Initial admission"]);
-      await db.query("UPDATE beds SET status='occupied',updated_at=now() WHERE id=$1 AND hospital_id=$2",[b.bed_id,ctx.hospitalId]);
-      await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId:encounter.rows[0].id,eventType:"ipd_admitted",stage:"ipd",entityType:"admission",entityId:admission.id,metadata:{bed_id:b.bed_id,admission_type:b.admission_type||"general"}});
-      return res.json({...admission,admission_number:admissionNumber(admission.id),encounter_id:encounter.rows[0].id});
+      // Reserve the admission id first so every dependent write can run in one DB transaction.
+      // The sequence is independent from row locks, so concurrent admissions still receive distinct ids.
+      const seq=await db.query("SELECT nextval('admissions_id_seq') AS id");
+      const admissionId=Number(seq.rows[0].id);
+      const admissionNumberValue=admissionNumber(admissionId);
+      const tx=await db.transaction([
+        {
+          sql:"SELECT CASE WHEN EXISTS(SELECT 1 FROM beds WHERE id=$1 AND hospital_id=$2 AND status='available' FOR UPDATE) THEN 1 ELSE CAST('bed_unavailable' AS integer) END AS ready",
+          params:[b.bed_id,ctx.hospitalId]
+        },
+        {
+          sql:"INSERT INTO admissions(id,hospital_id,patient_id,bed_id,admitting_doctor_id,expected_discharge_date,admission_type,notes,admission_number) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+          params:[admissionId,ctx.hospitalId,b.patient_id,b.bed_id,b.doctor_id||null,b.expected_discharge_date||null,b.admission_type||"general",b.notes||null,admissionNumberValue]
+        },
+        {
+          sql:"INSERT INTO care_encounters(hospital_id,patient_id,encounter_type,admission_id,doctor_id,status,reason) VALUES($1,$2,'ipd',$3,$4,'open',$5)",
+          params:[ctx.hospitalId,b.patient_id,admissionId,b.doctor_id||null,b.reason||"Inpatient admission"]
+        },
+        {
+          sql:"INSERT INTO bed_assignments(hospital_id,admission_id,bed_id,reason) VALUES($1,$2,$3,$4)",
+          params:[ctx.hospitalId,admissionId,b.bed_id,"Initial admission"]
+        },
+        {
+          sql:"UPDATE beds SET status='occupied',updated_at=now() WHERE id=$1 AND hospital_id=$2",
+          params:[b.bed_id,ctx.hospitalId]
+        }
+      ]);
+      const encounter=await db.query("SELECT id FROM care_encounters WHERE admission_id=$1 AND hospital_id=$2 ORDER BY id DESC LIMIT 1",[admissionId,ctx.hospitalId]);
+      await logWorkflowEvent(ctx,{patientId:b.patient_id,encounterId:encounter.rows[0]?.id||null,eventType:"ipd_admitted",stage:"ipd",entityType:"admission",entityId:admissionId,metadata:{bed_id:b.bed_id,admission_type:b.admission_type||"general"}});
+      const admission=await db.query("SELECT * FROM admissions WHERE id=$1 AND hospital_id=$2",[admissionId,ctx.hospitalId]);
+      return res.json({...admission.rows[0],admission_number:admissionNumberValue,encounter_id:encounter.rows[0]?.id||null});
     }
 
     const r=await db.query(
