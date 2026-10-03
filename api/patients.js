@@ -18,12 +18,24 @@ export default async function(req,res){
 
   // HMIS-aligned registration guard: review likely existing identities before creating another record.
   // Current CareFlow identity fields support exact phone matching and name+DOB matching.
-  let dup;
+  let dup={rows:[]};
   try{
-   dup=await db.query(
-    "SELECT p.id,p.name,p.uhid,p.phone,p.email,p.date_of_birth,p.status FROM patients p LEFT JOIN patient_identity pi ON pi.patient_id=p.id AND pi.hospital_id=p.hospital_id WHERE p.hospital_id=$1 AND ((NULLIF($2,'') IS NOT NULL AND COALESCE(p.phone,'')=$2) OR (LOWER(TRIM(p.name))=LOWER(TRIM($3)) AND $4 IS NOT NULL AND p.date_of_birth=$4) OR (NULLIF($5,'') IS NOT NULL AND LOWER(COALESCE(pi.nic_passport,''))=LOWER($5))) ORDER BY p.created_at DESC LIMIT 10",
-    [hid,phone,name,b.date_of_birth||null,String(b.nic_passport||"").trim()]
-   );
+   if(phone){
+    dup=await db.query(
+     "SELECT p.id,p.name,p.uhid,p.phone,p.email,p.date_of_birth,p.status FROM patients p WHERE p.hospital_id=$1 AND p.phone=$2 ORDER BY p.created_at DESC LIMIT 10",
+     [hid,phone]
+    );
+   }else if(b.date_of_birth){
+    dup=await db.query(
+     "SELECT p.id,p.name,p.uhid,p.phone,p.email,p.date_of_birth,p.status FROM patients p WHERE p.hospital_id=$1 AND LOWER(TRIM(p.name))=LOWER(TRIM($2)) AND p.date_of_birth=$3 ORDER BY p.created_at DESC LIMIT 10",
+     [hid,name,b.date_of_birth]
+    );
+   }else if(String(b.nic_passport||"").trim()){
+    dup=await db.query(
+     "SELECT p.id,p.name,p.uhid,p.phone,p.email,p.date_of_birth,p.status FROM patients p JOIN patient_identity pi ON pi.patient_id=p.id AND pi.hospital_id=p.hospital_id WHERE p.hospital_id=$1 AND LOWER(COALESCE(pi.nic_passport,''))=LOWER($2) ORDER BY p.created_at DESC LIMIT 10",
+     [hid,String(b.nic_passport).trim()]
+    );
+   }
   }catch(err){
    console.error("[patients] duplicate check failed",String(err?.message||err));
    return res.status(500).json({error:"Patient duplicate check failed",detail:String(err?.message||err)});
