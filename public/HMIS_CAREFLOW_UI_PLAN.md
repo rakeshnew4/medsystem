@@ -293,7 +293,8 @@ A module is UI-complete only when the UI reflects the verified HMIS workflow, al
 16. UI-15 Global Responsive Shell Hardening
 
 ## Current release gates
-- Live baseline: v482; visual/UI runner is deployed and operational.
+- Live baseline: v537; visual/UI runner is deployed and operational.
+- v537 Patient Workspace visual pass: compact six-column desktop action grid, three-column tablet and two-column mobile actions; Actions vs Reports & History tabs now have a clearer segmented treatment; workspace columns stack on smaller screens; Care Team action buttons are compact and non-wrapping on mobile.
 - Frontend main-script syntax parsing passes after the v469 interaction-regression repair.
 - Physical-device mobile verification remains open.
 - Authenticated hospital-staff E2E remains open for each module that explicitly lists it; role-preview and owner-level validators do not satisfy that gate.
@@ -330,3 +331,4 @@ A module is UI-complete only when the UI reflects the verified HMIS workflow, al
 - 2026-10-02: v474 UI-16 minimal role workspace pass: all supported staff roles now land on the normal Hospital overview first; role-specific focused workspaces remain available through the role workspace shortcuts and existing Patient Workspace flow. Main frontend syntax parsing passes. Genuine hospital-staff role-by-role E2E remains open.
 - 2026-10-02: OPD token visual-QA follow-up: replaced the missing-token dead-end with clear recovery actions (Back to OPD / Open Patient Portal) and a Retry path for token-load failures; tightened mobile spacing/contrast. This is a UI-only change and does not invent token retrieval behavior.
 - 2026-10-02: AI-agent foundation: added `api/ai-agent-tools.js`, a permission-gated, hospital-scoped read-only registry for hospital overview, patient search/workspace, OPD queue, appointments, due follow-ups and billing summary. The agent is not allowed to execute arbitrary SQL/URLs; future mutation tools must reuse and respect existing CareFlow API contracts.
+- 2026-10-02: v537 Patient Workspace visual pass: compact responsive command hierarchy, segmented Actions vs Reports & History navigation, stacked workspace columns at tablet/mobile widths, and denser Care Team controls. No backend workflow contracts changed; dry-run returned 0 errors.
