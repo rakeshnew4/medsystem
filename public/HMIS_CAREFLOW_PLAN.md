@@ -1,5 +1,15 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-03 — IPD/queue/nursing/pharmacy/discharge contract verification v643
+
+- Continued the HMIS-aligned backend contract audit after v642.
+- Found and fixed a real remaining IPD UI mismatch: the Patient Workspace admission form still exposed `observation` and `day_care`, while the verified `/api/ipd` update-admission contract accepts only `general`, `emergency`, `elective`, `maternity`, `surgical` and `medical`. The admission choices now use the same supported values.
+- Found one remaining global IPD admission browser `alert()` path and replaced it with the shared bottom action notification surface.
+- Dry-run passed with 0 hard errors; deployed live as v643.
+- Safe access/contract verification: `/api/beds` anonymous 401 and signed-in app-user GET 200; `/api/queue` anonymous 401 and signed-in app-user GET 200; `/api/discharge` anonymous 401 and signed-in app-user GET 200; `/api/pharmacy-stock` anonymous 401 and signed-in app-user GET 200; `/api/nursing-handoff` anonymous 401. No mutation was executed by the test runner.
+- The available app-user GET paths returned valid hospital-scoped data and no adapter errors. This is contract evidence, not genuine hospital-staff E2E.
+- Next: continue the remaining mutation-contract/error-feedback audit, especially pharmacy/inventory global forms and the nursing handoff role/state preconditions, then execute the complete staff click → mutation → persistence → reload matrix when a genuine hospital staff session is available.
+
 ## 2026-10-03 — Patient Workspace Next Action feedback hardening v642
 
 - Continued the Patient Workspace/Next Action audit against the HMIS-style clinical workflow.
