@@ -455,6 +455,9 @@ Expected: Patient Workspace Order investigation uses a supported clinical mutati
 ## TC-UX-CONTRACT-003 — Prescription order contract
 Expected: Patient Workspace Prescription submits POST /clinical with type=medicine, the selected patient's open consultation visit_id, and its encounter_id. The UI must not attempt a prescription without an open consultation. Status: Fixed in v635 after contract audit; direct mutation smoke execution was blocked by the tool safety layer, so authenticated persistence/reload remains open.
 
+## TC-UX-FEEDBACK-002 — IPD and nursing mutation feedback
+Expected: Patient Workspace IPD admission/transfer validation failures and nursing handoff failures use the shared bottom error notification surface, never browser alerts, and remain inside the Patient Workspace. Status: Fixed and deployed v637; authenticated click/persistence execution remains pending.
+
 Genuine hospital-staff OTP/browser E2E remains a separate production-authentication gate and must not be marked complete from demo mode. APP END USER or collaborator sessions must not be counted as genuine staff E2E.
 
 Current master E2E queue: E2E-AUTH → E2E-RECEPTION → E2E-QUEUE → E2E-NURSING → E2E-DOCTOR → E2E-LAB → E2E-PHARMACY → E2E-BILLING → E2E-IPD → E2E-THEATRE (only when requested) → E2E-INVENTORY → E2E-STAFF → E2E-INTEGRATIONS → E2E-REPORTING → E2E-CROSSCUT → E2E-RELEASE.

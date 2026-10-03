@@ -932,6 +932,11 @@ Current status: direct external PostgreSQL checks are healthy, while the deploye
 
 - **Billing validator runtime-consistency increment — v383 target:** replaced correlated payment-ledger subqueries with adapter-safe aggregate checks and added an explicit payment-ledger table-access check. This is a diagnostic/safety correction only; Billing remains incomplete until the deployed validator returns clean structural results and authenticated staff E2E passes. Legacy payment-ledger reconciliation remains open.
 
+### 2026-10-03
+
+- Deployed CareFlow v637: Patient Workspace IPD admission/transfer and nursing handoff error feedback now uses the shared bottom notification surface instead of browser alerts. Server-side `/api/beds` and `/api/nursing-handoff` contracts were preserved; authenticated staff click/persistence verification remains open.
+- Next: continue the Patient Workspace mutation-contract audit for remaining admission-edit/discharge and Next Action error paths, then execute the full genuine staff click → save → refresh/reload matrix when a real hospital staff session is available.
+
 ### 2026-10-01
 - Deployed CareFlow v375: extended the Inventory / Assets owner-only production validator with no-op transfer-history and inactive/disposed/retired-asset transfer-history invariants. Post-deploy validation returned 0 violations across 7 checks; anonymous /api/fixed-assets remains HTTP 401. Authenticated asset E2E and concurrent transfer execution remain open because the available runner has no real hospital staff session.
 - Inventory / Assets safety increment: asset creation now maps the existing hospital-scoped `asset_code` unique constraint to an explicit HTTP 409 instead of leaking a database conflict as HTTP 500. Added TC-ASSET-026; authenticated asset E2E and concurrent transfer execution remain open because no real hospital staff browser/session is available.
