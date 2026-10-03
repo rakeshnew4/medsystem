@@ -1,5 +1,32 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-02 — triage external-schema repair completed
+
+- Root cause isolated: the configured external PostgreSQL adapter had `patients` available but did not have the `triage_assessments` table. The application's native schema inspection had previously shown the table, which masked the external-database mismatch.
+- Applied the existing HMIS-aligned nursing triage schema from `migrations/0040_nursing_triage.sql` to the configured external PostgreSQL database:
+  - `triage_assessments`
+  - patient/queue/acuity indexes
+  - existing acuity and pain-score constraints
+- No clinical rows were inserted or modified.
+- Verified directly through the external adapter:
+  - triage GET → 200
+  - Patient Workspace → 200
+  - `degraded_sections` → empty
+  - anonymous triage access → 401
+  - missing patient validation → 400
+  - invalid acuity validation → 400
+- The application-side triage and Patient Workspace code remains hospital-scoped and read/write permission-gated; mutation behavior was not broadened.
+- Remaining infrastructure gates:
+  - MinIO endpoint is still absent; bucket is configured, so real archive upload cannot yet be verified.
+  - Integration API key is not configured, so authenticated FHIR client verification remains pending.
+  - Genuine hospital-staff browser/session E2E remains pending; signed-in app-user contract tests are not counted as staff E2E.
+- Next implementation order:
+  1. Continue Patient Workspace/HMIS workflow polish and test adjacent nursing/vitals flow.
+  2. Verify MinIO archive as soon as endpoint configuration exists.
+  3. Verify authenticated FHIR/LIS integration contract when integration credentials are configured.
+  4. Continue HMIS-aligned reporting/analytics and audit/archive coverage.
+  5. Keep mutation-capable AI tools gated until their complete permission, validation, idempotency, concurrency and audit contracts are verified.
+
 ## Current continuation status — v518
 - AI read-only expansion is already shipped; the next open implementation issue is the external PostgreSQL adapter failure affecting the optional nursing/triage read path.
 - v518 improved adapter error logging and kept the core Patient Workspace available when the optional section fails.
