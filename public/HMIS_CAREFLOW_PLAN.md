@@ -6,7 +6,8 @@
 - get_lab_worklist reuses the existing action.clinical.view permission boundary, hospital-scoped lab_orders joins, bounded limit (1–300), known-status validation, and read-only patient/test/doctor/result context.
 - get_fixed_assets reuses the existing action.assets.manage server authorization boundary, hospital-scoped fixed_assets, bounded limit (1–300), known lifecycle filters, and read-only asset register fields. No create/update/transfer operation is reachable through the tool.
 - Deployed v500. Anonymous /api/ai-agent-tools returned 401; signed-in app-user execution returned 200 for both tools. These app-user checks are contract verification only and do not count as genuine hospital-staff E2E.
-- Next AI expansion candidates: pharmacy stock/dispensing read summary and reporting summaries, after checking their existing permissions and schemas. Mutation tools remain blocked until their underlying contracts pass permission, validation, idempotency/concurrency and audit review.
+- Added get_pharmacy_summary after inspecting the existing pharmacy GET contract and verified pharmacy_stock schema. It uses the existing action.clinical.view permission boundary, hospital scope, bounded stock/dispensing reads, and no mutation controls. A first live execution exposed a schema mismatch (unit_price was not present); the query was corrected to the verified schema and v502 returned HTTP 200. Genuine pharmacist E2E remains open.
+- Next AI expansion candidate: reporting summaries. Mutation tools remain blocked until their underlying contracts pass permission, validation, idempotency/concurrency and audit review.
 
 # 2026-10-02 continuation increment — lab agent-tool hardening (draft, not deployed)
 

@@ -390,6 +390,10 @@ Status: Implemented and deployed v500; signed-in app-user execution returned 200
 Expected: the read-only fixed-asset register is permission-gated, hospital-scoped, bounded to 300 rows, accepts only known lifecycle filters, and cannot create/update/transfer assets.
 Status: Implemented and deployed v500; signed-in app-user execution returned 200 with an empty current asset set. Genuine hospital-staff E2E remains pending.
 
+## TC-AI-TOOLS-010 — Pharmacy summary tool
+Expected: the read-only pharmacy summary uses the existing clinical-view permission boundary, stays hospital-scoped, bounds stock/dispensing rows to 300, and exposes no dispense/stock mutation operation.
+Status: Implemented and deployed v502 after correcting the query to the verified pharmacy_stock schema; signed-in app-user execution returned 200. Genuine pharmacist E2E remains pending.
+
 # Completion gates
 
 Demo-mode E2E is now available through the explicit CARE_FLOW_DEMO_MODE secret. It may be used to exercise application workflows, role boundaries, invalid transitions, retries and concurrency without real OTP authentication, and all results must be labeled demo E2E.
