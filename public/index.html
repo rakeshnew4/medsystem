@@ -587,7 +587,7 @@ async function api(path,opts={}){
     if(roleToken)baseHeaders['X-CareFlow-Role-Token']=roleToken;
     const r=await fetch(API+path,{headers:{...baseHeaders,...(requestOpts.headers||{})},...requestOpts});
     let j={};try{j=await r.json()}catch{}
-    if(!r.ok)throw Object.assign(Error(j.error||'Request failed'),{status:r.status,data:j});
+    if(!r.ok||j?.error)throw Object.assign(Error(j.error||'Request failed'),{status:r.status,data:j});
     if(shouldNotify)showActionToast({title:'Saved',body:actionFeedbackLabel(path,method)});
     return j;
   }catch(e){
@@ -1901,10 +1901,10 @@ function patientTheatre(procedures){
  workspaceActionPanel({title:'Create bill / collect payment',body:b},pid,anchorRole||'billing');
 }
 async function workspaceSaveVitals(e,pid){
- e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());const numeric=['blood_pressure_systolic','blood_pressure_diastolic','pulse','temperature','weight_kg','height_cm','spo2','respiratory_rate'];for(const k of numeric)if(b[k]!==''&&(!Number.isFinite(Number(b[k]))||Number(b[k])<0))throw new Error('Enter valid non-negative vital values.');b.patient_id=Number(pid);const qid=state.activePatientRecord?.patient?.active_queue_id;if(qid)b.queue_entry_id=Number(qid);await api('/vitals',{method:'POST',body:JSON.stringify(b)});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+ e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());const numeric=['blood_pressure_systolic','blood_pressure_diastolic','pulse','temperature','weight_kg','height_cm','spo2','respiratory_rate'];for(const k of numeric)if(b[k]!==''&&(!Number.isFinite(Number(b[k]))||Number(b[k])<0))throw new Error('Enter valid non-negative vital values.');b.patient_id=Number(pid);const qid=state.activePatientRecord?.patient?.active_queue_id;if(qid)b.queue_entry_id=Number(qid);await api('/vitals',{method:'POST',body:JSON.stringify(b)});await refreshPatientWorkspace(pid)}catch(x){showActionToast({title:'Vitals not saved',body:x.message,error:true})}
 }
 async function workspaceSavePrescription(e,pid){
- e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());b.patient_id=pid;b.type='medicine';await api('/clinical',{method:'POST',body:JSON.stringify(b)});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+ e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());b.patient_id=pid;b.type='medicine';await api('/clinical',{method:'POST',body:JSON.stringify(b)});await refreshPatientWorkspace(pid)}catch(x){showActionToast({title:'Prescription not saved',body:x.message,error:true})}
 }
 async function workspaceSaveLab(e,pid){
  e.preventDefault();
@@ -1914,10 +1914,10 @@ async function workspaceSaveLab(e,pid){
   if(!visit)throw new Error('Start the doctor consultation before ordering an investigation.');
   await api('/clinical',{method:'POST',body:JSON.stringify({type:'lab',patient_id:Number(pid),visit_id:Number(visit.id),queue_entry_id:state.activePatientRecord?.patient?.active_queue_id||null,encounter_id:visit.encounter_id||null,test_name:b.test_name,notes:b.notes||null})});
   await refreshPatientWorkspace(pid);
- }catch(x){alert(x.message)}
+ }catch(x){showActionToast({title:'Investigation not saved',body:x.message,error:true})}
 }
 async function workspaceSaveInvoice(e,pid){
- e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/billing',{method:'POST',body:JSON.stringify({patient_id:pid,items:[{description:b.description,quantity:1,unit_price:Number(b.amount||0)}],paid:Number(b.paid||0),payment_method:b.payment_method||null,notes:b.notes||null})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+ e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/billing',{method:'POST',body:JSON.stringify({patient_id:pid,items:[{description:b.description,quantity:1,unit_price:Number(b.amount||0)}],paid:Number(b.paid||0),payment_method:b.payment_method||null,notes:b.notes||null})});await refreshPatientWorkspace(pid)}catch(x){showActionToast({title:'Bill not saved',body:x.message,error:true})}
 }
 async function patientWorkspaceAppointments(pid){
  const s=state.activePatientRecord;const rows=s?.appointments||[];
@@ -1925,7 +1925,7 @@ async function patientWorkspaceAppointments(pid){
  workspaceActionPanel({title:'Appointments & check-in',body:'<div>'+html+'</div>'},pid,'receptionist');
 }
 async function workspaceCheckIn(aid,pid){
- try{const r=await api('/appointments',{method:'PUT',body:JSON.stringify({id:aid,action:'checkin',stage:'waiting'})});alert('OPD token issued: '+(r.queue?.token||'assigned'));await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+ try{const r=await api('/appointments',{method:'PUT',body:JSON.stringify({id:aid,action:'checkin',stage:'waiting'})});showActionToast({title:'OPD check-in complete',body:'Token '+(r.queue?.token||'assigned')});await refreshPatientWorkspace(pid)}catch(x){showActionToast({title:'Check-in failed',body:x.message,error:true})}
 }
 async function refreshPatientWorkspace(pid){
  const r=await api('/patient-workspace?patient_id='+encodeURIComponent(pid));state.activePatientRecord=r;renderPatientWorkspace();
@@ -2020,7 +2020,7 @@ function workspaceDischargeChecklist(pid,admissionId){
 }
 async function workspaceSaveDischarge(e,pid,admissionId){
  e.preventDefault();
- try{const b=Object.fromEntries(new FormData(e.target).entries());if(b.payment_status==='approved'&&b.insurance_status!=='approved')return alert('Insurance must be approved when payment status is Insurance approved.');await api('/discharge',{method:state.activePatientRecord?.discharge?'PUT':'POST',body:JSON.stringify({admission_id:admissionId,clinical_clearance:b.clinical_clearance==='on',reports_ready:b.reports_ready==='on',medication_reconciled:b.medication_reconciled==='on',billing_cleared:b.billing_cleared==='on',insurance_status:b.insurance_status,payment_status:b.payment_status,discharge_medicines:b.discharge_medicines,summary:b.summary})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+ try{const b=Object.fromEntries(new FormData(e.target).entries());if(b.payment_status==='approved'&&b.insurance_status!=='approved'){showActionToast({title:'Discharge not saved',body:'Insurance must be approved when payment status is Insurance approved.',error:true});return;}await api('/discharge',{method:state.activePatientRecord?.discharge?'PUT':'POST',body:JSON.stringify({admission_id:admissionId,clinical_clearance:b.clinical_clearance==='on',reports_ready:b.reports_ready==='on',medication_reconciled:b.medication_reconciled==='on',billing_cleared:b.billing_cleared==='on',insurance_status:b.insurance_status,payment_status:b.payment_status,discharge_medicines:b.discharge_medicines,summary:b.summary})});await refreshPatientWorkspace(pid)}catch(x){showActionToast({title:'Discharge checklist failed',body:x.message,error:true})}
 }
 async function workspaceCompleteDischarge(pid,admissionId){
  const d=state.activePatientRecord?.discharge;
@@ -2030,7 +2030,7 @@ async function workspaceCompleteDischarge(pid,admissionId){
 }
 async function workspaceConfirmDischarge(pid,admissionId){
  const d=state.activePatientRecord?.discharge||{};
- try{await api('/beds',{method:'PUT',body:JSON.stringify({action:'discharge',id:admissionId,discharge_summary:d.summary||null})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+ try{await api('/beds',{method:'PUT',body:JSON.stringify({action:'discharge',id:admissionId,discharge_summary:d.summary||null})});await refreshPatientWorkspace(pid)}catch(x){showActionToast({title:'Discharge failed',body:x.message,error:true})}
 }
 function patientAppointments(a){return a.length?a.slice(0,8).map(x=>'<div class="compact-record"><div><strong>'+fmtDate(x.appointment_date)+' · '+fmtTime(x.appointment_time)+'</strong><span>'+esc(x.doctor_name||'Doctor')+' · '+esc(x.consultation_type||'in_person')+'</span></div><div>'+status(x.status)+(x.queue_stage?'<small>'+esc(prettyStatus(x.queue_stage))+'</small>':'')+(x.consultation_type==='online'&&x.public_token?'<button class="mini" onclick="openStaffVideo('+x.id+')">Join video</button>':'')+'</div></div>').join(''):'<div class="empty">No appointments found.</div>'}
 function patientClinicalSummary(c){
@@ -2058,10 +2058,10 @@ function workspacePayInvoice(id,pid,due){
 }
 async function workspaceSavePayment(e,id,pid){
  e.preventDefault();
- try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/billing',{method:'PUT',body:JSON.stringify({id,amount:Number(b.amount),payment_method:b.payment_method})});closePatientWorkspaceActionModal();await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+ try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/billing',{method:'PUT',body:JSON.stringify({id,amount:Number(b.amount),payment_method:b.payment_method})});closePatientWorkspaceActionModal();await refreshPatientWorkspace(pid)}catch(x){showActionToast({title:'Payment failed',body:x.message,error:true})}
 }
 async function workspaceCompleteFollowup(id,pid){
- try{await api('/followups',{method:'PUT',body:JSON.stringify({id,status:'completed'})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+ try{await api('/followups',{method:'PUT',body:JSON.stringify({id,status:'completed'})});await refreshPatientWorkspace(pid)}catch(x){showActionToast({title:'Follow-up update failed',body:x.message,error:true})}
 }
 function workspaceIPDAction(action,pid,admissionId){
  if(action==='edit')return editIPDAdmission(admissionId);

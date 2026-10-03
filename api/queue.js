@@ -96,7 +96,7 @@ export default async function(req,res){
 
     const before=await db.query("SELECT stage,patient_id,doctor_id,token FROM queue_entries WHERE id=$1 AND hospital_id=$2",[b.id,hid]);
     const previous=before.rows[0]||null;
-    if(!previous)return res.json({error:"Queue item not found"});
+    if(!previous)return res.status(404).json({error:"Queue item not found"});
     if(b.stage==="in_room" && ctx.staff.role!=="admin"){
       if(ctx.staff.role!=="doctor")return res.status(403).json({error:"Only a doctor can start a consultation"});
       if(!ctx.staff.doctor_id || Number(previous.doctor_id)!==Number(ctx.staff.doctor_id))return res.status(403).json({error:"This patient is not assigned to you"});
@@ -115,7 +115,7 @@ export default async function(req,res){
       "UPDATE queue_entries SET stage=$1,priority=COALESCE($2,priority),doctor_id=COALESCE($3,doctor_id),started_at=CASE WHEN $1 IN ('doctor','in_room','vitals','lab','followup') AND started_at IS NULL THEN now() ELSE started_at END,completed_at=CASE WHEN $1='completed' THEN now() ELSE completed_at END,updated_at=now() WHERE id=$4 AND hospital_id=$5 RETURNING id,patient_id,appointment_id,stage,priority,doctor_id,token,token_date,token_number",
       [b.stage,b.priority||null,b.doctor_id||null,b.id,hid]
     );
-    if(!r.rows[0])return res.json({error:"Queue item not found"});
+    if(!r.rows[0])return res.status(404).json({error:"Queue item not found"});
     const q=r.rows[0];
 
     if(!q.token_number){
