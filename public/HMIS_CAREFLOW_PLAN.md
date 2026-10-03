@@ -1,5 +1,17 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-03 — Patient Workspace prescription contract fix v635
+
+- Audited Patient Workspace mutation payloads against the live backend handlers using the HMIS consultation-to-medication workflow as the reference.
+- Found a real contract defect: the workspace prescription form called POST /clinical with type=medicine but omitted the required visit_id. The backend requires an open doctor consultation and matching patient/doctor assignment before inserting a prescription.
+- Fixed the workspace form to resolve the active open consultation for the selected patient and submit visit_id plus encounter_id with the prescription.
+- The form now refuses to submit when no open consultation exists and surfaces the backend-aligned message instead of generating a guaranteed 400.
+- Dry-run: 0 hard errors. Deployed live as v635.
+- Post-deploy 15-minute error review: 0 HTTP 5xx logs.
+- Additional direct mutation smoke calls were blocked by the execution safety layer in this run, so no prescription data was created or modified during testing.
+- Genuine hospital-staff browser E2E, mutation persistence/reload, and role-specific click-through remain open and are not claimed.
+- Next: continue the Patient Workspace mutation-contract audit, starting with IPD bed actions and nursing handoff validation, then test the complete mutation matrix when a genuine staff session is available.
+
 ## 2026-10-03 — Patient Workspace notification consistency v630
 
 - Found two remaining Patient Workspace mutation paths that still used browser alerts: laboratory result verification and follow-up scheduling.

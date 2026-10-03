@@ -452,6 +452,9 @@ Expected: successful POST/PUT/DELETE actions show a bottom-of-screen confirmatio
 ## TC-UX-CONTRACT-002 — Investigation order contract
 Expected: Patient Workspace Order investigation uses a supported clinical mutation contract and does not call POST /lab, because the lab route accepts GET/PUT only. Status: Fixed in v624; workspace now requires an open consultation and submits the lab order through POST /clinical with visit/encounter context.
 
+## TC-UX-CONTRACT-003 — Prescription order contract
+Expected: Patient Workspace Prescription submits POST /clinical with type=medicine, the selected patient's open consultation visit_id, and its encounter_id. The UI must not attempt a prescription without an open consultation. Status: Fixed in v635 after contract audit; direct mutation smoke execution was blocked by the tool safety layer, so authenticated persistence/reload remains open.
+
 Genuine hospital-staff OTP/browser E2E remains a separate production-authentication gate and must not be marked complete from demo mode. APP END USER or collaborator sessions must not be counted as genuine staff E2E.
 
 Current master E2E queue: E2E-AUTH → E2E-RECEPTION → E2E-QUEUE → E2E-NURSING → E2E-DOCTOR → E2E-LAB → E2E-PHARMACY → E2E-BILLING → E2E-IPD → E2E-THEATRE (only when requested) → E2E-INVENTORY → E2E-STAFF → E2E-INTEGRATIONS → E2E-REPORTING → E2E-CROSSCUT → E2E-RELEASE.
