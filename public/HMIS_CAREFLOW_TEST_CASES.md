@@ -355,6 +355,24 @@ Status: Open.
 Expected: protected operational reports require the appropriate authenticated role.
 Status: Open.
 
+## AI-agent tool safety contract
+`/api/ai-agent-tools` exposes a discoverable tool registry and permission-gated execution for read-only staff workflows. Each tool is hospital-scoped and executes fixed server-side queries; the model cannot submit arbitrary SQL, URLs or database operations. Future write tools must reuse the existing API/function contract, permission guard, validation, idempotency and concurrency boundary before being exposed to an agent.
+
+## TC-AI-TOOLS-001 — Tool discovery
+Expected: signed-in staff can discover only the declared CareFlow agent tools and their read-only metadata; no secrets are returned.
+
+## TC-AI-TOOLS-002 — Tool permission boundary
+Expected: each tool enforces its mapped CareFlow page permission and hospital scope; unauthorized access is rejected by the same server-side authorization layer used by the UI.
+
+## TC-AI-TOOLS-003 — Tool hospital isolation
+Expected: patient, queue, appointment, follow-up and billing tool queries are constrained to the authenticated staff member's hospital.
+
+## TC-AI-TOOLS-004 — No arbitrary execution
+Expected: tool input cannot become arbitrary SQL, URL fetches, code execution or unregistered tool dispatch.
+
+## TC-AI-TOOLS-005 — Mutation gate
+Expected: no write/mutation tool is exposed until its underlying CareFlow API/function contract has verified permission, validation, idempotency/concurrency and audit behavior.
+
 # Completion gates
 
 Demo-mode E2E is now available through the explicit CARE_FLOW_DEMO_MODE secret. It may be used to exercise application workflows, role boundaries, invalid transitions, retries and concurrency without real OTP authentication, and all results must be labeled demo E2E.

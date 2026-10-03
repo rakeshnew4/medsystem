@@ -146,5 +146,12 @@ For every U12 increment, inspect the relevant HMIS staff/privilege/configuration
 6. [ ] Financial reconciliation review: legacy payment-ledger gap remains open until source-backed historical payment rows are available; never synthesize ledger entries from invoice totals alone.
 7. [ ] Authenticated hospital-staff E2E gates — execute only when a genuine staff session is available.
 8. [ ] Physical-device mobile verification — manual device gate.
+9. [x] OPD token missing-link UX — implemented recovery actions (Back to OPD, Patient Portal) plus retry for invalid/expired token responses; mobile-friendly spacing/contrast.
+10. [x] AI-agent tool foundation — added `api/ai-agent-tools.js` with a discoverable, permission-gated, hospital-scoped read-only tool registry. Initial tools cover hospital overview, patient search/workspace, OPD queue, appointments, due follow-ups and billing summary. No arbitrary SQL/URL execution and no mutations.
+11. [ ] AI-agent tool expansion — map every existing CareFlow API/function to an agent tool only after checking its server permission, validation, hospital isolation, idempotency/concurrency and mutation contract. Add write tools incrementally; never bypass the underlying API guard.
+12. [ ] HMIS AI comparison — continue repository-wide search for AI/automation/assistant patterns and compare each CareFlow AI capability and staff UI with relevant HMIS workflows. Record concrete gaps, not speculative features.
+13. [ ] Visual E2E loop — rerun OPD token after deployment, then continue public/module coverage. Treat model findings as candidates until reproduced by browser assertions.
+14. [ ] E2E-AUTH genuine staff gate — attempt persistent OTP/browser execution when available; demo-mode remains separate and must never be counted as production staff authentication.
+15. [ ] Full HMIS end-to-end workflow loop — Reception → Queue → Nursing → Doctor → Lab → Pharmacy → Billing → IPD → Inventory → Staff → Integrations → Reporting, with authenticated gates preserved.
 
 This file is the persistent next-task/reminder loop. It must never be left with an empty or stale NEXT TASK QUEUE.
