@@ -49,6 +49,7 @@ HMIS references: OPD Patient Lookup/Registration, EMR patient lookup, patient pr
 - [x] First-viewport refinement — v530: consolidated selected-patient identity/context into one compact hero, reduced top-level commands to high-frequency actions, surfaced age/sex/contact/DOB and current OPD/IPD state, and tightened command/tab spacing so the workspace reaches usable patient actions sooner.
 - [x] Registered-patient boundary refinement — v532: Patient Lookup/Workspace is now explicitly registered-patient-only; New Patient, Appointments and Register OPD entry points were removed from the workspace, the launcher is named Patient Lookup, and the care workflow begins with downstream patient operations rather than registration.
 - [x] Top-to-bottom Patient Workspace audit — v535: reviewed Encounter/Next Action → Care Workflow → Current Care → Clinical → Reports/History against HMIS EMR/BHT patterns; the workspace remains registered-patient-only, new-visit entry and appointment scheduling are outside the workspace, and the hidden appointment surface was removed.
+- [x] Next Action workspace-boundary pass — v539 draft: actionable transitions remain inside Patient Workspace, mutating actions refresh the patient record after database writes, and non-mutating waiting/review states no longer navigate to Queue/Doctor/Lab pages.
 
 ### UI-02 — Appointments / OPD
 HMIS references: OPD patient lookup, token, queue, OPD billing.

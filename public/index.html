@@ -1486,6 +1486,16 @@ function patientWorkspaceActionButtons(p){
  const clinical='<button class="btn primary patient-action patient-action-primary" onclick="openClinical('+id+')"><span class="patient-action-icon">↗</span><span>Clinical</span></button>';
  return '<div class="patient-quick-actions">'+q+a+vit+ipd+finance+clinical+'</div>';
 }
+function workspaceWaitingStatus(pid){
+ const el=document.getElementById('patientWorkspaceActionArea');
+ if(!el)return;
+ workspaceActionPanel({title:'Workflow status',body:'<div class="empty">No database transition is available for this role at this stage. The patient remains in the current queue state until the responsible clinical staff member records the next step.</div>'},pid);
+}
+function workspaceFocusConsultation(pid){
+ const card=document.querySelector('#patientWorkspaceBody .consultation-card');
+ if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.querySelector('textarea')?.focus();return;}
+ workspaceActionPanel({title:'Consultation',body:'<div class="empty">The consultation controls are available to the assigned doctor. This patient remains in the Patient Workspace.</div>'},pid,'doctor');
+}
 function patientNextActions(p,s){
  const clinical=!!s.permissions?.clinical, billing=!!s.permissions?.billing, pharmacy=!!s.permissions?.pharmacy;
  const q=String(p.queue_stage||'').toLowerCase();
@@ -1505,25 +1515,29 @@ function patientNextActions(p,s){
    else add('ipd','Review admission','Open admission actions for bed, transfer or discharge.','workspaceIPDPanel('+p.id+','+activeAdm.id+')');
  } else if(q==='waiting'){
    if(clinical)add('vitals','Record vitals','Patient is waiting for clinical assessment.','workspaceVitals('+p.id+')');
-   else add('doctor','Open queue','Move the patient through the OPD queue.','showSection(\'queue\')');
+   else add('waiting','Waiting for clinical staff','The patient remains in the current queue state until clinical staff record the next step.','workspaceWaitingStatus('+p.id+')',false);
  } else if(q==='vitals'){
    if(clinical)add('triage','Complete triage','Vitals are recorded. Document the nursing triage assessment before handoff.','workspaceTriage('+p.id+')');
  } else if(q==='doctor'){
-   if(s.role==='doctor')add('consult','Patient ready for consultation','Vitals are completed. The patient is waiting for you.','workspaceOpenDoctor('+p.id+')');
-   else add('doctor','Vitals completed','Patient is now waiting for the doctor to start the consultation.','showSection(\'queue\')',false);
+   if(s.role==='doctor')add('consult','Start consultation','Move the queue state to In Room and continue from this patient workspace.','doctorStartFromQueue('+p.id+','+(p.active_queue_id||0)+')');
+   else add('doctor','Waiting for doctor','The patient is ready for the doctor; no navigation is needed from this workspace.','workspaceWaitingStatus('+p.id+')',false);
  } else if(q==='in_room'){
-   if(clinical)add('consult','Consultation in progress','Patient is in the doctor room. Continue the consultation and complete the visit when finished.','workspaceOpenDoctor('+p.id+')');
+   if(s.role==='doctor')add('consult','Continue consultation','Continue the consultation here without leaving the Patient Workspace.','workspaceFocusConsultation('+p.id+')');
+   else if(clinical)add('consult','Consultation in progress','The patient is currently with the doctor. Review the current clinical record here.','workspaceFocusConsultation('+p.id+')',false);
  } else if(q==='lab'){
-   // if(latestLab?.status==='ordered'&&clinical)add('sample','Collect lab sample','The latest investigation is ordered and awaiting sample collection.','workspaceLabStatus('+latestLab.id+',\\'sample_collected\\','+p.id+')');
-   // else if(latestLab?.status==='sample_collected'&&clinical)add('processing','Start processing','Sample is collected and ready for lab processing.','workspaceLabStatus('+latestLab.id+',\\'processing\\','+p.id+')');
-   // else if(latestLab?.status==='processing'&&clinical)add('verify','Verify result','Enter/verify the latest laboratory result.','workspaceVerifyLab('+latestLab.id+','+p.id+')');
-   // else if(latestLab?.status==='verified'&&clinical)add('review','Review result','A verified result is ready for clinician review.','workspaceOpenDoctor('+p.id+')');
-   // else add('lab','Open lab','Review the latest investigation and its status.','showSection(\'lab\')');
+   if(clinical){
+     const currentLab=(s.clinical?.lab_orders||[])[0];
+     if(currentLab?.status==='ordered')add('sample','Collect lab sample','Record the sample collection transition here.','workspaceLabStatus('+currentLab.id+',\\'sample_collected\\','+p.id+')');
+     else if(currentLab?.status==='sample_collected')add('processing','Start processing','Record that the sample has entered processing.','workspaceLabStatus('+currentLab.id+',\\'processing\\','+p.id+')');
+     else if(currentLab?.status==='processing')add('verify','Verify result','Enter and save the verified laboratory result here.','workspaceVerifyLab('+currentLab.id+','+p.id+')');
+     else if(currentLab?.status==='verified')add('review','Review result','Review the verified result in this workspace.','workspaceFocusConsultation('+p.id+')',false);
+   }
  } else if(q==='pharmacy'){
    if(pharmacy&&latestMed&&!['dispensed','completed'].includes(String(latestMed.dispense_status||'').toLowerCase()))add('pharmacy','Dispense medicine','A prescription is awaiting pharmacy dispensing.','workspaceDispenseForm('+latestMed.medication_id+','+p.id+')');
    // else add('pharmacy','Review pharmacy','Review prescriptions and dispensing.','showSection(\\'pharmacy\\')');
  } else if(q==='followup'){
-   add('followup','Review follow-up','Review the next planned visit and follow-up history in Reports & History.','setPatientWorkspaceTab(\'reports\')',false);
+   const pending=(s.followups||[]).find(x=>x.status!=='completed');
+   if(pending)add('followup','Complete follow-up','Mark the pending follow-up complete here and refresh the patient journey.','workspaceCompleteFollowup('+pending.id+','+p.id+')');
  } else if(outstanding>0&&billing){
    add('bill','Collect outstanding payment','₹'+outstanding.toFixed(2)+' remains due.','workspacePayOutstanding('+p.id+')');
  } else if(!p.today_token){
@@ -1531,7 +1545,7 @@ function patientNextActions(p,s){
  } else {
    add('record','Review patient','Open the full patient record and current journey.','openClinical('+p.id+')',false);
  }
- return actions.length?'<div class="next-actions"><div class="next-actions-head"><div><h3 class="panel-title">Next action</h3><div class="record-section-note">Context-aware workflow guidance; staff remain in control of the action.</div></div><span class="status active">'+esc(prettyStatus(q||'registered'))+'</span></div>'+actions.join('')+'</div>':'';
+ return actions.length?'<div class="next-actions"><div class="next-actions-head"><div><h3 class="panel-title">Next action</h3><div class="record-section-note">Workflow transitions stay inside this Patient Workspace. Mutating actions update the database and refresh the workspace; review states only focus existing workspace content.</div></div><span class="status active">'+esc(prettyStatus(q||'registered'))+'</span></div>'+actions.join('')+'</div>':'';
 }
 async function workspaceLabStatus(id,status,pid){
  try{await api('/lab',{method:'PUT',body:JSON.stringify({id,status})});await refreshPatientWorkspace(pid)}
