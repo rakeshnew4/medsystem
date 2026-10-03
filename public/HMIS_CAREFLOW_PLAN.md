@@ -1,5 +1,10 @@
 # CareFlow × HMIS Implementation Plan
 
+## Current continuation status — v518
+- AI read-only expansion is already shipped; the next open implementation issue is the external PostgreSQL adapter failure affecting the optional nursing/triage read path.
+- v518 improved adapter error logging and kept the core Patient Workspace available when the optional section fails.
+- Next run: diagnose the external schema/adapter mismatch, repair the triage read contract, regression-test Patient Workspace, then continue the authenticated HMIS workflow gates.
+
 ## 2026-10-02 planned workstream — reporting, authentication, MinIO and integrations
 
 - Reporting increment shipped in v511: added three read-only AI tools to the existing hospital-scoped registry:
