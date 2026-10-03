@@ -16,7 +16,7 @@ export default async function(req,res){
     if(!h.rows[0])return res.status(503).json({signed_in:false,error:"Demo mode requires an initialized hospital"});
     const role=demoRole(req);
     const staff={email:"demo@careflow.test",display_name:"Demo "+role,role,active:true,doctor_id:null};
-    const effective=role==="admin"?Object.fromEntries((await db.query("SELECT permission_key FROM permissions")).rows.map(x=>[x.permission_key,true])):await getPermissions({staff:{...staff,id:null,department_id:null}});
+    const effective=role==="admin"?Object.fromEntries((await db.query("SELECT permission_key FROM permissions")).rows.map(x=>[x.permission_key,true])):await getPermissions({demo:true,staff:{...staff,id:null,department_id:null}});
     return res.json({signed_in:true,user:{id:"careflow-demo",email:staff.email,name:staff.display_name},staff,permissions:effective,preview:false,demo_mode:true,demo_roles:DEMO_ROLES});
   }
 
