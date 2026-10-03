@@ -1690,11 +1690,11 @@ function patientNextActions(p,s){
  return actions.length?'<div class="next-actions"><div class="next-actions-head"><div><h3 class="panel-title">Next action</h3><div class="record-section-note">Workflow transitions stay inside this Patient Workspace. Mutating actions update the database and refresh the workspace; review states only focus existing workspace content.</div></div><span class="status active">'+esc(prettyStatus(q||'registered'))+'</span></div>'+actions.join('')+'</div>':'';
 }
 async function workspaceLabStatus(id,status,pid){
- const allowed=['processing','verified','rejected'];
- if(!allowed.includes(String(status)))return alert('Unsupported laboratory status transition.');
- if(!Number.isInteger(Number(id))||!Number.isInteger(Number(pid)))return alert('Invalid laboratory or patient reference.');
+ const allowed=['sample_collected','processing','verified','rejected'];
+ if(!allowed.includes(String(status)))return showActionToast({title:'Laboratory action failed',body:'Unsupported laboratory status transition.',error:true});
+ if(!Number.isInteger(Number(id))||!Number.isInteger(Number(pid)))return showActionToast({title:'Laboratory action failed',body:'Invalid laboratory or patient reference.',error:true});
  try{await api('/lab',{method:'PUT',body:JSON.stringify({id:Number(id),status})});closePatientWorkspaceActionModal();await refreshPatientWorkspace(pid)}
- catch(x){alert(x.message)}
+ catch(x){showActionToast({title:'Laboratory action failed',body:x.message,error:true})}
 }
 function workspaceVerifyLab(id,pid){
  const body='<form class="form-grid" onsubmit="workspaceSaveLabVerification(event,'+id+','+pid+')"><div class="field full"><label>Verified result / summary</label><textarea name="result_summary" rows="5" required placeholder="Enter the verified laboratory result or summary"></textarea></div><div class="field full"><button class="btn primary">Verify result</button></div></form>';
@@ -2487,12 +2487,20 @@ async function discharge(id){
 async function editIPDAdmission(id){
   const r=await api('/ipd?admission_id='+id);const a=r.admissions?.[0];if(!a)return;
   const pid=Number(a.patient_id||state.activePatientRecord?.patient?.id||0);
-  const body='<form class="form-grid" onsubmit="workspaceSaveIPDAdmission(event,'+pid+','+id+')"><div class="field"><label>Admission type</label><select name="admission_type"><option value="general">General</option><option value="emergency">Emergency</option><option value="surgical">Surgical</option><option value="observation">Observation</option><option value="day_care">Day care</option></select></div><div class="field"><label>Expected discharge</label><input name="expected_discharge_date" type="date" value="'+esc(a.expected_discharge_date?String(a.expected_discharge_date).slice(0,10):'')+'"></div><div class="field full"><label>Admission notes</label><textarea name="notes">'+esc(a.notes||'')+'</textarea></div><div class="field full"><button class="btn primary">Save admission</button></div></form>';
+  const body='<form class="form-grid" onsubmit="workspaceSaveIPDAdmission(event,'+pid+','+id+')"><div class="field"><label>Admission type</label><select name="admission_type"><option value="general">General</option><option value="emergency">Emergency</option><option value="elective">Elective</option><option value="maternity">Maternity</option><option value="surgical">Surgical</option><option value="medical">Medical</option></select></div><div class="field"><label>Expected discharge</label><input name="expected_discharge_date" type="date" value="'+esc(a.expected_discharge_date?String(a.expected_discharge_date).slice(0,10):'')+'"></div><div class="field full"><label>Admission notes</label><textarea name="notes">'+esc(a.notes||'')+'</textarea></div><div class="field full"><button class="btn primary">Save admission</button></div></form>';
   workspaceActionPanel({title:'Edit admission',body},pid,'ipd');
   const typeEl=document.querySelector('#patientWorkspaceActionModal select[name="admission_type"]'); if(typeEl) typeEl.value=a.admission_type||'general';
 }
 async function workspaceSaveIPDAdmission(e,pid,id){
-  e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/ipd',{method:'PUT',body:JSON.stringify({action:'update-admission',id,admission_type:b.admission_type,expected_discharge_date:b.expected_discharge_date||null,notes:b.notes||''})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+  e.preventDefault();
+  try{
+    const b=Object.fromEntries(new FormData(e.target).entries());
+    await api('/ipd',{method:'PUT',body:JSON.stringify({action:'update-admission',id,admission_type:b.admission_type,expected_discharge_date:b.expected_discharge_date||null,notes:b.notes||''})});
+    showActionToast({title:'Admission saved',body:'The admission details were updated.'});
+    await refreshPatientWorkspace(pid);
+  }catch(x){
+    showActionToast({title:'Admission not saved',body:x.message,error:true});
+  }
 }
 async function transferIPDBed(id){
   const activePid=Number(state.activePatientRecord?.patient?.id||0);
