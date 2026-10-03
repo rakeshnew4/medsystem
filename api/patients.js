@@ -44,7 +44,8 @@ export default async function(req,res){
 
   const inserted=await db.query("INSERT INTO patients(hospital_id,name,phone,email,date_of_birth,notes,status) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id",[hid,name,phone||null,b.email||null,b.date_of_birth||null,b.notes||null,b.status||"active"]);
   const patientId=inserted.rows[0].id;
-  const r=await db.query("UPDATE patients SET uhid=COALESCE(NULLIF(uhid,''),'UHID-'||lpad(id::text,6,'0')),registration_source=$3,registration_source_locked=true WHERE id=$1 AND hospital_id=$2 RETURNING id,name,uhid,phone,email,date_of_birth,notes,status,created_at",[patientId,hid,String(b.source||"staff")]);
+  const generatedUhid="UHID-"+String(patientId).padStart(6,"0");
+  const r=await db.query("UPDATE patients SET uhid=$1,registration_source=$2,registration_source_locked=true WHERE id=$3 AND hospital_id=$4 RETURNING id,name,uhid,phone,email,date_of_birth,notes,status,created_at",[generatedUhid,String(b.source||"staff"),patientId,hid]);
   try{
    await db.query("INSERT INTO patient_identity(hospital_id,patient_id,title,sex,nic_passport,alternate_phone,address,area,blood_group,occupation,emergency_contact) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT(patient_id) DO UPDATE SET title=EXCLUDED.title,sex=EXCLUDED.sex,nic_passport=EXCLUDED.nic_passport,alternate_phone=EXCLUDED.alternate_phone,address=EXCLUDED.address,area=EXCLUDED.area,blood_group=EXCLUDED.blood_group,occupation=EXCLUDED.occupation,emergency_contact=EXCLUDED.emergency_contact,updated_at=now()",[hid,patientId,b.title||null,b.sex||null,b.nic_passport||null,b.alternate_phone||null,b.address||null,b.area||null,b.blood_group||null,b.occupation||null,b.emergency_contact||null]);
   }catch(err){
