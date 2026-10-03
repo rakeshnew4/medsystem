@@ -1867,9 +1867,13 @@ async function workspaceCompleteFollowup(id,pid){
 function workspaceIPDAction(action,pid,admissionId){
  if(action==='edit')return editIPDAdmission(admissionId);
  if(action==='discharge'){return workspaceDischargeChecklist(pid,admissionId)}
- if(action==='transfer'){const bed=prompt('New bed ID');if(bed===null)return;return workspaceIPDRequest({action,id:admissionId,new_bed_id:Number(bed),reason:'Patient workspace transfer'},pid)}
- if(action==='admit'){const bed=prompt('Bed ID for admission');if(bed===null)return;return workspaceIPDRequest({action:'admit',patient_id:pid,bed_id:Number(bed),admission_type:'general'},pid)}
+ if(action==='transfer'){return workspaceIPDTransferModal(pid,admissionId)}
+ if(action==='admit'){return workspaceIPDAdmitModal(pid)}
 }
+function workspaceIPDTransferModal(pid,admissionId){const beds=(state.beds||[]).filter(b=>b.status==='available');const body='<form class="form-grid" onsubmit="workspaceSubmitIPDTransfer(event,'+pid+','+admissionId+')"><div class="field full"><label>Destination bed</label><select name="new_bed_id" required>'+beds.map(b=>'<option value="'+b.id+'">'+esc((b.ward||'Ward')+' · '+(b.bed_number||'Bed'))+'</option>').join('')+'</select></div><div class="field full"><label>Reason</label><textarea name="reason" required>Patient workspace transfer</textarea></div><button class="btn primary">Transfer patient</button></form>';workspaceActionPanel({title:'Transfer bed',body},pid,'ipd')}
+function workspaceIPDAdmitModal(pid){const beds=(state.beds||[]).filter(b=>b.status==='available');const body='<form class="form-grid" onsubmit="workspaceSubmitIPDAdmit(event,'+pid+')"><div class="field full"><label>Admission bed</label><select name="bed_id" required>'+beds.map(b=>'<option value="'+b.id+'">'+esc((b.ward||'Ward')+' · '+(b.bed_number||'Bed'))+'</option>').join('')+'</select></div><div class="field"><label>Admission type</label><select name="admission_type"><option value="general">General</option><option value="emergency">Emergency</option><option value="surgical">Surgical</option><option value="observation">Observation</option><option value="day_care">Day care</option></select></div><div class="field full"><label>Notes</label><textarea name="notes"></textarea></div><button class="btn primary">Admit patient</button></form>';workspaceActionPanel({title:'Create IPD admission',body},pid,'ipd')}
+async function workspaceSubmitIPDTransfer(e,pid,admissionId){e.preventDefault();const b=Object.fromEntries(new FormData(e.target).entries());await workspaceIPDRequest({action:'transfer',id:admissionId,new_bed_id:Number(b.new_bed_id),reason:b.reason},pid)}
+async function workspaceSubmitIPDAdmit(e,pid){e.preventDefault();const b=Object.fromEntries(new FormData(e.target).entries());await workspaceIPDRequest({action:'admit',patient_id:pid,bed_id:Number(b.bed_id),admission_type:b.admission_type,notes:b.notes||''},pid)}
 async function workspaceIPDRequest(body,pid){
  try{await api('/beds',{method:'PUT',body:JSON.stringify(body)});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
 }
