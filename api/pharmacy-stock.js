@@ -21,15 +21,20 @@ export default async function(req,res){
  if(expiryDate&&!/^\d{4}-\d{2}-\d{2}$/.test(expiryDate))return res.status(400).json({error:"expiry_date must use YYYY-MM-DD"});
  let r;
  try {
-  r=await db.query(`WITH upsert AS (
-   INSERT INTO pharmacy_stock(hospital_id,medicine_name,batch_no,expiry_date,quantity,reorder_level,unit)
-   VALUES($1,$2,$3,$4,$5,$6,$7)
-   ON CONFLICT DO UPDATE SET quantity=pharmacy_stock.quantity+EXCLUDED.quantity,expiry_date=EXCLUDED.expiry_date,reorder_level=EXCLUDED.reorder_level,unit=EXCLUDED.unit,active=TRUE,updated_at=CURRENT_TIMESTAMP
-   RETURNING *
-  ), ledger AS (
-   INSERT INTO pharmacy_stock_transactions(hospital_id,stock_id,transaction_type,quantity,quantity_before,quantity_after,performed_by,notes,idempotency_key)
-   SELECT $1,id,'receipt',$5,quantity-$5,quantity,$8,$9,$10 FROM upsert RETURNING id
-  ) SELECT * FROM upsert`,[ctx.hospitalId,name,batch,expiryDate,qty,reorderLevel,unit,ctx.user.email,b.notes||null,idempotencyKey||null]);
+  const existing=await db.query("SELECT * FROM pharmacy_stock WHERE hospital_id=$1 AND medicine_name=$2 AND batch_no=$3 AND ((expiry_date=$4) OR (expiry_date IS NULL AND $4 IS NULL)) LIMIT 1",[ctx.hospitalId,name,batch,expiryDate]);
+  if(existing.rows[0]){
+   const before=Number(existing.rows[0].quantity||0), after=before+qty;
+   await db.transaction([
+    {sql:"UPDATE pharmacy_stock SET quantity=$1,reorder_level=$2,unit=$3,expiry_date=$4,active=true,updated_at=CURRENT_TIMESTAMP WHERE id=$5",params:[after,reorderLevel,unit,expiryDate,existing.rows[0].id]},
+    {sql:"INSERT INTO pharmacy_stock_transactions(hospital_id,stock_id,transaction_type,quantity,quantity_before,quantity_after,performed_by,notes,idempotency_key) VALUES($1,$2,'receipt',$3,$4,$5,$6,$7,$8)",params:[ctx.hospitalId,existing.rows[0].id,qty,before,after,ctx.user.email,b.notes||null,idempotencyKey||null]}
+   ]);
+   r={rows:[{...existing.rows[0],quantity:after,reorder_level:reorderLevel,unit,expiry_date:expiryDate,active:true}]};
+  }else{
+   const ins=await db.query("INSERT INTO pharmacy_stock(hospital_id,medicine_name,batch_no,expiry_date,quantity,reorder_level,unit,active,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,true,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP) RETURNING *",[ctx.hospitalId,name,batch,expiryDate,qty,reorderLevel,unit]);
+   const row=ins.rows[0];
+   await db.query("INSERT INTO pharmacy_stock_transactions(hospital_id,stock_id,transaction_type,quantity,quantity_before,quantity_after,performed_by,notes,idempotency_key) VALUES($1,$2,'receipt',$3,0,$4,$5,$6,$7)",[ctx.hospitalId,row.id,qty,qty,ctx.user.email,b.notes||null,idempotencyKey||null]);
+   r={rows:[row]};
+  }
  } catch(e) {
   if(e?.code==="23505" && idempotencyKey)return res.status(409).json({error:"This receipt idempotency key was already used; refresh stock before retrying."});
   console.error("[pharmacy-stock] receipt failed",String(e?.message||e));
