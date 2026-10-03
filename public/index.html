@@ -579,8 +579,7 @@ async function api(path,opts={}){
   try{
     const roleToken=localStorage.getItem('careflowRoleToken')||'';
     const demoRole=localStorage.getItem('careflowDemoRole')||'';
-    if(demoRole&&String(path).startsWith('/public-staff-status'))path+=(String(path).includes('?')?'&':'?')+'demo_role='+encodeURIComponent(demoRole);
-    else if(demoRole&&String(path).startsWith('/'))path+=(String(path).includes('?')?'&':'?')+'demo_role='+encodeURIComponent(demoRole);
+    if(demoRole&&!String(path).includes('demo_role=')&&String(path).startsWith('/'))path+=(String(path).includes('?')?'&':'?')+'demo_role='+encodeURIComponent(demoRole);
     const baseHeaders={'Content-Type':'application/json'};
     if(roleToken)baseHeaders['X-CareFlow-Role-Token']=roleToken;
     const r=await fetch(API+path,{headers:{...baseHeaders,...(requestOpts.headers||{})},...requestOpts});
@@ -967,7 +966,8 @@ function showQueueForPatient(pid){openPatientWorkspace(pid,'workspace')}
 function table(rows,heads,renderer){if(!rows.length)return '<div class="empty">Nothing here yet.</div>';return '<table><thead><tr>'+heads.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(x=>'<tr>'+renderer(x)+'</tr>').join('')+'</tbody></table>'}
 
 async function checkSession(){
-  const s=await api('/public-staff-status');
+  const demoRole=localStorage.getItem('careflowDemoRole')||'';
+  const s=await api('/public-staff-status'+(demoRole?'?demo_role='+encodeURIComponent(demoRole):''));
   if(!s.signed_in){location.replace('/login?next='+encodeURIComponent(location.pathname));return false}
   state.session=s;
   if(!s.staff){
