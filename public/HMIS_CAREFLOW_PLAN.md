@@ -1,5 +1,12 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-03 — E2E authentication/visual runner hardening v622
+
+- Verified the explicit CARE_FLOW_DEMO_MODE role matrix on the deployed build for all 8 supported roles through the public staff-status contract; invalid role input falls back to admin. This is demo E2E evidence only and does not close genuine staff authentication.
+- Added safe demo-role propagation to the admin-only visual runner and a demo-mode login entry path without storing or exposing production staff credentials.
+- The available browser farm still remains on the staff login surface during the Patient Workspace visual attempt, so no authenticated browser E2E completion is claimed.
+- Next: genuine hospital-staff OTP/session verification remains the first real browser gate; meanwhile continue safe API/invariant coverage and module-specific UI hardening.
+
 ## 2026-10-02 — Patient Workspace UX/flow correction v606
 
 - Fixed the Patient Workspace follow-up completion 500. Root cause: PUT completion omitted `due_date`, and the API converted the missing value to an empty PostgreSQL date. The handler now validates the follow-up id, preserves the existing due date/notes when omitted, and updates only supplied fields.

@@ -430,6 +430,14 @@ Status: Implemented by deterministic hospitals/{hospital_id}/... object keys; au
 
 # Completion gates
 
+## TC-E2E-AUTH-001 — Demo role matrix
+Expected: with CARE_FLOW_DEMO_MODE enabled, the synthetic demo identity resolves each supported role (admin, receptionist, nurse, doctor, lab, pharmacy, billing, store) with the role-specific permission set; invalid role input falls back to admin; demo mode is explicitly reported and never represents a real staff account.
+Status: Verified on the deployed build through /api/public-staff-status. All 8 supported roles returned HTTP 200 with distinct role/permission payloads; invalid role input resolved to admin. Real OTP/browser authentication and demo-mode-off behavior remain separate open gates.
+
+## TC-E2E-VISUAL-001 — Demo visual runner entry
+Expected: the admin-only visual runner can request a demo role without exposing credentials and can capture the target UI at desktop/mobile sizes; demo execution is labeled separately from genuine staff E2E.
+Status: Runner now supports validated demo_role input and safe demo login plumbing, but the available browser farm still remains on the login surface after the demo redirect attempt. No Patient Workspace visual E2E completion is claimed.
+
 Demo-mode E2E is now available through the explicit CARE_FLOW_DEMO_MODE secret. It may be used to exercise application workflows, role boundaries, invalid transitions, retries and concurrency without real OTP authentication, and all results must be labeled demo E2E.
 
 Visual/UI E2E is now a first-class test layer. The admin-only /api/e2e-visual runner uses Hatchable Chromium at desktop/mobile viewports, captures top/middle/bottom screenshots to project storage, exercises safe visible interactions, and sends screenshots to Groq with a direct LiteLLM fallback pinned to Gemini 2.5 Flash Lite. v487 confirmed the LiteLLM path returns HTTP 200 visual reviews. Visual findings must be reproduced by browser assertions before being treated as defects. AI summaries are retained in public/AI_VISUAL_REPORTS.json for later improvement/validation loops.

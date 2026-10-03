@@ -246,6 +246,7 @@ HMIS references: `Privileges.java`, `UserPrivilageController.java`, `ConfigOptio
 
 ### UI-17 — Automated visual/UI verification layer
 - [x] Chromium screenshot runner — admin-only `/api/e2e-visual` captures deployed CareFlow screens at desktop/mobile viewports and stores PNG evidence.
+- [x] Demo-role visual runner plumbing — v622: the runner accepts a validated `demo_role`, the demo identity can be role-selected through the demo-mode login/session path, and no production staff credentials are introduced. This remains explicitly separate from genuine staff OTP E2E.
 - [x] Safe interaction smoke checks — patient portal Home/Book/Manage/Track tabs and staff-login empty-email validation are exercised without sending OTPs or mutating hospital data.
 - [x] LLM visual review — screenshots are reviewed with the configured Groq multimodal model; findings are recorded separately from browser assertions.
 - [x] First verified visual defect fixed — patient portal tabs now wrap on narrow screens; browser assertion confirms no horizontal overflow and all four tabs remain clickable.
