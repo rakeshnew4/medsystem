@@ -1,1 +1,126 @@
-{"reports":[{"run":"2026-10-02-001","version":484,"viewport":"390x844","pages":[{"name":"staff-login","severity":"none","summary":"Clean mobile login; clear hierarchy and touch targets."},{"name":"patient-portal","severity":"unreviewed","summary":"Browser checks passed: four tabs clicked successfully, no horizontal overflow, no console errors. Groq was rate-limited and LiteLLM returned 502 for visual review."},{"name":"opd","severity":"unreviewed","summary":"Browser checks passed with no horizontal overflow or console errors. Groq was rate-limited and LiteLLM returned 502 for visual review."},{"name":"opd-token","severity":"medium","summary":"Missing-token state has no obvious recovery action. Valid-token behavior was not tested."},{"name":"portal-home","severity":"unreviewed","summary":"Browser checks passed with no horizontal overflow or console errors. Visual model unavailable during this state."},{"name":"display","severity":"high","summary":"Display-disabled state appears broken-looking and lacks a recovery action; reproduce before changing layout."}],"provider":{"primary":"Groq","fallback":"LiteLLM","fallback_status":"HTTP 502","preferred_fallback":"Gemini 2.5 Flash Lite"},"browser_assertions":{"horizontal_overflow":false,"console_errors":0,"patient_tabs":"4/4 passed","login_validation":"passed"},"next_tasks":["Diagnose LiteLLM 502","Run remaining desktop visual coverage","Investigate OPD token recovery UX","Reproduce display-disabled state","Continue module visual coverage"]}],"updated":"2026-10-02"}
+{
+  "reports": [
+    {
+      "run": "2026-10-02-001",
+      "version": 484,
+      "viewport": "390x844",
+      "pages": [
+        {
+          "name": "staff-login",
+          "severity": "none",
+          "summary": "Clean mobile login; clear hierarchy and touch targets."
+        },
+        {
+          "name": "patient-portal",
+          "severity": "unreviewed",
+          "summary": "Browser checks passed: four tabs clicked successfully, no horizontal overflow, no console errors. Groq was rate-limited and LiteLLM returned 502 for visual review."
+        },
+        {
+          "name": "opd",
+          "severity": "unreviewed",
+          "summary": "Browser checks passed with no horizontal overflow or console errors. Groq was rate-limited and LiteLLM returned 502 for visual review."
+        },
+        {
+          "name": "opd-token",
+          "severity": "medium",
+          "summary": "Missing-token state has no obvious recovery action. Valid-token behavior was not tested."
+        },
+        {
+          "name": "portal-home",
+          "severity": "unreviewed",
+          "summary": "Browser checks passed with no horizontal overflow or console errors. Visual model unavailable during this state."
+        },
+        {
+          "name": "display",
+          "severity": "high",
+          "summary": "Display-disabled state appears broken-looking and lacks a recovery action; reproduce before changing layout."
+        }
+      ],
+      "provider": {
+        "primary": "Groq",
+        "fallback": "LiteLLM",
+        "fallback_status": "HTTP 502",
+        "preferred_fallback": "Gemini 2.5 Flash Lite"
+      },
+      "browser_assertions": {
+        "horizontal_overflow": false,
+        "console_errors": 0,
+        "patient_tabs": "4/4 passed",
+        "login_validation": "passed"
+      },
+      "next_tasks": [
+        "Diagnose LiteLLM 502",
+        "Run remaining desktop visual coverage",
+        "Investigate OPD token recovery UX",
+        "Reproduce display-disabled state",
+        "Continue module visual coverage"
+      ]
+    },
+    {
+      "run": "2026-10-02-002",
+      "version": 487,
+      "purpose": "Reusable visual QA harness verification + next public-page sweep",
+      "pages": [
+        {
+          "name": "staff-login",
+          "viewport": "390x844",
+          "provider": "LiteLLM",
+          "model": "gemini-2.5-flash-lite",
+          "severity": "none",
+          "summary": "Clean mobile login; no overflow or console errors; empty-email validation passed."
+        },
+        {
+          "name": "opd",
+          "viewport": "390x844",
+          "provider": "LiteLLM/Groq",
+          "severity": "low",
+          "summary": "Browser checks passed with no overflow/errors. AI review flagged the fixed Hatchable badge, small disclaimer text, and the appointment-token section being below the fold; reproduce before changing."
+        },
+        {
+          "name": "opd-token",
+          "viewport": "390x844",
+          "provider": "LiteLLM",
+          "severity": "medium",
+          "summary": "Missing-token state is readable but has no recovery action and excessive empty space. This is a reproducible UX candidate."
+        }
+      ],
+      "visual_runner": {
+        "file": "api/e2e-visual.js",
+        "reusable": true,
+        "screenshots": "e2e/visual/<date>/",
+        "safe_clicks": true,
+        "scroll_states": [
+          "top",
+          "middle",
+          "bottom"
+        ],
+        "primary_provider": "Groq",
+        "fallback_provider": "LiteLLM",
+        "fallback_model": "gemini-2.5-flash-lite",
+        "fallback_status": "HTTP 200 confirmed"
+      },
+      "auth_loop": {
+        "demo_mode": true,
+        "roles_verified": [
+          "admin",
+          "receptionist",
+          "nurse",
+          "doctor",
+          "lab",
+          "pharmacy",
+          "billing",
+          "store"
+        ],
+        "identity_status": "All eight roles returned signed_in=true, active=true and the requested demo role.",
+        "remaining_gate": "Protected access=user routes still require the Hatchable user session, so demo identity verification does not replace genuine staff OTP E2E."
+      },
+      "next_tasks": [
+        "Reproduce/fix OPD token missing-link recovery UX",
+        "Continue public/module visual coverage",
+        "Run genuine staff OTP when a persistent browser session is available",
+        "Keep demo E2E separate from production staff-auth gate"
+      ]
+    }
+  ],
+  "updated": "2026-10-02"
+}

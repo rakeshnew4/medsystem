@@ -359,7 +359,7 @@ Status: Open.
 
 Demo-mode E2E is now available through the explicit CARE_FLOW_DEMO_MODE secret. It may be used to exercise application workflows, role boundaries, invalid transitions, retries and concurrency without real OTP authentication, and all results must be labeled demo E2E.
 
-Visual/UI E2E is now a first-class test layer. The admin-only /api/e2e-visual runner uses Hatchable Chromium at desktop/mobile viewports, captures screenshots to project storage, exercises safe visible interactions, and sends screenshots to the configured Groq multimodal model for a structured visual review. Visual findings must be reproduced by browser assertions before being treated as defects; the first verified finding was patient-portal tab wrapping on mobile, now fixed in v481.
+Visual/UI E2E is now a first-class test layer. The admin-only /api/e2e-visual runner uses Hatchable Chromium at desktop/mobile viewports, captures top/middle/bottom screenshots to project storage, exercises safe visible interactions, and sends screenshots to Groq with a direct LiteLLM fallback pinned to Gemini 2.5 Flash Lite. v487 confirmed the LiteLLM path returns HTTP 200 visual reviews. Visual findings must be reproduced by browser assertions before being treated as defects. AI summaries are retained in public/AI_VISUAL_REPORTS.json for later improvement/validation loops.
 
 Genuine hospital-staff OTP/browser E2E remains a separate production-authentication gate and must not be marked complete from demo mode. APP END USER or collaborator sessions must not be counted as genuine staff E2E.
 
