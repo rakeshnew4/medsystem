@@ -42,7 +42,13 @@ export default async function(req,res){
   }
   if(dup.rows.length)return res.status(409).json({error:"Possible existing patient found",code:"POSSIBLE_DUPLICATE",matches:dup.rows});
 
-  const inserted=await db.query("INSERT INTO patients(hospital_id,name,phone,email,date_of_birth,notes,status) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id",[hid,name,phone||null,b.email||null,b.date_of_birth||null,b.notes||null,b.status||"active"]);
+  const cols=["hospital_id","name"],vals=[hid,name],marks=["$1","$2"];
+  if(phone){cols.push("phone");vals.push(phone);marks.push("$"+marks.length+1)}
+  if(b.email){cols.push("email");vals.push(String(b.email).trim());marks.push("$"+marks.length+1)}
+  if(b.date_of_birth){cols.push("date_of_birth");vals.push(b.date_of_birth);marks.push("$"+marks.length+1)}
+  if(b.notes){cols.push("notes");vals.push(String(b.notes));marks.push("$"+marks.length+1)}
+  cols.push("status");vals.push(b.status||"active");marks.push("$"+marks.length+1);
+  const inserted=await db.query("INSERT INTO patients("+cols.join(",")+") VALUES("+marks.join(",")+") RETURNING id",vals);
   const patientId=inserted.rows[0].id;
   const generatedUhid="UHID-"+String(patientId).padStart(6,"0");
   const r=await db.query("UPDATE patients SET uhid=$1,registration_source=$2,registration_source_locked=true WHERE id=$3 AND hospital_id=$4 RETURNING id,name,uhid,phone,email,date_of_birth,notes,status,created_at",[generatedUhid,String(b.source||"staff"),patientId,hid]);
