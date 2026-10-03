@@ -8,6 +8,9 @@ function estimateMinutes(minutes){const total=Math.max(0,Math.round(Number(minut
 export default async function(req,res){
   const token=String(req.query?.token||"").trim();
   if(!token)return res.status(400).json({error:"Token link is missing"});
+  // public_token is UUID-backed; reject malformed links before the external DB adapter sees them.
+  // This keeps copied/truncated links on the normal 404 UX instead of leaking a database cast error.
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(token))return res.status(404).json({error:"Token link is invalid or expired"});
   const q=await db.query("SELECT q.id,q.hospital_id,q.patient_id,q.token,q.token_date,q.token_number,q.stage,q.priority,q.checked_in_at,q.started_at,p.name AS patient_name,p.uhid,d.id AS doctor_id,d.name AS doctor_name,d.specialty,d.display_room,h.name AS hospital_name,h.phone AS hospital_phone,h.address AS hospital_address FROM queue_entries q JOIN patients p ON p.id=q.patient_id JOIN hospitals h ON h.id=q.hospital_id LEFT JOIN doctors d ON d.id=q.doctor_id WHERE q.public_token=$1 LIMIT 1",[token]);
   if(!q.rows[0])return res.status(404).json({error:"Token link is invalid or expired"});
   const row=q.rows[0];
