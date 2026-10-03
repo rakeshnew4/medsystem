@@ -1,5 +1,12 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-02 continuation increment — archive observability hardening
+
+- Re-tested the deployed `get_ipd_census` AI read-only tool through the signed-in app-user contract: HTTP 200, hospital-scoped census returned, bounded result respected. This is contract verification only; genuine hospital-staff E2E remains open.
+- Re-tested the scheduler archive worker: it is scheduler-gated, runs independently of WhatsApp delivery, and currently reports `configured:false` because the MinIO endpoint/access/secret configuration is not populated.
+- Hardened `lib/archive.js` so an incomplete MinIO configuration is reported explicitly as `skipped:true` with a bounded reason instead of looking like a successful zero-object archive. No archive upload is attempted when configuration is incomplete.
+- Next: deploy this observability hardening, verify the worker response, then continue reporting-specific AI read tools and the remaining authenticated HMIS workflow gates.
+
 ## 2026-10-02 continuation increment — AI read-only tool expansion v500
 
 - Completed and deployed the next two safe AI-agent tools: get_lab_worklist and get_fixed_assets.
