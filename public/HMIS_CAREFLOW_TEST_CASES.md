@@ -51,6 +51,10 @@ Status: Implemented; authenticated execution pending.
 Expected: concurrent token allocation does not create duplicate hospital/date/sequence tokens.
 Status: Implemented; authenticated execution pending.
 
+## TC-UX-QUEUE-001 — Queue mutation feedback
+Expected: queue call-next and manual stage transitions show a bottom success notification after a successful mutation and a bottom error notification when the mutation fails; no browser alert is used for these actions.
+Status: Implemented and deployed v632; authenticated click/persistence execution remains pending.
+
 # Appointments / OPD
 
 ## TC-OPD-021 — Appointment booking
