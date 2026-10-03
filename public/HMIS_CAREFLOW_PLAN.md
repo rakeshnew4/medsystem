@@ -1029,5 +1029,5 @@ Current status: direct external PostgreSQL checks are healthy, while the deploye
 - Updated pharmacy test cases TC-PHARM-009 through TC-PHARM-011 to reflect the v238 implementation; authenticated pharmacist E2E remains the explicit completion gate.
 - Finalized Pharmacy v240 by closing the canonical encounter when successful dispensing completes the linked pharmacy queue item; authenticated pharmacist E2E remains the only required workflow completion gate before moving to IPD.
 
-### Latest continuation v641
-Patient Workspace notification consistency was extended to nursing triage save, AI consultation-open failures, and empty outstanding-payment state. Dry-run passed with 0 hard errors. Next: audit remaining Patient Workspace Next Action mutation handlers for stale alert/prompt/error paths and server-contract alignment; genuine staff click → save → refresh/reload E2E remains open.
+### Latest continuation v650
+Patient Workspace error-feedback audit continued. Remaining workspace entry/edit failures now use the shared bottom notification surface instead of browser alerts, while unrelated pharmacy/inventory handlers were preserved. Draft dry-run passes with 0 hard errors. Next: deploy v650, re-parse the live frontend, then continue the Patient Workspace mutation contract/persistence matrix; genuine hospital-staff click → save → reload E2E remains open.
