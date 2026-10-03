@@ -1,5 +1,13 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-03 — Patient Workspace notification consistency v630
+
+- Found two remaining Patient Workspace mutation paths that still used browser alerts: laboratory result verification and follow-up scheduling.
+- Replaced both with the shared bottom success/error notification surface, keeping workspace mutations in-context and consistent with the other Patient Workspace mutation feedback.
+- v630 deployed successfully with 0 hard dry-run errors.
+- Post-deploy checks: database health HTTP 200 through the external adapter; anonymous Patient Workspace HTTP 401; no 5xx logs in the last 30 minutes.
+- Next: inspect Patient Workspace mutation method/body contracts against live API handlers and run safe non-mutating validation for every Next Action state. Genuine hospital-staff mutation/reload E2E remains open.
+
 ## 2026-10-03 — External adapter regression verification + Patient Workspace contract pass v629
 
 - Rechecked the live v628 external PostgreSQL boundary after retry hardening. Production logs for the last 2 hours contain 0 HTTP 5xx entries.
