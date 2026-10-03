@@ -34,7 +34,7 @@ Use public/HMIS_CAREFLOW_PLAN.md as the source of truth. Prefer the earliest unf
 
 ## Current continuation target
 
-Theatre / procedures is now the active UI workstream. **The active implementation focus is the CareFlow UI redesign.** `public/HMIS_CAREFLOW_UI_PLAN.md` is the UI source of truth and `agents/CONTINUE_WORK.md` is the persistent live task/reminder queue. Backend completion gates remain preserved and must not be weakened. The next-task loop is mandatory:
+**v628 continuation state:** external PostgreSQL adapter resilience is deployed and verified healthy. The active implementation focus remains the CareFlow UI / Patient Workspace workflow while backend safety gates are preserved. `public/HMIS_CAREFLOW_UI_PLAN.md` is the UI source of truth and `agents/CONTINUE_WORK.md` is the persistent live task/reminder queue. Backend completion gates remain preserved and must not be weakened. The next-task loop is mandatory:
 1. At the beginning of EVERY work turn, re-read this file and public/HMIS_CAREFLOW_PLAN.md.
 2. Before changing any workflow, inspect the relevant hmislk/hmis repository code/design on the development branch and use it as the domain, workflow, UI and data-model reference. Do not invent HMIS-like behavior without checking the repository.
 3. Execute the FIRST unfinished task listed below immediately. Do not stop at a status report when a safe implementation/test task remains.

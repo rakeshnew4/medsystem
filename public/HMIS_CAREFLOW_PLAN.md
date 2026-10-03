@@ -1,5 +1,13 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-03 — External PostgreSQL adapter resilience v628
+
+- Deployed v628 with a narrowly scoped retry at the shared external PostgreSQL adapter boundary for the exact opaque HTTP 500 response "Database query failed". The retry is limited to one attempt; concrete SQL/application errors remain fail-fast.
+- Verified the deployed database health route after v628: HTTP 200, external-adapter source, 5 patient rows returned, no adapter error.
+- This does not prove every mutation is healthy: the available execution harness cannot establish the genuine hospital-staff session required by protected queue/Patient Workspace mutations, so authenticated mutation persistence remains an open gate.
+- The Hatchable deploy warning about unused native migrations is expected for this architecture because CareFlow deliberately routes application SQL through the external PostgreSQL adapter rather than Hatchable's native DB.
+- Next: continue safe protected-route contract checks and Patient Workspace/UI verification; when a genuine staff session is available, run the full mutation click matrix with reload/persistence checks. Do not mark staff E2E complete from owner/public harness results.
+
 ## 2026-10-03 — Patient Workspace mutation feedback + E2E runner recheck v626
 
 - Mutation feedback is now consistently visible at the bottom of the screen. POST/PUT/DELETE actions show success or error toasts without leaving Patient Workspace.
