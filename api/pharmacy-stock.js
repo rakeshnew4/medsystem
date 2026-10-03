@@ -32,7 +32,8 @@ export default async function(req,res){
   ) SELECT * FROM upsert`,[ctx.hospitalId,name,batch,expiryDate,qty,reorderLevel,unit,ctx.user.email,b.notes||null,idempotencyKey||null]);
  } catch(e) {
   if(e?.code==="23505" && idempotencyKey)return res.status(409).json({error:"This receipt idempotency key was already used; refresh stock before retrying."});
-  throw e;
+  console.error("[pharmacy-stock] receipt failed",String(e?.message||e));
+  return res.status(500).json({error:"Stock receipt failed",detail:String(e?.message||e)});
  }
  return res.json(r.rows[0]);
 }
