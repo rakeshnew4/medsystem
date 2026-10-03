@@ -1,5 +1,12 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-02 continuation increment — lab agent-tool hardening (draft, not deployed)
+
+- Inspected HMIS laboratory/LIMS architecture before the next agent-tool increment. HMIS is a modular HMIS with laboratory/LIMS support, and its LIMS middleware is explicitly an analyzer connector using REST plus HL7/ASTM boundaries. citeturn0search0turn0search9
+- Fixed a real CareFlow laboratory verification bug in `api/lab.js`: the post-verification audit event referenced an undefined local `report` variable; it now records the report ID returned by the atomic verification statement.
+- Started `get_lab_worklist` as the next read-only AI-agent tool using the existing protected `action.clinical.view` lab read boundary and hospital-scoped `lab_orders` data. The registry edit was staged, but the matching server handler edit was blocked by the source-edit safety guard, so this increment must NOT be deployed yet; the live production baseline is unchanged.
+- Dry-run currently has 0 hard errors. Next run must restore registry/handler atomicity, then test lab-tool anonymous denial, signed-in permission, hospital isolation, bounded filtering and response shape before deployment.
+
 ## 2026-10-02 continuation increment — IPD census tool shipped (v493)
 
 - Completed the next AI-agent increment: added the missing server-side `get_ipd_census` handler to match the existing registry entry.

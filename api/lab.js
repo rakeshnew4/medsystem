@@ -98,7 +98,7 @@ export default async function(req,res){
    [result,ctx.user?.email||String(ctx.staff?.id||""),order.id,ctx.hospitalId]
   );
   if(!r.rows[0])return res.status(409).json({error:"Lab verification could not be completed; refresh and retry"});
-  await logWorkflowEvent(ctx,{patientId:order.patient_id,encounterId:order.encounter_id,eventType:"lab_result_verified",stage:"followup",entityType:"lab_order",entityId:order.id,metadata:{result_report_id:report.rows[0]?.id||null}});
+  await logWorkflowEvent(ctx,{patientId:order.patient_id,encounterId:order.encounter_id,eventType:"lab_result_verified",stage:"followup",entityType:"lab_order",entityId:order.id,metadata:{result_report_id:r.rows[0]?.result_report_id||null}});
   await notifyRoles({hospitalId:ctx.hospitalId,roles:["doctor"],title:"Laboratory result verified",body:"A laboratory result is ready for doctor review.",kind:"workflow",entityType:"lab_order",entityId:order.id,patientId:order.patient_id});
   return res.json(r.rows[0]);
  }
