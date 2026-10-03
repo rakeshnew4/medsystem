@@ -50,7 +50,13 @@ export default async function(req,res){
   cols.push("status");vals.push(b.status||"active");marks.push("$"+(marks.length+1));
   let inserted;
   try{
-   inserted=await db.query("INSERT INTO patients("+cols.join(",")+") VALUES("+marks.join(",")+") RETURNING id",vals);
+   await db.query("INSERT INTO patients("+cols.join(",")+") VALUES("+marks.join(",")+")",vals);
+   const lookupSql=phone
+    ?"SELECT id FROM patients WHERE hospital_id=$1 AND name=$2 AND phone=$3 ORDER BY created_at DESC,id DESC LIMIT 1"
+    :"SELECT id FROM patients WHERE hospital_id=$1 AND name=$2 AND phone IS NULL ORDER BY created_at DESC,id DESC LIMIT 1";
+   const lookup=await db.query(lookupSql,phone?[hid,name,phone]:[hid,name]);
+   if(!lookup.rows[0])throw new Error("Patient was inserted but could not be reloaded");
+   inserted={rows:[lookup.rows[0]]};
   }catch(err){
    console.error("[patients] patient insert failed",String(err?.message||err),{sql:"INSERT INTO patients("+cols.join(",")+") VALUES("+marks.join(",")+") RETURNING id",valueCount:vals.length});
    return res.status(500).json({error:"Patient insert failed",detail:String(err?.message||err)});
