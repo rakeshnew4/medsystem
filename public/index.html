@@ -1781,7 +1781,6 @@ async function workspaceSaveDoctorVisit(complete,pid){
   const body={type:'visit',patient_id:Number(pid),clinical_notes:note,visit_status:complete?'completed':'open',queue_entry_id:s.queueId||null,appointment_id:s.appointmentId||null};
   if(open)await api('/clinical',{method:'PUT',body:JSON.stringify({type:'visit',id:open.id,clinical_notes:note,visit_status:body.visit_status,queue_entry_id:body.queue_entry_id,appointment_id:body.appointment_id})});
   else await api('/clinical',{method:'POST',body:JSON.stringify(body)});
-  if(complete&&s.queueId)await api('/queue',{method:'PUT',body:JSON.stringify({id:Number(s.queueId),stage:'completed'})});
   await refreshPatientWorkspace(pid); if(!complete)await workspaceOpenDoctor(pid);
  }catch(e){showActionToast({title:complete?'Consultation not saved':'Draft not saved',body:e.message,error:true})}
 }
