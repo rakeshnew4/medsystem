@@ -1,5 +1,8 @@
 # HMIS → CareFlow Test Cases
 
+## TC-UX-FEEDBACK-003 — Patient Workspace consultation/clinical mutation feedback
+Expected: consultation open/start/save/complete, prescription ordering, investigation ordering, and pharmacy dispensing failures use the shared bottom error notification surface and do not invoke blocking browser alerts or navigate away from Patient Workspace. Status: Implemented in v642; authenticated click/persistence/reload verification remains part of the genuine staff E2E gate.
+
 ## TC-UX-CONTRACT-004 — Patient Workspace IPD admission editor
 
 - Expected: Patient Workspace admission editing exposes only admission types accepted by `/api/ipd` and saves through `PUT /api/ipd` with the active admission id.

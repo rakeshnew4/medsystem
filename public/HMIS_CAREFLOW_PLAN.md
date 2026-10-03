@@ -1,5 +1,13 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-03 — Patient Workspace Next Action feedback hardening v642
+
+- Continued the Patient Workspace/Next Action audit against the HMIS-style clinical workflow.
+- Found remaining workspace-local browser `alert()` error paths in consultation start/open/save, prescription ordering, investigation ordering and pharmacy dispensing. Replaced them with the shared bottom action notification surface so failures do not block the workspace or interrupt the in-context workflow.
+- Verified `/api/lab` directly: its live transition contract is `ordered → sample_collected → processing → verified`; verification also requires `result_summary` and advances a lab queue entry to `followup`. The Patient Workspace Next Action sequence matches that contract.
+- Dry-run and post-deploy checks are required before marking this increment live. Genuine hospital-staff click → mutation → persistence → reload E2E remains an explicit gate.
+- Next: continue the remaining Patient Workspace mutation/error-path audit, then run safe access/contract checks for queue, IPD, nursing handoff, pharmacy and discharge routes.
+
 ## 2026-10-03 — Patient Workspace IPD/laboratory contract pass v639
 
 - Continued the Patient Workspace mutation-contract audit using the HMIS inpatient/clinical workflow as the reference.

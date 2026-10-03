@@ -1714,7 +1714,7 @@ function workspaceDispenseMedicine(medication_id,pid){
 async function workspaceSaveDispense(e,medication_id,pid){
  e.preventDefault();
  try{const b=Object.fromEntries(new FormData(e.target).entries());const quantity=Number(b.quantity||0);if(!Number.isFinite(quantity)||quantity<1)throw new Error('Enter a valid quantity.');await api('/pharmacy',{method:'POST',body:JSON.stringify({patient_id:Number(pid),medication_id:Number(medication_id),quantity,notes:b.notes||null})});await refreshPatientWorkspace(pid)}
- catch(x){alert(x.message)}
+ catch(x){showActionToast({title:'Dispensing failed',body:x.message,error:true})}
 }
 function closePatientWorkspaceActionModal(){
  const modal=document.getElementById('patientWorkspaceActionModal');
@@ -1763,19 +1763,19 @@ async function workspaceOpenDoctor(pid){
       '</div>')+
     '</div>';
   workspaceActionPanel({title:'Consultation · '+(patient.name||'Patient'),body:consultation},pid,'doctor');
- }catch(e){alert(e.message)}
+ }catch(e){showActionToast({title:'Consultation unavailable',body:e.message,error:true})}
 }
 async function workspaceDoctorStartConsultation(pid){
  const s=state.doctorRoomPatient;if(!s)return;
  try{
   if(s.queueId)await api('/queue',{method:'PUT',body:JSON.stringify({id:Number(s.queueId),stage:'in_room'})});
   await workspaceOpenDoctor(pid);
- }catch(e){alert(e.message)}
+ }catch(e){showActionToast({title:'Consultation could not start',body:e.message,error:true})}
 }
 async function workspaceSaveDoctorVisit(complete,pid){
  const s=state.doctorRoomPatient;if(!s)return;
  const note=document.getElementById('doctorConsultationNote')?.value||'';
- if(complete&&!note.trim())return alert('Add the consultation note before completing.');
+ if(complete&&!note.trim())return showActionToast({title:'Consultation not completed',body:'Add the consultation note before completing.',error:true});
  try{
   const open=s.record?.visits?.find(v=>v.visit_status==='open'&&Number(v.patient_id)===Number(pid));
   const body={type:'visit',patient_id:Number(pid),clinical_notes:note,visit_status:complete?'completed':'open',queue_entry_id:s.queueId||null,appointment_id:s.appointmentId||null};
@@ -1783,13 +1783,13 @@ async function workspaceSaveDoctorVisit(complete,pid){
   else await api('/clinical',{method:'POST',body:JSON.stringify(body)});
   if(complete&&s.queueId)await api('/queue',{method:'PUT',body:JSON.stringify({id:Number(s.queueId),stage:'completed'})});
   await refreshPatientWorkspace(pid); if(!complete)await workspaceOpenDoctor(pid);
- }catch(e){alert(e.message)}
+ }catch(e){showActionToast({title:complete?'Consultation not saved':'Draft not saved',body:e.message,error:true})}
 }
 async function workspaceDoctorPrescription(e,pid,visitId){
- e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/clinical',{method:'POST',body:JSON.stringify({type:'medicine',patient_id:Number(pid),visit_id:Number(visitId),...b})});await workspaceOpenDoctor(pid)}catch(x){alert(x.message)}
+ e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/clinical',{method:'POST',body:JSON.stringify({type:'medicine',patient_id:Number(pid),visit_id:Number(visitId),...b})});await workspaceOpenDoctor(pid)}catch(x){showActionToast({title:'Prescription not saved',body:x.message,error:true})}
 }
 async function workspaceDoctorLab(e,pid,visitId){
- e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/clinical',{method:'POST',body:JSON.stringify({type:'lab',patient_id:Number(pid),visit_id:Number(visitId),queue_entry_id:state.doctorRoomPatient?.queueId||null,test_name:b.test_name,notes:b.notes||null})});await workspaceOpenDoctor(pid)}catch(x){alert(x.message)}
+ e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/clinical',{method:'POST',body:JSON.stringify({type:'lab',patient_id:Number(pid),visit_id:Number(visitId),queue_entry_id:state.doctorRoomPatient?.queueId||null,test_name:b.test_name,notes:b.notes||null})});await workspaceOpenDoctor(pid)}catch(x){showActionToast({title:'Investigation not saved',body:x.message,error:true})}
 }
 function workspacePharmacy(pid){
  const rows=state.activePatientRecord?.pharmacy||[];
@@ -1807,7 +1807,7 @@ function workspaceDispenseForm(medication_id,pid){
 }
 async function workspaceSaveDispenseForm(e,pid,medication_id){
  e.preventDefault();
- try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/pharmacy',{method:'POST',body:JSON.stringify({patient_id:pid,medication_id,quantity:Number(b.quantity),notes:b.notes||null})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+ try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/pharmacy',{method:'POST',body:JSON.stringify({patient_id:pid,medication_id,quantity:Number(b.quantity),notes:b.notes||null})});await refreshPatientWorkspace(pid)}catch(x){showActionToast({title:'Dispensing failed',body:x.message,error:true})}
 }
 function workspaceFollowupForm(pid){
  const options=(state.doctors||[]).filter(d=>d.active!==false).map(d=>'<option value="'+d.id+'">'+esc(d.name)+' · '+esc(d.specialty||'')+(d.online_consultation_enabled?' · online':'')+'</option>').join('');
