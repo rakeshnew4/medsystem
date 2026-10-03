@@ -2846,6 +2846,42 @@ window.addEventListener('DOMContentLoaded',()=>{
   });
 });
 </script>
+<script>
+(function initHmisModuleChrome(){
+  const meta={
+    patients:['Patient Lookup','Search and manage the hospital patient registry.','OPD · Registration'],
+    appointments:['Appointments','Day view, doctor sessions, check-in and appointment status.','OPD · Scheduling'],
+    queue:['OPD Queue & Tokens','Dispatch patients through the operational queue with clear stage and priority.','OPD · Front Desk'],
+    followups:['Follow-ups','Track due follow-ups and route patients back into care.','OPD · Continuity'],
+    'doctor-room':['Doctor Consultation','Patient-first clinical workspace for the active encounter.','Clinical · EMR'],
+    doctors:['Doctors & Schedules','Doctor directory, availability and OPD session context.','Clinical · Scheduling'],
+    lab:['Laboratory','Worklist-first investigation processing, verification and reporting.','Diagnostics · LIS'],
+    pharmacy:['Pharmacy','Dispensing, stock, transfers and medicine history.','Diagnostics · Pharmacy'],
+    theatre:['Theatre & Procedures','Procedure worklist, room schedule, team, charges and closure.','Procedures · OT'],
+    beds:['Inpatient Care','Admissions, BHT/encounter context, beds, transfers and discharge.','Inpatient · Ward'],
+    billing:['Billing & Payments','Invoice worklist, outstanding balances, payments and financial history.','Finance · Billing'],
+    analytics:['Reports & Analytics','Operational reporting, KPIs and management insights.','Operations · Reporting'],
+    communication:['Staff Communication','Hospital-wide staff messages, groups and operational notifications.','Operations · Communication'],
+    display:['Displays & Advertising','Digital display campaigns, public information and impressions.','Operations · Displays'],
+    assets:['Inventory & Assets','Fixed assets, stock visibility, transfers and operational history.','Operations · Stores'],
+    staff:['Staff & Access','Staff directory, roles, permissions, availability and audit history.','Administration · Access'],
+    setup:['Hospital Setup','Hospital identity, departments, services, working hours and configuration.','Administration · Configuration'],
+    integrations:['Integrations','FHIR/REST capabilities, connection settings and integration boundaries.','Administration · Integrations']
+  };
+  const esc=(v)=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  function addHeader(section){
+    const m=meta[section.id]; if(!m || section.querySelector('.cf-module-header')) return;
+    const head=document.createElement('div');
+    head.className='cf-module-header';
+    head.innerHTML='<div class="cf-module-header-main"><div class="cf-module-kicker">'+esc(m[2])+'</div><h2>'+esc(m[0])+'</h2><p>'+esc(m[1])+'</p></div><div class="cf-module-header-actions"><button type="button" class="btn" data-cf-home>Overview</button><button type="button" class="btn" data-cf-refresh>Refresh</button></div>';
+    head.querySelector('[data-cf-home]').addEventListener('click',()=>window.showSection?.('dashboard'));
+    head.querySelector('[data-cf-refresh]').addEventListener('click',()=>window.loadAllWithLoader?.());
+    section.prepend(head);
+  }
+  function apply(){document.querySelectorAll('.section[id]').forEach(addHeader);}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
+})();
+</script>
 
 <div id="notificationModal" class="modal"><div class="modal-card notification-modal-card"><div class="panel-head"><div><h2 class="panel-title">Workflow notifications</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Tasks routed to your role from the patient journey.</div></div><button class="btn" onclick="closeModal('notificationModal')">Close</button></div><div id="notificationModalBody"></div></div></div>
 <div id="inventoryTransferModal" class="modal"><div class="modal-card"><div class="panel-head"><div><h2 class="panel-title">Issue stock transfer</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Source department ownership is checked by the server. The transfer starts in transit.</div></div><button class="btn" onclick="closeModal('inventoryTransferModal')">Close</button></div><form id="inventoryTransferForm" class="form-grid"><div class="field full"><label>Source stock / batch</label><select id="inventoryTransferStock" required></select></div><div class="field"><label>Destination department</label><select id="inventoryTransferDestination" required></select></div><div class="field"><label>Quantity</label><input id="inventoryTransferQuantity" type="number" min="0.01" step="0.01" required></div><div class="field full"><label>Notes</label><textarea id="inventoryTransferNotes" placeholder="Reason or operational note"></textarea></div><div><button class="btn primary">Issue transfer</button></div></form></div></div>
