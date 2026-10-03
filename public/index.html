@@ -1858,7 +1858,7 @@ async function workspaceSaveTriage(e,pid,qid){
 async function workspaceCompleteNursing(pid){
  const qid=state.activePatientRecord?.patient?.active_queue_id;
  if(!qid)return alert('No active OPD queue entry is attached to this patient.');
- try{await api('/nursing-handoff',{method:'POST',body:JSON.stringify({patient_id:pid,queue_entry_id:qid})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+ try{await api('/nursing-handoff',{method:'POST',body:JSON.stringify({patient_id:pid,queue_entry_id:qid})});await refreshPatientWorkspace(pid)}catch(x){showActionToast({title:'Nursing handoff failed',body:x.message,error:true})}
 }
 function workspacePrescription(pid){
  const b='<form class="form-grid" onsubmit="workspaceSavePrescription(event,'+pid+')"><div class="field"><label>Medicine</label><input name="medicine_name" required></div><div class="field"><label>Dose</label><input name="dose"></div><div class="field"><label>Frequency</label><input name="frequency" placeholder="1-0-1"></div><div class="field"><label>Duration</label><input name="duration" placeholder="5 days"></div><div class="field full"><label>Instructions</label><textarea name="instructions"></textarea></div><div class="field full"><button class="btn primary">Save prescription</button></div></form>';
@@ -2082,11 +2082,11 @@ function workspaceIPDAdmitModal(pid){const beds=(state.activePatientRecord?.ipd?
 async function workspaceSubmitIPDTransfer(e,pid,admissionId){e.preventDefault();const b=Object.fromEntries(new FormData(e.target).entries());await workspaceIPDRequest({action:'transfer',id:admissionId,new_bed_id:Number(b.new_bed_id),reason:b.reason},pid)}
 async function workspaceSubmitIPDAdmit(e,pid){e.preventDefault();const b=Object.fromEntries(new FormData(e.target).entries());await workspaceIPDRequest({action:'admit',patient_id:pid,bed_id:Number(b.bed_id),admission_type:b.admission_type,notes:b.notes||''},pid)}
 async function workspaceIPDRequest(body,pid){
- if(!['transfer','admit'].includes(String(body?.action)))return alert('Unsupported IPD bed action.');
- if(!Number.isInteger(Number(pid)))return alert('Invalid patient reference.');
- if(body.action==='transfer'&&(!Number.isInteger(Number(body.id))||!Number.isInteger(Number(body.new_bed_id))))return alert('Select a valid destination bed.');
- if(body.action==='admit'&&!Number.isInteger(Number(body.bed_id)))return alert('Select a valid admission bed.');
- try{await api('/beds',{method:'PUT',body:JSON.stringify(body)});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+ if(!['transfer','admit'].includes(String(body?.action)))return showActionToast({title:'IPD action failed',body:'Unsupported IPD bed action.',error:true});
+ if(!Number.isInteger(Number(pid)))return showActionToast({title:'IPD action failed',body:'Invalid patient reference.',error:true});
+ if(body.action==='transfer'&&(!Number.isInteger(Number(body.id))||!Number.isInteger(Number(body.new_bed_id))))return showActionToast({title:'Transfer failed',body:'Select a valid destination bed.',error:true});
+ if(body.action==='admit'&&!Number.isInteger(Number(body.bed_id)))return showActionToast({title:'Admission failed',body:'Select a valid admission bed.',error:true});
+ try{await api('/beds',{method:'PUT',body:JSON.stringify(body)});await refreshPatientWorkspace(pid)}catch(x){showActionToast({title:body.action==='transfer'?'Transfer failed':'Admission failed',body:x.message,error:true})}
 }
 async function openPatientWorkspace(pid,action){
  try{
