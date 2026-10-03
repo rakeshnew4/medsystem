@@ -1506,7 +1506,7 @@ function scrollToPatientSection(cls){const el=document.querySelector('.'+cls);if
 function patientWorkspaceActionButtons(p){
  const s=state.activePatientRecord||{}, id=p.id;
  const q=p.today_token
-   ? '<button class="btn patient-action" onclick="showSection(\'queue\')"><span class="patient-action-icon">≡</span><span>Queue</span></button>'
+   ? '<button class="btn patient-action" onclick="workspaceQueuePanel(undefined)"><span class="patient-action-icon">≡</span><span>Queue</span></button>'
    : '';
  const a='<button class="btn patient-action" onclick="editPatient('+id+')"><span class="patient-action-icon">✎</span><span>Edit</span></button>';
  const vit=s.permissions?.clinical?'<button class="btn patient-action" onclick="workspaceVitals('+id+')"><span class="patient-action-icon">♡</span><span>Vitals</span></button>':'';
@@ -1514,6 +1514,23 @@ function patientWorkspaceActionButtons(p){
  const ipd=(s.ipd?.admissions||[]).some(a=>!a.discharged_at)?'<button class="btn patient-action" onclick="workspaceIPDPanel('+id+', '+Number((s.ipd?.admissions||[]).find(a=>!a.discharged_at)?.id||0)+')"><span class="patient-action-icon">B</span><span>IPD</span></button>':'';
  const clinical='<button class="btn primary patient-action patient-action-primary" onclick="openClinical('+id+')"><span class="patient-action-icon">↗</span><span>Clinical</span></button>';
  return '<div class="patient-quick-actions">'+q+a+vit+ipd+finance+clinical+'</div>';
+}
+function workspaceInsurancePanel(pid){
+ const rows=state.activePatientRecord?.insurance||[];
+ const body=rows.length?rows.slice(0,8).map(x=>'<div class="compact-record"><div><strong>'+esc(x.payer_name||'Payer')+'</strong><span>'+esc(x.claim_number||x.policy_number||'No claim number')+'</span></div><div>'+status(x.status||'pending')+'<small>Claimed ₹'+Number(x.claimed_amount||0).toFixed(2)+'</small></div></div>').join(''):'<div class="empty">No insurance / TPA claims.</div>';
+ workspaceActionPanel({title:'Insurance / TPA',body},pid,'billing');
+}
+function workspaceWardPanel(pid){
+ const admission=(state.activePatientRecord?.ipd?.admissions||[]).find(a=>!a.discharged_at);
+ if(admission)return workspaceIPDPanel(pid,admission.id);
+ return workspaceIPDAdmitModal(pid);
+}
+function workspaceQueuePanel(pid){
+ const p=state.activePatientRecord?.patient||state.patients.find(x=>Number(x.id)===Number(pid))||{};
+ const qid=p.active_queue_id||null;
+ const q=(state.queue||[]).find(x=>Number(x.id)===Number(qid)||Number(x.patient_id)===Number(pid));
+ const body='<div class="care-banner"><div><strong>Queue status</strong><span>'+esc(q?prettyStatus(q.stage||'waiting'):'No active queue')+'</span></div><div><strong>Token</strong><span>'+esc(q?.token||'—')+'</span></div></div><div class="record-section-note">Queue details are shown here without leaving Patient Workspace. Queue transitions are performed by the responsible workflow action.</div>';
+ workspaceActionPanel({title:'OPD queue',body},pid,'nurse');
 }
 function workspaceWaitingStatus(pid){
  const el=document.getElementById('patientWorkspaceActionArea');
@@ -1853,10 +1870,10 @@ function renderPatientWorkspace(){
  '<section class="patient-workspace-pane" data-pworkspace-pane="reports" style="display:none">'+
    '<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Reports & History</h3><div class="record-section-note">Read-only clinical, financial and journey history for the selected patient.</div></div></div>'+
    '<div class="patient-report-grid">'+
-     (s.permissions.clinical?'<div class="workspace-card"><div class="panel-head"><h3 class="panel-title">Investigations & reports</h3><button class="mini" onclick="showSection(\'lab\')">Open lab</button></div>'+patientInvestigations(c)+'</div>':'')+
-     (s.permissions.billing?'<div class="workspace-card"><div class="panel-head"><h3 class="panel-title">Billing & payments</h3><button class="mini" onclick="showSection(\'billing\')">Open billing</button></div>'+patientBilling(bills)+'</div>':'')+
-     (s.permissions.pharmacy?'<div class="workspace-card"><div class="panel-head"><h3 class="panel-title">Medicines & pharmacy</h3><button class="mini" onclick="showSection(\'pharmacy\')">Open pharmacy</button></div>'+patientPharmacy(s.pharmacy||[])+'</div>':'')+
-     (s.permissions.billing?'<div class="workspace-card"><div class="panel-head"><h3 class="panel-title">Insurance / TPA</h3><button class="mini" onclick="showSection(\'billing\')">Open claims</button></div>'+patientInsurance(s.insurance||[])+'</div>':'')+
+     (s.permissions.clinical?'<div class="workspace-card"><div class="panel-head"><h3 class="panel-title">Investigations & reports</h3><button class="mini" onclick="workspaceLab('+p.id+')">Lab</button></div>'+patientInvestigations(c)+'</div>':'')+
+     (s.permissions.billing?'<div class="workspace-card"><div class="panel-head"><h3 class="panel-title">Billing & payments</h3><button class="mini" onclick="workspaceInvoice('+p.id+',\'billing\')">Bill</button></div>'+patientBilling(bills)+'</div>':'')+
+     (s.permissions.pharmacy?'<div class="workspace-card"><div class="panel-head"><h3 class="panel-title">Medicines & pharmacy</h3><button class="mini" onclick="workspacePharmacy('+p.id+')">Pharmacy</button></div>'+patientPharmacy(s.pharmacy||[])+'</div>':'')+
+     (s.permissions.billing?'<div class="workspace-card"><div class="panel-head"><h3 class="panel-title">Insurance / TPA</h3><button class="mini" onclick="workspaceInsurancePanel('+p.id+')">Claims</button></div>'+patientInsurance(s.insurance||[])+'</div>':'')+
      '<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Follow-up history</h3><div class="record-section-note">Completed and pending follow-up records.</div></div></div>'+patientFollowups(fu)+'</div>'+
      '<div class="workspace-card"><div class="panel-head"><h3 class="panel-title">Patient journey</h3><span class="status active">'+events.length+' events</span></div>'+patientTimeline(events)+'</div>'+
    '</div></div>'+
@@ -2308,10 +2325,13 @@ async function discharge(id){
 }
 async function editIPDAdmission(id){
   const r=await api('/ipd?admission_id='+id);const a=r.admissions?.[0];if(!a)return;
-  const type=prompt('Admission type (general, emergency, surgical, observation, day_care):',a.admission_type||'general');if(type===null)return;
-  const date=prompt('Expected discharge date YYYY-MM-DD:',a.expected_discharge_date?String(a.expected_discharge_date).slice(0,10):'');if(date===null)return;
-  const notes=prompt('Admission notes:',a.notes||'');if(notes===null)return;
-  try{await api('/ipd',{method:'PUT',body:JSON.stringify({action:'update-admission',id,admission_type:type,expected_discharge_date:date||null,notes})});await loadAll();if(state.activePatientRecord?.patient?.id)openClinical(state.activePatientRecord.patient.id)}catch(e){alert(e.message)}
+  const pid=Number(a.patient_id||state.activePatientRecord?.patient?.id||0);
+  const body='<form class="form-grid" onsubmit="workspaceSaveIPDAdmission(event,'+pid+','+id+')"><div class="field"><label>Admission type</label><select name="admission_type"><option value="general">General</option><option value="emergency">Emergency</option><option value="surgical">Surgical</option><option value="observation">Observation</option><option value="day_care">Day care</option></select></div><div class="field"><label>Expected discharge</label><input name="expected_discharge_date" type="date" value="'+esc(a.expected_discharge_date?String(a.expected_discharge_date).slice(0,10):'')+'"></div><div class="field full"><label>Admission notes</label><textarea name="notes">'+esc(a.notes||'')+'</textarea></div><div class="field full"><button class="btn primary">Save admission</button></div></form>';
+  workspaceActionPanel({title:'Edit admission',body},pid,'ipd');
+  document.querySelector('#patientWorkspaceActionModal select[name="admission_type"]')?.value=a.admission_type||'general';
+}
+async function workspaceSaveIPDAdmission(e,pid,id){
+  e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/ipd',{method:'PUT',body:JSON.stringify({action:'update-admission',id,admission_type:b.admission_type,expected_discharge_date:b.expected_discharge_date||null,notes:b.notes||''})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
 }
 async function transferIPDBed(id){
   const available=state.beds.filter(b=>b.status==='available');
@@ -2936,8 +2956,8 @@ function patientCareTeamActions(p,s){
   const sections=[
     section('01','nurse','Nursing','Vitals, triage and patient movement.',[
       {label:'Record vitals',onclick:'workspaceVitals('+id+')'},
-      {label:'Open OPD queue',onclick:"showSection('queue')"},
-      {label:'Ward / IPD',onclick:"showSection('beds')"}
+      {label:'Queue',onclick:'workspaceQueuePanel('+id+')'},
+      {label:'Ward',onclick:'workspaceWardPanel('+id+')'}
     ]),
     section('02','doctor','Doctor','Consultation, clinical documentation and treatment.',[
       {label:'Open consultation',onclick:'workspaceOpenDoctor('+id+')'},
@@ -2947,15 +2967,15 @@ function patientCareTeamActions(p,s){
       {label:'Follow-up',onclick:'workspaceFollowupForm('+id+')'}
     ]),
     section('03','lab','Laboratory','Investigations, sample processing and reports.',[
-      {label:'Open lab',onclick:"showSection('lab')"},
+      {label:'Lab',onclick:'workspaceLab('+id+')'},
       {label:'Open investigation',onclick:'workspaceLab('+id+')'}
     ]),
     section('04','pharmacy','Pharmacy','Prescription dispensing and medicine handover.',[
-      {label:'Open pharmacy',onclick:"showSection('pharmacy')"},
+      {label:'Pharmacy',onclick:'workspacePharmacy('+id+')'},
       {label:'Dispense medicines',onclick:'workspacePharmacy('+id+')'}
     ]),
     section('05','billing','Billing','Invoices, payments and financial records.',[
-      {label:'Open billing',onclick:"showSection('billing')"},
+      {label:'Bill',onclick:'workspaceInvoice('+id+',\'billing\')'},
       {label:'Review account',onclick:'workspaceInvoice('+id+',\'billing\')'}
     ])
   ];
