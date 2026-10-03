@@ -436,11 +436,17 @@ Status: Verified on the deployed build through /api/public-staff-status. All 8 s
 
 ## TC-E2E-VISUAL-001 — Demo visual runner entry
 Expected: the admin-only visual runner can request a demo role without exposing credentials and can capture the target UI at desktop/mobile sizes; demo execution is labeled separately from genuine staff E2E.
-Status: Runner now supports validated demo_role input and safe demo login plumbing, but the available browser farm still remains on the login surface after the demo redirect attempt. No Patient Workspace visual E2E completion is claimed.
+Status: Runner supports validated demo_role input and safe demo login plumbing. v624 rerun used the Groq/LiteLLM-capable visual flow agent; it correctly stopped at the genuine staff-auth boundary (protected Patient Workspace/appointments returned 401), so no Patient Workspace visual E2E completion is claimed. A desktop run also hit a browser navigation timeout, which remains a runner-environment issue.
 
 Demo-mode E2E is now available through the explicit CARE_FLOW_DEMO_MODE secret. It may be used to exercise application workflows, role boundaries, invalid transitions, retries and concurrency without real OTP authentication, and all results must be labeled demo E2E.
 
 Visual/UI E2E is now a first-class test layer. The admin-only /api/e2e-visual runner uses Hatchable Chromium at desktop/mobile viewports, captures top/middle/bottom screenshots to project storage, exercises safe visible interactions, and sends screenshots to Groq with a direct LiteLLM fallback pinned to Gemini 2.5 Flash Lite. v487 confirmed the LiteLLM path returns HTTP 200 visual reviews. Visual findings must be reproduced by browser assertions before being treated as defects. AI summaries are retained in public/AI_VISUAL_REPORTS.json for later improvement/validation loops.
+
+## TC-UX-FEEDBACK-001 — Patient Workspace mutation feedback
+Expected: successful POST/PUT/DELETE actions show a bottom-of-screen confirmation toast; failed mutations show a bottom error toast; notification-center toasts remain clickable; feedback must not navigate away from Patient Workspace. Status: Implemented in v624 and covered by frontend contract inspection; browser click/persistence verification remains part of the genuine staff E2E gate.
+
+## TC-UX-CONTRACT-002 — Investigation order contract
+Expected: Patient Workspace Order investigation uses a supported clinical mutation contract and does not call POST /lab, because the lab route accepts GET/PUT only. Status: Fixed in v624; workspace now requires an open consultation and submits the lab order through POST /clinical with visit/encounter context.
 
 Genuine hospital-staff OTP/browser E2E remains a separate production-authentication gate and must not be marked complete from demo mode. APP END USER or collaborator sessions must not be counted as genuine staff E2E.
 
