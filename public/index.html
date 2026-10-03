@@ -196,7 +196,34 @@
   </div>
 </section>
 
-<section id="appointments" class="section"><div class="card panel appointment-worklist"><div class="panel-head"><div><div class="kicker">OPD · APPOINTMENTS</div><h2 class="panel-title">Appointment worklist</h2><div style="font-size:12px;color:var(--muted);margin-top:4px">Plan the doctor session first; check-in creates the OPD token and patient flow. Appointment outcome and queue state remain separate.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="showSection('patients')">Patient lookup</button><button class="btn" onclick="showSection('queue')">OPD queue</button><button class="btn primary" onclick="openModal('appointmentModal')">+ Book appointment</button></div></div><div id="appointmentSummary" class="queue-summary"></div><div class="queue-toolbar appointment-toolbar"><div class="queue-search"><span>⌕</span><input id="appointmentSearch" type="search" placeholder="Search patient, UHID, token or doctor…" oninput="renderAppointmentsWorklist()"></div><select id="appointmentDoctorFilter" onchange="renderAppointmentsWorklist()" aria-label="Filter by doctor"><option value="all">All doctors</option></select><select id="appointmentStatusFilter" onchange="renderAppointmentsWorklist()" aria-label="Filter by appointment status"><option value="all">All appointment states</option><option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="checked_in">Checked in</option><option value="completed">Completed</option><option value="no_show">No-show</option><option value="cancelled">Cancelled</option></select><select id="appointmentTypeFilter" onchange="renderAppointmentsWorklist()" aria-label="Filter by consultation type"><option value="all">All sessions</option><option value="in_person">In-person</option><option value="online">Online video</option></select><input id="appointmentDateFilter" type="date" onchange="renderAppointmentsWorklist()" aria-label="Appointment date"><button class="btn" onclick="clearAppointmentFilters()">Clear</button></div><div id="appointmentWorklist"></div></div></section>
+<section id="appointments" class="section">
+  <div class="cf-module-header">
+    <div class="cf-module-header-main"><div class="cf-module-kicker">OPD · SCHEDULING</div><h2>Appointments</h2><p>Search the appointment register, review the doctor session, then move the patient into OPD flow.</p></div>
+    <div class="cf-module-header-actions"><button class="btn" onclick="showSection('patients')">Patient lookup</button><button class="btn" onclick="showSection('queue')">OPD queue</button><button class="btn primary" onclick="openModal('appointmentModal')">+ Book appointment</button></div>
+  </div>
+  <div class="appointment-shell">
+    <aside class="appointment-filter-card">
+      <div class="hmis-strip-title">Search & filters</div>
+      <div class="appointment-filter-body">
+        <label>Search</label>
+        <div class="queue-search"><span>⌕</span><input id="appointmentSearch" type="search" placeholder="Patient, UHID, token, doctor…" oninput="renderAppointmentsWorklist()"></div>
+        <label>From / day</label><input id="appointmentDateFilter" type="date" onchange="renderAppointmentsWorklist()" aria-label="Appointment date">
+        <label>Doctor</label><select id="appointmentDoctorFilter" onchange="renderAppointmentsWorklist()" aria-label="Filter by doctor"><option value="all">All doctors</option></select>
+        <label>Status</label><select id="appointmentStatusFilter" onchange="renderAppointmentsWorklist()" aria-label="Filter by appointment status"><option value="all">All appointment states</option><option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="checked_in">Checked in</option><option value="completed">Completed</option><option value="no_show">No-show</option><option value="cancelled">Cancelled</option></select>
+        <label>Consultation</label><select id="appointmentTypeFilter" onchange="renderAppointmentsWorklist()" aria-label="Filter by consultation type"><option value="all">All sessions</option><option value="in_person">In-person</option><option value="online">Online video</option></select>
+        <div class="appointment-filter-actions"><button class="btn primary" onclick="renderAppointmentsWorklist()">Search</button><button class="btn" onclick="clearAppointmentFilters()">Clear</button></div>
+      </div>
+      <div class="appointment-filter-note">Appointment status and OPD queue stage are separate. Check-in creates the token; completion belongs to the consultation workflow.</div>
+    </aside>
+    <div class="appointment-results">
+      <div class="card panel">
+        <div class="panel-head"><div><div class="kicker">REGISTER</div><h3 class="panel-title">Appointment register</h3><div class="record-section-note">Day-grouped operational list with patient, doctor, session, status and next action.</div></div></div>
+        <div id="appointmentSummary" class="queue-summary"></div>
+        <div id="appointmentWorklist"></div>
+      </div>
+    </div>
+  </div>
+</section>
 <div id="clinicalModal" class="modal"><div class="modal-card patient-record-modal"><div class="patient-record-head"><div><div class="kicker">Patient record</div><h2 class="patient-record-name" id="clinicalPatientName">Patient</h2><div id="clinicalPatientMeta" class="patient-record-meta"></div></div><div class="patient-record-actions"><button class="btn" onclick="editPatientFromRecord()">Edit patient</button><button class="btn" onclick="closeModal('clinicalModal')">Close</button></div></div><div id="clinicalPatientSummary" class="patient-record-summary"></div><div id="clinicalBody"></div></div></div>
 
 <section id="patients" class="section">
