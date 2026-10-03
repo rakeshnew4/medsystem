@@ -1592,7 +1592,10 @@ function patientNextActions(p,s){
  return actions.length?'<div class="next-actions"><div class="next-actions-head"><div><h3 class="panel-title">Next action</h3><div class="record-section-note">Workflow transitions stay inside this Patient Workspace. Mutating actions update the database and refresh the workspace; review states only focus existing workspace content.</div></div><span class="status active">'+esc(prettyStatus(q||'registered'))+'</span></div>'+actions.join('')+'</div>':'';
 }
 async function workspaceLabStatus(id,status,pid){
- try{await api('/lab',{method:'PUT',body:JSON.stringify({id,status})});closePatientWorkspaceActionModal();await refreshPatientWorkspace(pid)}
+ const allowed=['processing','verified','rejected'];
+ if(!allowed.includes(String(status)))return alert('Unsupported laboratory status transition.');
+ if(!Number.isInteger(Number(id))||!Number.isInteger(Number(pid)))return alert('Invalid laboratory or patient reference.');
+ try{await api('/lab',{method:'PUT',body:JSON.stringify({id:Number(id),status})});closePatientWorkspaceActionModal();await refreshPatientWorkspace(pid)}
  catch(x){alert(x.message)}
 }
 function workspaceVerifyLab(id,pid){
@@ -1793,7 +1796,7 @@ function patientTheatre(procedures){
  workspaceActionPanel({title:'Create bill / collect payment',body:b},pid,anchorRole||'billing');
 }
 async function workspaceSaveVitals(e,pid){
- e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());b.patient_id=pid;const qid=state.activePatientRecord?.patient?.active_queue_id;if(qid)b.queue_entry_id=qid;await api('/vitals',{method:'POST',body:JSON.stringify(b)});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+ e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());const numeric=['blood_pressure_systolic','blood_pressure_diastolic','pulse','temperature','weight_kg','height_cm','spo2','respiratory_rate'];for(const k of numeric)if(b[k]!==''&&(!Number.isFinite(Number(b[k]))||Number(b[k])<0))throw new Error('Enter valid non-negative vital values.');b.patient_id=Number(pid);const qid=state.activePatientRecord?.patient?.active_queue_id;if(qid)b.queue_entry_id=Number(qid);await api('/vitals',{method:'POST',body:JSON.stringify(b)});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
 }
 async function workspaceSavePrescription(e,pid){
  e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());b.patient_id=pid;b.type='medicine';await api('/clinical',{method:'POST',body:JSON.stringify(b)});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
@@ -1959,6 +1962,10 @@ function workspaceIPDAdmitModal(pid){const beds=(state.beds||[]).filter(b=>b.sta
 async function workspaceSubmitIPDTransfer(e,pid,admissionId){e.preventDefault();const b=Object.fromEntries(new FormData(e.target).entries());await workspaceIPDRequest({action:'transfer',id:admissionId,new_bed_id:Number(b.new_bed_id),reason:b.reason},pid)}
 async function workspaceSubmitIPDAdmit(e,pid){e.preventDefault();const b=Object.fromEntries(new FormData(e.target).entries());await workspaceIPDRequest({action:'admit',patient_id:pid,bed_id:Number(b.bed_id),admission_type:b.admission_type,notes:b.notes||''},pid)}
 async function workspaceIPDRequest(body,pid){
+ if(!['transfer','admit'].includes(String(body?.action)))return alert('Unsupported IPD bed action.');
+ if(!Number.isInteger(Number(pid)))return alert('Invalid patient reference.');
+ if(body.action==='transfer'&&(!Number.isInteger(Number(body.id))||!Number.isInteger(Number(body.new_bed_id))))return alert('Select a valid destination bed.');
+ if(body.action==='admit'&&!Number.isInteger(Number(body.bed_id)))return alert('Select a valid admission bed.');
  try{await api('/beds',{method:'PUT',body:JSON.stringify(body)});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
 }
 async function openPatientWorkspace(pid,action){
