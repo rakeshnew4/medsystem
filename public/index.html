@@ -1450,12 +1450,14 @@ function patientCareTeamActions(p,s){
 function scrollToPatientSection(cls){const el=document.querySelector('.'+cls);if(el)el.scrollIntoView({behavior:'smooth',block:'center'})}
 function patientWorkspaceActionButtons(p){
  const s=state.activePatientRecord||{}, id=p.id;
- const q=p.today_token?'<button class="btn patient-action" onclick="movePatient('+id+',\'waiting\');refreshPatientWorkspace('+id+')"><span class="patient-action-icon">≡</span><span>Queue</span></button>':'<button class="btn patient-action" onclick="openOpdRegistration('+id+')"><span class="patient-action-icon">＋</span><span>Register OPD</span></button>';
- const a='<button class="btn patient-action" onclick="editPatient('+id+')"><span class="patient-action-icon">✎</span><span>Edit patient</span></button>';
+ const q=p.today_token
+   ? '<button class="btn patient-action" onclick="movePatient('+id+',\'waiting\');refreshPatientWorkspace('+id+')"><span class="patient-action-icon">≡</span><span>Queue</span></button>'
+   : '<button class="btn patient-action" onclick="openOpdRegistration('+id+')"><span class="patient-action-icon">＋</span><span>Register OPD</span></button>';
+ const a='<button class="btn patient-action" onclick="editPatient('+id+')"><span class="patient-action-icon">✎</span><span>Edit</span></button>';
  const ap='<button class="btn patient-action" onclick="patientWorkspaceAppointments('+id+')"><span class="patient-action-icon">▦</span><span>Appointments</span></button>';
- const clinical=s.permissions?.clinical?'<button class="btn patient-action" onclick="workspaceVitals('+id+')"><span class="patient-action-icon">♡</span><span>Vitals</span></button><button class="btn patient-action" onclick="workspacePrescription('+id+')"><span class="patient-action-icon">＋</span><span>Prescription</span></button><button class="btn patient-action" onclick="workspaceLab('+id+')"><span class="patient-action-icon">⌁</span><span>Lab order</span></button>':'';
+ const vit=s.permissions?.clinical?'<button class="btn patient-action" onclick="workspaceVitals('+id+')"><span class="patient-action-icon">♡</span><span>Vitals</span></button>':'';
  const finance=s.permissions?.billing?'<button class="btn patient-action" onclick="workspaceInvoice('+id+')"><span class="patient-action-icon">₹</span><span>Bill</span></button>':'';
- return '<div class="patient-quick-actions">'+a+q+ap+clinical+finance+'<button class="btn primary patient-action patient-action-primary" onclick="openClinical('+id+')"><span class="patient-action-icon">↗</span><span>Full clinical record</span></button></div>';
+ return '<div class="patient-quick-actions">'+q+a+ap+vit+finance+'<button class="btn primary patient-action patient-action-primary" onclick="openClinical('+id+')"><span class="patient-action-icon">↗</span><span>Clinical record</span></button></div>';
 }
 function patientNextActions(p,s){
  const clinical=!!s.permissions?.clinical, billing=!!s.permissions?.billing, pharmacy=!!s.permissions?.pharmacy;
@@ -1703,11 +1705,11 @@ function renderPatientWorkspace(){
  const contextState=activeAdm?'IPD · '+(activeAdm.admission_number||'Active admission'):(p.today_token?'OPD · Token '+p.today_token:'OPD · No active token');
  const body=document.getElementById('patientWorkspaceBody');
  body.innerHTML=
- '<div class="patient-identity-context">'+
-   '<div class="patient-identity-main"><div class="patient-directory-avatar">'+esc((p.name||'P').slice(0,1).toUpperCase())+'</div><div><div class="kicker">Selected patient</div><h2 class="patient-workspace-name">'+esc(p.name||'Patient')+'</h2><div class="patient-identity-ids"><strong>UHID</strong> '+esc(p.uhid||'Not assigned')+(phn?' <span>·</span> <strong>PHN/ID</strong> '+esc(phn):'')+'</div><div class="patient-workspace-meta">'+(patientAge(p.date_of_birth)?patientAge(p.date_of_birth)+' · ':'')+esc(p.phone||'No phone')+(p.email?' · '+esc(p.email):'')+'</div></div></div>'+
-   '<div class="patient-identity-state"><span class="status active">'+esc(contextState)+'</span><strong>'+esc(currentStep)+'</strong>'+(activeAdm?'<small>'+esc(activeAdm.ward||'Ward')+' · '+esc(activeAdm.bed_number||'Bed not assigned')+'</small>':'<small>Current outpatient pathway</small>')+'</div>'+
+ '<div class="patient-identity-context patient-hero">'+
+   '<div class="patient-identity-main"><div class="patient-directory-avatar">'+esc((p.name||'P').slice(0,1).toUpperCase())+'</div><div class="patient-hero-copy"><div class="kicker">PATIENT WORKSPACE</div><h2 class="patient-workspace-name">'+esc(p.name||'Patient')+'</h2><div class="patient-identity-ids"><strong>UHID</strong> '+esc(p.uhid||'Not assigned')+(phn?' <span>·</span> <strong>PHN/ID</strong> '+esc(phn):'')+'</div><div class="patient-workspace-meta">'+(patientAge(p.date_of_birth)?patientAge(p.date_of_birth)+' · ':'')+(p.gender||p.sex?esc(p.gender||p.sex)+' · ':'')+esc(p.phone||'No phone')+(p.email?' · '+esc(p.email):'')+'</div></div></div>'+
+   '<div class="patient-identity-state"><span class="status active">'+esc(contextState)+'</span><strong>'+esc(currentStep)+'</strong>'+(activeAdm?'<small>'+esc(activeAdm.ward||'Ward')+' · '+esc(activeAdm.bed_number||'Bed not assigned')+'</small>':'<small>Current outpatient pathway</small>')+(p.date_of_birth?'<small>DOB '+fmtDate(p.date_of_birth)+'</small>':'')+'</div>'+
  '</div>'+
- '<div class="patient-workspace-header"><div><div class="patient-header-status"><span>'+esc(activeAdm?'IPD':'OPD')+'</span><span>'+esc(currentStep)+'</span><span>'+((c?.visits||[]).length)+' visits</span><span>'+fu.filter(x=>x.status!=='completed').length+' follow-ups</span>'+(outstanding>0?'<span>₹'+outstanding.toFixed(2)+' due</span>':'')+'</div></div><div class="patient-quick-actions">'+patientWorkspaceActionButtons(p)+'</div></div>'+
+ '<div class="patient-workspace-header"><div class="patient-header-status"><span>'+esc(activeAdm?'IPD':'OPD')+'</span><span>'+esc(currentStep)+'</span><span>'+((c?.visits||[]).length)+' visits</span><span>'+fu.filter(x=>x.status!=='completed').length+' follow-ups</span>'+(outstanding>0?'<span class="due">₹'+outstanding.toFixed(2)+' due</span>':'')+'</div><div class="patient-quick-actions">'+patientWorkspaceActionButtons(p)+'</div></div>'+
  '<div class="patient-workspace-tabs" role="tablist" aria-label="Patient workspace">'+
    '<button type="button" class="mini active" data-pworkspace-tab="actions" onclick="setPatientWorkspaceTab(\'actions\',this)">Actions</button>'+
    '<button type="button" class="mini" data-pworkspace-tab="reports" onclick="setPatientWorkspaceTab(\'reports\',this)">Reports & History</button>'+
