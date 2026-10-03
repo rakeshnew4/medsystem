@@ -1142,3 +1142,37 @@ td{font-size:13px}
  .patient-identity-state{text-align:left;margin-top:12px;min-width:0}
  .patient-report-grid{grid-template-columns:1fr}
 }
+/* CareFlow patient workspace refinement — compact HMIS command surface. */
+.patient-workspace-main{background:transparent}
+.patient-identity-context{display:grid!important;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;padding:18px 20px!important;margin-bottom:10px!important;background:linear-gradient(135deg,#f8fbfa,#f1f7f5)!important;border:1px solid #dce8e4!important;border-radius:16px!important;box-shadow:0 4px 18px rgba(18,62,52,.045)}
+.patient-identity-main{gap:14px!important}
+.patient-identity-main .patient-directory-avatar{width:52px!important;height:52px!important;flex-basis:52px!important;border-radius:14px!important;font-size:19px;background:#e2f1ec!important}
+.patient-workspace-name{font-size:25px!important;letter-spacing:-.025em!important;margin:1px 0 4px!important}
+.patient-workspace-meta{font-size:12px!important}
+.patient-identity-state{min-width:205px!important;padding-left:18px;border-left:1px solid #d8e5e1}
+.patient-identity-state .status{justify-self:end}
+.patient-workspace-header{display:block!important;padding:10px 2px 12px!important;border-bottom:1px solid #e0e9e6!important}
+.patient-workspace-header>div:first-child{display:flex;align-items:center;min-width:0}
+.patient-workspace-header .patient-header-status{width:100%;gap:6px!important;overflow:visible!important;flex-wrap:wrap!important;white-space:normal!important}
+.patient-workspace-header .patient-header-status span{padding:6px 10px!important;font-size:10px!important;background:#fff!important;border-color:#dce7e3!important}
+.patient-workspace-header .patient-header-status span:first-child{background:#e7f5f0!important;border-color:#b9ddd1!important;color:#176e5b;font-weight:800}
+.patient-workspace-header .patient-quick-actions{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px!important;width:100%!important;max-width:none!important;margin-top:12px!important;padding:0!important;overflow:visible!important;justify-content:initial!important}
+.patient-quick-actions .patient-action{width:100%!important;min-width:0!important;height:42px!important;min-height:42px!important;padding:8px 10px!important;border:1px solid #d7e4e0!important;background:#fff!important;color:#294a42!important;box-shadow:none!important;font-size:12px!important;border-radius:10px!important}
+.patient-quick-actions .patient-action:hover{border-color:#9bc9bc!important;background:#f6fbf9!important;transform:translateY(-1px)}
+.patient-quick-actions .patient-action-primary,.patient-quick-actions .patient-action:last-child{background:#2f806d!important;border-color:#2f806d!important;color:#fff!important}
+.patient-quick-actions .patient-action-icon{opacity:.72}
+.patient-quick-actions .patient-action-primary .patient-action-icon,.patient-quick-actions .patient-action:last-child .patient-action-icon{opacity:.95}
+.patient-workspace-tabs{padding:10px 0!important;margin-bottom:10px!important}
+.patient-workspace-tabs .mini{min-width:112px;border-radius:9px!important;font-size:11px!important}
+.patient-workspace-grid{gap:14px!important}
+.workspace-card{border-radius:14px!important;padding:15px!important;box-shadow:0 2px 10px rgba(18,62,52,.035)}
+.workspace-card .panel-head{margin-bottom:10px}
+.panel-title{font-size:15px!important}
+.record-section-note{font-size:11px!important}
+.patient-summary-strip{gap:8px!important;margin:10px 0!important}
+.patient-summary-strip>div{border-radius:10px!important;padding:9px 10px!important}
+.patient-summary-strip strong{font-size:16px!important}
+.patient-workspace-column{gap:14px!important}
+@media(max-width:1050px){.patient-workspace-header .patient-quick-actions{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){.patient-identity-context{display:block!important;padding:15px!important}.patient-identity-state{border-left:0;border-top:1px solid #d8e5e1;padding:11px 0 0;margin-top:12px!important}.patient-identity-state .status{justify-self:start}.patient-workspace-header .patient-quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:430px){.patient-workspace-header .patient-quick-actions{grid-template-columns:1fr!important}}
