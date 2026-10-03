@@ -2262,9 +2262,16 @@ async function callNextForMyRole(){
     const r=await api('/queue',{method:'PUT',body:JSON.stringify({action:'call_next'})});
     if(r?.error)throw new Error(r.error);
     await loadAll();
-  }catch(e){alert(e.message)}
+    showActionToast({title:'Queue updated',body:'The next eligible patient was dispatched.'});
+  }catch(e){showActionToast({title:'Queue action failed',body:e?.message||'The queue could not be updated.',error:true})}
 }
-async function moveQueue(id,stage){try{await api('/queue',{method:'PUT',body:JSON.stringify({id:Number(id),stage})});await loadAll()}catch(e){alert(e.message)}}
+async function moveQueue(id,stage){
+  try{
+    await api('/queue',{method:'PUT',body:JSON.stringify({id:Number(id),stage})});
+    await loadAll();
+    showActionToast({title:'Queue updated',body:'Patient moved to '+queueStageLabel(stage)+'.'});
+  }catch(e){showActionToast({title:'Queue action failed',body:e?.message||'The queue could not be updated.',error:true})}
+}
 function openVitals(qid,pid){openPatientWorkspace(pid,'vitals')}
 
 async function loadTheatreCharges(){
