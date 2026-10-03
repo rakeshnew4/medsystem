@@ -76,6 +76,20 @@ body.workspace-modal-open{overflow:hidden}
  .care-team-buttons{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px!important}
  .care-team-buttons .mini{min-width:0!important;width:100%;min-height:38px!important;padding:8px 7px!important;font-size:10px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
+
+/* Patient Workspace action consistency: compact, single-line controls. */
+.patient-quick-actions{display:flex!important;flex-wrap:nowrap!important;align-items:center;gap:6px;overflow-x:auto;overflow-y:hidden;white-space:nowrap}
+.patient-quick-actions .patient-action{flex:0 0 auto!important;min-width:86px;height:38px;min-height:38px;padding:7px 10px!important;white-space:nowrap!important}
+.patient-quick-actions .patient-action span:last-child{white-space:nowrap!important}
+.care-team-buttons{display:flex!important;flex-wrap:nowrap!important;align-items:center;gap:6px!important;overflow-x:auto;overflow-y:hidden;white-space:nowrap}
+.care-team-buttons .mini{flex:0 0 auto!important;min-width:78px!important;width:auto!important;height:36px;min-height:36px!important;padding:7px 10px!important;white-space:nowrap!important}
+.next-action{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.next-action>div{min-width:0;flex:1}.next-action .btn{flex:0 0 auto;min-width:78px;white-space:nowrap}
+.consultation-tools{grid-template-columns:repeat(3,minmax(0,1fr));align-items:start}
+.consultation-context{display:flex;gap:6px;overflow-x:auto;white-space:nowrap;margin:8px 0 12px}
+.consultation-context span{display:inline-flex;align-items:center;padding:5px 8px;border:1px solid var(--border);border-radius:999px;font-size:10px;color:var(--muted);background:var(--surface-soft,#f8faf9)}
+@media(max-width:900px){.consultation-tools{grid-template-columns:1fr}}
+@media(max-width:700px){.patient-quick-actions .patient-action{min-width:78px;padding:7px 8px!important}.care-team-buttons .mini{min-width:70px!important;padding:7px 8px!important}}
 </style>
 </head>
 <body>
@@ -1494,9 +1508,9 @@ function patientWorkspaceActionButtons(p){
  const q=p.today_token
    ? '<button class="btn patient-action" onclick="showSection(\'queue\')"><span class="patient-action-icon">≡</span><span>Queue</span></button>'
    : '';
- const a='<button class="btn patient-action" onclick="editPatient('+id+')"><span class="patient-action-icon">✎</span><span>Edit patient</span></button>';
+ const a='<button class="btn patient-action" onclick="editPatient('+id+')"><span class="patient-action-icon">✎</span><span>Edit</span></button>';
  const vit=s.permissions?.clinical?'<button class="btn patient-action" onclick="workspaceVitals('+id+')"><span class="patient-action-icon">♡</span><span>Vitals</span></button>':'';
- const finance=s.permissions?.billing?'<button class="btn patient-action" onclick="workspaceInvoice('+id+')"><span class="patient-action-icon">₹</span><span>Billing</span></button>':'';
+ const finance=s.permissions?.billing?'<button class="btn patient-action" onclick="workspaceInvoice('+id+')"><span class="patient-action-icon">₹</span><span>Bill</span></button>':'';
  const ipd=(s.ipd?.admissions||[]).some(a=>!a.discharged_at)?'<button class="btn patient-action" onclick="workspaceIPDPanel('+id+', '+Number((s.ipd?.admissions||[]).find(a=>!a.discharged_at)?.id||0)+')"><span class="patient-action-icon">B</span><span>IPD</span></button>':'';
  const clinical='<button class="btn primary patient-action patient-action-primary" onclick="openClinical('+id+')"><span class="patient-action-icon">↗</span><span>Clinical</span></button>';
  return '<div class="patient-quick-actions">'+q+a+vit+ipd+finance+clinical+'</div>';
@@ -1606,11 +1620,54 @@ function workspaceActionPanel(html,pid,anchorRole){
  setTimeout(()=>document.querySelector('#patientWorkspaceActionModal input, #patientWorkspaceActionModal select, #patientWorkspaceActionModal textarea, #patientWorkspaceActionModal button')?.focus(),40);
 }
 function workspaceOpenOpd(pid){openOpdRegistration(pid)}
-function workspaceOpenDoctor(pid){
- const q=(state.queue||[]).find(x=>Number(x.patient_id)===Number(pid));
- showSection('doctor-room');
- if(q){loadDoctorRoom().then(()=>selectDoctorPatient(pid,q.id,q.appointment_id||null))}
- else {loadDoctorRoom().then(()=>alert('No active OPD queue item for this patient.'))}
+async function workspaceOpenDoctor(pid){
+ try{
+  const q=(state.queue||[]).find(x=>Number(x.patient_id)===Number(pid));
+  const patient=state.activePatientRecord?.patient||state.patients.find(x=>Number(x.id)===Number(pid))||{};
+  const r=await api('/clinical?patient_id='+encodeURIComponent(pid));
+  state.doctorRoomPatient={id:Number(pid),queueId:q?.id||patient.active_queue_id||null,appointmentId:q?.appointment_id||null,patient,record:r};
+  saveWorkingContext({section:'patients',patientId:Number(pid),patientName:patient.name||'',mode:'workspace',queueId:q?.id||null,appointmentId:q?.appointment_id||null,action:'consultation'});
+  const visit=(r.visits||[]).find(v=>v.visit_status==='open');
+  const latest=r.vitals?.[0];
+  const consultation='<div class="workspace-card consultation-card">'+
+    '<div class="panel-head"><div><h3 class="panel-title">Doctor consultation</h3><div class="record-section-note">Complete the consultation here without leaving Patient Workspace.</div></div><span class="role-pill">Doctor</span></div>'+
+    '<div class="consultation-context"><span>'+esc(patient.uhid||'No UHID')+'</span><span>'+esc(patient.phone||'No phone')+'</span><span>'+esc(q?.token||'No active token')+'</span></div>'+
+    (!visit?'<div class="next-action primary"><div><strong>Consultation not started</strong><span>Start the consultation to enable clinical note, prescription and investigation actions.</span></div><button class="btn primary" type="button" onclick="workspaceDoctorStartConsultation('+pid+')">Start</button></div>':
+      '<textarea id="doctorConsultationNote" rows="7" placeholder="Assessment, findings, plan and instructions…">'+esc(visit.clinical_notes||'')+'</textarea>'+
+      '<div class="consultation-footer"><button class="btn" type="button" onclick="workspaceSaveDoctorVisit(false,'+pid+')">Save draft</button><button class="btn primary" type="button" onclick="workspaceSaveDoctorVisit(true,'+pid+')">Complete</button></div>'+
+      '<div class="workspace-grid consultation-tools">'+
+        '<div class="workspace-card"><div class="panel-head"><h3 class="panel-title">Vitals</h3><button class="mini" type="button" onclick="workspaceVitals('+pid+')">Update</button></div>'+(latest?'<div class="vitals-strip"><div><strong>'+esc((latest.blood_pressure_systolic||'—')+'/'+(latest.blood_pressure_diastolic||'—'))+'</strong><span>BP</span></div><div><strong>'+esc(latest.pulse||'—')+'</strong><span>Pulse</span></div><div><strong>'+esc(latest.temperature||'—')+'</strong><span>Temp</span></div><div><strong>'+esc(latest.spo2||'—')+'</strong><span>SpO₂</span></div></div>':'<div class="empty">No vitals recorded.</div>')+'</div>'+
+        '<div class="workspace-card"><div class="panel-head"><h3 class="panel-title">Prescription</h3></div><form class="form-grid compact-form" onsubmit="workspaceDoctorPrescription(event,'+pid+','+visit.id+')"><div class="field"><label>Medicine</label><input name="medicine_name" required></div><div class="field"><label>Dose</label><input name="dose" placeholder="500 mg"></div><div class="field"><label>Frequency</label><input name="frequency" placeholder="1-0-1"></div><div class="field"><label>Duration</label><input name="duration" placeholder="5 days"></div><div class="field full"><label>Instructions</label><input name="instructions" placeholder="After food"></div><div class="field full"><button class="btn primary">Add Rx</button></div></form></div>'+
+        '<div class="workspace-card"><div class="panel-head"><h3 class="panel-title">Investigation</h3></div><form class="form-grid compact-form" onsubmit="workspaceDoctorLab(event,'+pid+','+visit.id+')"><div class="field full"><label>Test</label><input name="test_name" required placeholder="CBC, LFT, HbA1c…"></div><div class="field full"><label>Notes</label><input name="notes"></div><div class="field full"><button class="btn primary">Order lab</button></div></form></div>'+
+      '</div>')+
+    '</div>';
+  workspaceActionPanel({title:'Consultation · '+(patient.name||'Patient'),body:consultation},pid,'doctor');
+ }catch(e){alert(e.message)}
+}
+async function workspaceDoctorStartConsultation(pid){
+ const s=state.doctorRoomPatient;if(!s)return;
+ try{
+  if(s.queueId)await api('/queue',{method:'PUT',body:JSON.stringify({id:Number(s.queueId),stage:'in_room'})});
+  await workspaceOpenDoctor(pid);
+ }catch(e){alert(e.message)}
+}
+async function workspaceSaveDoctorVisit(complete,pid){
+ const s=state.doctorRoomPatient;if(!s)return;
+ const note=document.getElementById('doctorConsultationNote')?.value||'';
+ if(complete&&!note.trim())return alert('Add the consultation note before completing.');
+ try{
+  const open=s.record?.visits?.find(v=>v.visit_status==='open'&&Number(v.patient_id)===Number(pid));
+  const body={type:'visit',patient_id:Number(pid),clinical_notes:note,visit_status:complete?'completed':'open',queue_entry_id:s.queueId||null,appointment_id:s.appointmentId||null};
+  if(open)await api('/clinical',{method:'PUT',body:JSON.stringify({type:'visit',id:open.id,clinical_notes:note,visit_status:body.visit_status,queue_entry_id:body.queue_entry_id,appointment_id:body.appointment_id})});
+  else await api('/clinical',{method:'POST',body:JSON.stringify(body)});
+  await refreshPatientWorkspace(pid); if(!complete)await workspaceOpenDoctor(pid);
+ }catch(e){alert(e.message)}
+}
+async function workspaceDoctorPrescription(e,pid,visitId){
+ e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/clinical',{method:'POST',body:JSON.stringify({type:'medicine',patient_id:Number(pid),visit_id:Number(visitId),...b})});await workspaceOpenDoctor(pid)}catch(x){alert(x.message)}
+}
+async function workspaceDoctorLab(e,pid,visitId){
+ e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/clinical',{method:'POST',body:JSON.stringify({type:'lab',patient_id:Number(pid),visit_id:Number(visitId),queue_entry_id:state.doctorRoomPatient?.queueId||null,test_name:b.test_name,notes:b.notes||null})});await workspaceOpenDoctor(pid)}catch(x){alert(x.message)}
 }
 function workspacePharmacy(pid){
  const rows=state.activePatientRecord?.pharmacy||[];
