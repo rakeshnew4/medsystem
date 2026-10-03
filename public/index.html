@@ -3020,7 +3020,7 @@ async function pollNotifications(){
 }
 function actionFeedbackLabel(path,method){
   const p=String(path||'').split('?')[0].replace(/^\//,'');
-  const labels={queue:'Queue updated',vitals:'Vitals saved',triage:'Triage saved',clinical:'Clinical record saved',lab:'Laboratory workflow updated',pharmacy:'Pharmacy workflow updated',followups:'Follow-up saved',patients:'Patient details saved',billing:'Billing record saved',appointments:'Appointment updated',beds:'Admission / bed updated',nursing-handoff:'Nursing handoff saved',theatre:'Procedure updated'};
+  const labels={queue:'Queue updated',vitals:'Vitals saved',triage:'Triage saved',clinical:'Clinical record saved',lab:'Laboratory workflow updated',pharmacy:'Pharmacy workflow updated',followups:'Follow-up saved',patients:'Patient details saved',billing:'Billing record saved',appointments:'Appointment updated',beds:'Admission / bed updated','nursing-handoff':'Nursing handoff saved',theatre:'Procedure updated'};
   return labels[p]||((method==='DELETE')?'Record deleted':'Changes saved');
 }
 function showActionToast(n){
