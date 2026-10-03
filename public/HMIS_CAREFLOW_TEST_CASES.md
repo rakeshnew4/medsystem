@@ -75,6 +75,9 @@ Status: Implemented; authenticated staff E2E pending.
 
 # Clinical / Doctor Consultation
 
+## TC-UI-PS-001 — Patient Workspace consultation remains workspace-local
+Expected: Start consultation from Patient Workspace/queue changes the existing queue state to in_room and opens consultation in the same patient workspace; no navigation to a separate Doctor Room page occurs. AI listening/summary remains inside the consultation workspace and is not duplicated as a Care Team navigation action. Status: Implemented v614; anonymous/browser visual execution reaches the staff login boundary, so authenticated mutation E2E remains pending.
+
 ## TC-CLINICAL-021 — Invalid consultation completion does not mutate the visit
 Route: /api/clinical; Method: PUT type=visit.
 Expected: invalid visit status returns 400; completed without a non-empty clinical note returns 400 before updating the visit.

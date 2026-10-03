@@ -311,9 +311,12 @@ async function runFlowAgent(page,width,height){
   return {ok:log.every(x=>x.ok),log,final:await audit("final-workspace")};
 }
 
-async function runTarget(target,width,height){
+async function runTarget(target,width,height,demoRole=null){
   return browser.session(async page=>{
     await page.setViewport({width,height});
+    if(demoRole){
+      await page.setCookie({name:"careflow_demo_role",value:String(demoRole).toLowerCase(),domain:"hospital-ai.hatchable.site",path:"/",secure:true,httpOnly:false});
+    }
     await page.goto(target.url,{waitUntil:"domcontentloaded"});
     await new Promise(r=>setTimeout(r,800));
     if(target.name==="ai-flow-agent")return {flow_agent:await runFlowAgent(page,width,height)};
@@ -343,12 +346,14 @@ export default async function(req,res){
   const height=Number(req.body?.height||req.query?.height||900);
   const mobile=req.body?.mobile===true||req.query?.mobile==="true";
   const selected=String(req.body?.targets||req.query?.targets||"").split(",").map(x=>x.trim()).filter(Boolean);
+  const requestedDemoRole=String(req.body?.demo_role||req.query?.demo_role||"").trim().toLowerCase();
+  const demoRole=["admin","receptionist","nurse","doctor","lab","pharmacy","billing","store"].includes(requestedDemoRole)?requestedDemoRole:null;
   const targets=selected.length?TARGETS.filter(x=>selected.includes(x.name)):TARGETS;
   const sizes=mobile?[[390,844]]:[[width,height],[390,844]];
   const results=[];
   for(const target of targets){
     for(const [w,h] of sizes){
-      try{results.push({target:target.name,width:w,height:h,...await runTarget(target,w,h)})}
+      try{results.push({target:target.name,width:w,height:h,demo_role:demoRole,...await runTarget(target,w,h,demoRole)})}
       catch(error){results.push({target:target.name,width:w,height:h,error:String(error?.message||error)})}
     }
   }
