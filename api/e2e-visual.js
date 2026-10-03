@@ -63,15 +63,9 @@ async function liteLLMReview(png,meta){
   const base=String(process.env.LITELLM_URL||"").trim().replace(/\/$/,"");
   const key=String(process.env.LITELLM_API_KEY||"").trim();
   if(!base||!key)return {status:"not_configured",provider:"litellm"};
-  let model=String(process.env.LITELLM_MODEL||"").trim();
-  if(!model){
-    try{
-      const mr=await fetch(base.endsWith("/v1")?base+"/models":base+"/v1/models",{headers:{Authorization:"Bearer "+key}});
-      const mj=await mr.json();
-      const ids=(mj?.data||[]).map(x=>x.id).filter(Boolean);
-      model=ids.find(x=>/gemini.*2\.5.*flash.*lite/i.test(x))||ids.find(x=>/gemini.*flash.*lite/i.test(x))||ids.find(x=>/vision|vl|gemini/i.test(x))||ids[0];
-    }catch{}
-  }
+  // Keep the visual fallback deterministic: LiteLLM routes this model name
+  // to the configured Gemini 2.5 Flash Lite backend. No /models discovery call is needed.
+  const model=String(process.env.LITELLM_MODEL||"gemini-2.5-flash-lite").trim();
   if(!model)return {status:"no_model",provider:"litellm"};
   const endpoint=base.endsWith("/v1")?base+"/chat/completions":base+"/v1/chat/completions";
   try{
