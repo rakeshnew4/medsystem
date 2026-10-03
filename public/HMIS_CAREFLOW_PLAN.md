@@ -1,5 +1,15 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-03 — Book Appointment patient registration form refinement v658
+
+- Reviewed the HMIS patient-registration field set before changing the receptionist booking form. The core booking form now keeps only the operational fields visible: Name, Phone, DOB, auto-calculated Age, Gender, Email and Address, followed by doctor/date/time/consultation/priority.
+- Age is derived from DOB and shown as read-only; it is not stored as a second conflicting demographic value.
+- Added a collapsed **Advanced / Optional** section for Title, NIC/Passport, alternate phone, area/locality, blood group, occupation and emergency contact. These map to the existing CareFlow patient-identity contract and can be completed later from Patient Workspace.
+- The appointment POST now sends those optional identity fields when supplied.
+- HMIS/OpenELIS patient references include additional demographics such as age, birth details, emergency, occupation, national identifier and address components; the CareFlow form deliberately keeps these out of the fast OPD path unless they are already supported by the current patient-identity schema. citeturn1search1
+- Dry-run passed with 0 hard errors. Next deployment: v658.
+- Genuine receptionist/staff click → save → reload E2E remains an open gate because the available automated session is not a genuine hospital-staff session.
+
 ## 2026-10-03 — Complete Book Appointment front-desk flow v656
 
 - Reworked the main Book Appointment action so it is the complete OPD front-desk transaction: find an existing patient or register a new patient inline, book the doctor/date/time, assign the OPD token, create the queue entry, and for today's booking open the OPD care encounter immediately.
