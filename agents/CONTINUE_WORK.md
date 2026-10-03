@@ -154,4 +154,8 @@ For every U12 increment, inspect the relevant HMIS staff/privilege/configuration
 14. [ ] E2E-AUTH genuine staff gate — attempt persistent OTP/browser execution when available; demo-mode remains separate and must never be counted as production staff authentication.
 15. [ ] Full HMIS end-to-end workflow loop — Reception → Queue → Nursing → Doctor → Lab → Pharmacy → Billing → IPD → Inventory → Staff → Integrations → Reporting, with authenticated gates preserved.
 
+### AI-agent / HMIS tool-loop reference — added 2026-10-02
+HMIS development branch was inspected directly. Its ai_chat.xhtml provides a dedicated assistant UI, while AnthropicApiService implements an agent loop with declared tools and server-side executeToolCall() handlers. Current HMIS tool examples include GitHub code search/file fetch, configuration management, admission search/counter, clinical metadata and item requests; some sensitive mutations are deliberately kept in the normal UI. CareFlow will use this architecture as the reference: model -> named tool -> server-side permission/validation -> API/function -> tool result -> model, with no arbitrary SQL/URL execution. CareFlow first seven tools are read-only; mutation tools remain queued until each underlying contract is verified.
+HMIS AI/UI comparison is now an explicit recurring task, not a one-time review.
+
 This file is the persistent next-task/reminder loop. It must never be left with an empty or stale NEXT TASK QUEUE.

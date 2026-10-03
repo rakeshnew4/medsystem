@@ -121,6 +121,49 @@
         "Keep demo E2E separate from production staff-auth gate"
       ]
     }
+  ,
+    {
+      "run": "2026-10-02-003",
+      "version": 490,
+      "purpose": "OPD token recovery UX validation + AI-agent tool foundation verification",
+      "pages": [
+        {
+          "name": "opd-token",
+          "viewport": "390x844",
+          "provider": "Groq top/middle; LiteLLM Gemini 2.5 Flash Lite bottom",
+          "severity": "none",
+          "summary": "The missing-token state now gives clear recovery actions. Browser assertions show no horizontal overflow, no console errors and the page remains within one mobile viewport. Gemini's final review found no visual issues."
+        }
+      ],
+      "browser_assertions": {
+        "horizontal_overflow": false,
+        "console_errors": 0,
+        "missing_token_recovery": "Back to OPD + Open Patient Portal",
+        "invalid_token_api": "404 with intended token error instead of database cast failure"
+      },
+      "ai_agent_tools": {
+        "route": "/api/ai-agent-tools",
+        "discovery": "user access returned 200 with 7 declared read-only tools",
+        "anonymous_gate": "401",
+        "execution_check": "get_hospital_overview returned hospital-scoped aggregate data for the signed-in app-user harness",
+        "mutation_access": "none exposed"
+      },
+      "HMIS_ai_review": {
+        "existing_careflow_ai": [
+          "administrative assistant",
+          "clinical documentation summary/ask/scribe",
+          "administrative message drafting",
+          "operations brief",
+          "visual UI QA"
+        ],
+        "hmIs_repository_ai_finding": "The inspected hmislk/hmis development repository exposes the conventional HMIS modules/workflows and current development tooling, but the repository search did not surface a production AI assistant comparable to CareFlow's AI endpoints. CareFlow therefore keeps AI as a separate permission-gated layer over existing workflows rather than changing the HMIS core workflow model."
+      },
+      "next_tasks": [
+        "Expand the AI-agent registry by mapping existing CareFlow APIs/functions one by one, preserving their permission and mutation contracts.",
+        "Continue HMIS module/UI comparison and visual E2E coverage.",
+        "Attempt genuine staff OTP/browser E2E when a persistent staff session is available."
+      ]
+    }
   ],
   "updated": "2026-10-02"
 }
