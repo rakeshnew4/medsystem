@@ -1488,7 +1488,7 @@ function toggleClinicalDictation(){
  rec.onend=()=>{window.__careflowRecognition=null};
  window.__careflowRecognition=rec;rec.start();
 }
-async function doctorStartFromQueue(pid,queueId){try{if(Number(queueId)>0)await api('/queue',{method:'PUT',body:JSON.stringify({id:Number(queueId),stage:'in_room'})});await workspaceOpenDoctor(pid);await refreshPatientWorkspace(pid)}catch(e){alert(e.message)}}
+async function doctorStartFromQueue(pid,queueId){try{if(Number(queueId)>0)await api('/queue',{method:'PUT',body:JSON.stringify({id:Number(queueId),stage:'in_room'}),notify:false});showActionToast({title:'Consultation started',body:'The patient is now in the doctor consultation workflow.'});await workspaceOpenDoctor(pid);await refreshPatientWorkspace(pid)}catch(e){showActionToast({title:'Consultation not started',body:e.message,error:true})}}
 async function doctorStartVisit(){const s=state.doctorRoomPatient;if(!s)return;saveWorkingContext({section:'doctor-room',patientId:s.id,patientName:s.patient?.name||'',queueId:s.queueId,appointmentId:s.appointmentId,tab:state.doctorRoomTab||'waiting',action:'consultation'});try{await api('/queue',{method:'PUT',body:JSON.stringify({id:Number(s.queueId),stage:'in_room'})});await loadDoctorRoom();await selectDoctorPatient(s.id,s.queueId,s.appointmentId,'consultation')}catch(e){alert(e.message)}}
 async function doctorMoveTo(id,stage){if(!id)return;try{await api('/queue',{method:'PUT',body:JSON.stringify({id:Number(id),stage})});await loadDoctorRoom();if(stage==='completed'){clearWorkingContext();document.getElementById('doctorWorkspace').style.display='none';document.getElementById('doctorWorkspaceEmpty').style.display='block'}else{renderDoctorRoom()}}catch(e){alert(e.message)}}
 async function saveDoctorVisit(complete){const s=state.doctorRoomPatient;if(!s)return;const note=document.getElementById('doctorConsultationNote')?.value||'';if(complete&&!note.trim())return alert('Add the consultation note before completing the visit.');saveWorkingContext({section:'doctor-room',patientId:s.id,patientName:s.patient?.name||'',queueId:s.queueId,appointmentId:s.appointmentId,tab:state.doctorRoomTab||'waiting',action:'clinical'});try{const open=s.record?.visits?.find(v=>v.visit_status==='open'&&Number(v.patient_id)===Number(s.id));let visit;if(open){visit=await api('/clinical',{method:'PUT',body:JSON.stringify({type:'visit',id:open.id,clinical_notes:note,visit_status:complete?'completed':'open',queue_entry_id:s.queueId||null,appointment_id:s.appointmentId||null})})}else{visit=await api('/clinical',{method:'POST',body:JSON.stringify({type:'visit',patient_id:s.id,appointment_id:s.appointmentId||null,queue_entry_id:s.queueId||null,clinical_notes:note,visit_status:complete?'completed':'open'})})}if(complete){clearWorkingContext();await loadDoctorRoom();showSection('doctor-room')}else{await selectDoctorPatient(s.id,s.queueId,s.appointmentId)}alert(complete?'Visit completed.':'Visit saved.')}catch(e){alert(e.message)}}
@@ -1636,7 +1636,7 @@ async function workspaceAIListen(pid){
    await workspaceOpenDoctor(pid);
    setTimeout(()=>document.querySelector('#patientWorkspaceActionModal .consultation-ai-card')?.scrollIntoView({behavior:'smooth',block:'center'}),80);
    setTimeout(()=>document.getElementById('aiScribeInput')?.focus(),180);
- }catch(e){alert(e.message)}
+ }catch(e){showActionToast({title:'AI consultation failed',body:e.message,error:true})}
 }
 function patientNextActions(p,s){
  const clinical=!!s.permissions?.clinical, billing=!!s.permissions?.billing, pharmacy=!!s.permissions?.pharmacy;
@@ -1831,7 +1831,7 @@ function workspaceBilling(pid){
 function workspacePayOutstanding(pid){
  const rows=state.activePatientRecord?.billing||[];
  const open=rows.filter(x=>Math.max(0,Number(x.due??(Number(x.total||0)-Number(x.paid||0))))>0);
- if(!open.length)return alert('No outstanding invoices.');
+ if(!open.length)return showActionToast({title:'Payment',body:'No outstanding invoices.'});
  const html=open.map(x=>'<div class="compact-record"><div><strong>'+esc(x.invoice_number)+'</strong><span>Total ₹'+Number(x.total||0).toFixed(2)+' · Paid ₹'+Number(x.paid||0).toFixed(2)+' · Due ₹'+Number(x.due??(Number(x.total||0)-Number(x.paid||0))).toFixed(2)+'</span></div><button class="mini" onclick="workspacePayInvoice('+x.id+','+pid+','+Number(x.due??(Number(x.total||0)-Number(x.paid||0)))+')">Pay</button></div>').join('');
  workspaceActionPanel({title:'Outstanding payments',body:html},pid);
 }
@@ -1853,7 +1853,9 @@ function workspaceTriage(pid){
  workspaceActionPanel({title:'Nursing triage',body:b},pid,'nurse');
 }
 async function workspaceSaveTriage(e,pid,qid){
- e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());b.patient_id=pid;if(qid)b.queue_entry_id=qid;await api('/triage',{method:'POST',body:JSON.stringify(b)});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+ e.preventDefault();
+ try{const b=Object.fromEntries(new FormData(e.target).entries());b.patient_id=pid;if(qid)b.queue_entry_id=qid;await api('/triage',{method:'POST',body:JSON.stringify(b)});showActionToast({title:'Triage saved',body:'The nursing triage assessment was saved.'});await refreshPatientWorkspace(pid)}
+ catch(x){showActionToast({title:'Triage not saved',body:x.message,error:true})}
 }
 async function workspaceCompleteNursing(pid){
  const qid=state.activePatientRecord?.patient?.active_queue_id;
