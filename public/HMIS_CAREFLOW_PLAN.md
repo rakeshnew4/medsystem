@@ -1,5 +1,15 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-03 — Patient Workspace remaining notification cleanup v648
+
+- Continued the active Patient Workspace mutation/error-feedback audit using the HMIS workflow principle that the selected patient remains the operational context rather than sending the user to unrelated pages.
+- Removed the remaining Patient Workspace browser-alert paths from nursing handoff and Theatre scheduling. Missing nursing queue context, Theatre admission precondition failures, Theatre success, and Theatre save failures now use the shared bottom in-context notification surface.
+- Existing `/api/nursing-handoff` and `/api/theatre` contracts were preserved; no new workflow state or mutation was introduced.
+- Dry-run passed with 0 hard errors; deployed live as v648.
+- Verified the public integration-capabilities endpoint still returns HTTP 200 and the declared FHIR/LIS capability contract remains unchanged.
+- Genuine hospital-staff browser click → mutation → persistence → reload E2E remains open because the available runner still cannot establish the required hospital staff session.
+- Next: continue the remaining Patient Workspace mutation-contract audit, then harden any remaining workspace-reachable browser-dialog/error paths and run the complete authenticated click/save/reload matrix when a genuine staff session is available.
+
 ## 2026-10-03 — IPD/queue/nursing/pharmacy/discharge contract verification v643
 
 - Continued the HMIS-aligned backend contract audit after v642.
