@@ -50,20 +50,20 @@ export default async function(req,res){
   cols.push("status");vals.push(b.status||"active");marks.push("$"+(marks.length+1));
   let inserted;
   try{
+   const seq=await db.query("SELECT nextval('patients_id_seq') AS id");
+   const patientId=Number(seq.rows[0]?.id);
+   if(!patientId)throw new Error("Unable to allocate patient id");
+   cols.unshift("id","uhid","registration_source","registration_source_locked");
+   vals.unshift(patientId,"UHID-"+String(patientId).padStart(6,"0"),String(b.source||"staff"),true);
+   marks.unshift("$1","$2","$3","$4");
+   for(let i=4;i<marks.length;i++)marks[i]="$"+(i+1);
    await db.query("INSERT INTO patients("+cols.join(",")+") VALUES("+marks.join(",")+")",vals);
-   const lookupSql=phone
-    ?"SELECT id FROM patients WHERE hospital_id=$1 AND name=$2 AND phone=$3 ORDER BY created_at DESC,id DESC LIMIT 1"
-    :"SELECT id FROM patients WHERE hospital_id=$1 AND name=$2 AND phone IS NULL ORDER BY created_at DESC,id DESC LIMIT 1";
-   const lookup=await db.query(lookupSql,phone?[hid,name,phone]:[hid,name]);
-   if(!lookup.rows[0])throw new Error("Patient was inserted but could not be reloaded");
-   inserted={rows:[lookup.rows[0]]};
+   inserted={rows:[{id:patientId}]};
   }catch(err){
    console.error("[patients] patient insert failed",String(err?.message||err),{sql:"INSERT INTO patients("+cols.join(",")+") VALUES("+marks.join(",")+") RETURNING id",valueCount:vals.length});
    return res.status(500).json({error:"Patient insert failed",detail:String(err?.message||err)});
   }
   const patientId=inserted.rows[0].id;
-  const generatedUhid="UHID-"+String(patientId).padStart(6,"0");
-  await db.query("UPDATE patients SET uhid=$1,registration_source=$2,registration_source_locked=true WHERE id=$3 AND hospital_id=$4",[generatedUhid,String(b.source||"staff"),patientId,hid]);
   const r=await db.query("SELECT id,name,uhid,phone,email,date_of_birth,notes,status,created_at FROM patients WHERE id=$1 AND hospital_id=$2",[patientId,hid]);
   if(!r.rows[0])return res.status(500).json({error:"Patient registration could not be reloaded"});
   const identityFields=["title","sex","nic_passport","alternate_phone","address","area","blood_group","occupation","emergency_contact"];
