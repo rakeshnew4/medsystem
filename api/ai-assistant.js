@@ -1,6 +1,7 @@
 import { db } from "../lib/db.js";
 import { requirePermission } from "../lib/authz.js";
-import { litellmChat } from "../lib/llm.js";
+import { litellmToolLoop } from "../lib/llm.js";
+import { TOOLS, runTool } from "../lib/ai-agent-tools.js";
 export const access = "user";
 export const methods = ["GET","POST"];
 
@@ -35,28 +36,28 @@ export default async function(req,res){
 
   const q=String((req.body||{}).question||"").trim();
   if(!q)return res.status(400).json({error:"Question is required"});
-  const context=await hospitalContext(ctx.hospitalId);
-  if(!context)return res.status(400).json({error:"Set up the hospital first"});
-
   await db.query("INSERT INTO ai_assistant_messages(conversation_id,role,body) VALUES($1,'user',$2)",[conversationId,q]);
 
   const history=await db.query("SELECT role,body FROM ai_assistant_messages WHERE conversation_id=$1 ORDER BY id DESC LIMIT 10",[conversationId]);
-  const recent=history.rows.reverse();
+  const recent=history.rows.reverse().map(x=>({role:x.role==="assistant"?"assistant":"user",content:String(x.body||"")}));
 
-  const system="You are CareFlow's administrative hospital assistant. Never diagnose, prescribe, interpret medical reports, or provide clinical treatment decisions. Use only supplied hospital information and the conversation history. If asked for clinical advice, direct the user to a qualified clinician. Keep answers concise and practical.";
-  const prompt=`Hospital information: ${JSON.stringify(context)}.
-Recent conversation history (up to 10 messages):
-${recent.map(x=>x.role.toUpperCase()+": "+x.body).join("\n")}
-
-Answer the latest staff question using only the supplied information. Latest question: ${q}`;
+  const system="You are CareFlow's staff hospital assistant. You may use the declared read-only CareFlow tools to retrieve current operational information. Never diagnose, prescribe, interpret medical reports, or make clinical treatment decisions. Never invent patient, queue, appointment, billing or admission data. Before answering, use the appropriate tool when the question asks for current hospital data. Explain when a requested action requires a normal CareFlow workflow because no safe mutation tool is available. Keep answers concise and practical.";
 
   try{
-    const answer=await litellmChat({system,user:prompt,maxTokens:500});
-    const finalAnswer=answer||"I could not generate a response.";
+    const result=await litellmToolLoop({
+      system,
+      messages:recent,
+      tools:TOOLS,
+      execute:(name,input)=>runTool(name,input,ctx.hospitalId),
+      maxTokens:700,
+      temperature:0.1,
+      maxIterations:5
+    });
+    const finalAnswer=result.answer||"I could not generate a response.";
     await db.query("INSERT INTO ai_assistant_messages(conversation_id,role,body) VALUES($1,'assistant',$2)",[conversationId,finalAnswer]);
     await db.query("UPDATE ai_assistant_conversations SET updated_at=now() WHERE id=$1",[conversationId]);
-    res.json({answer:finalAnswer});
+    return res.json({answer:finalAnswer,agent:true,tool_iterations:result.iterations||1,available_tools:TOOLS.map(t=>t.name)});
   }catch(e){
-    res.status(502).json({error:e.message||"AI assistant failed"});
+    return res.status(502).json({error:e.message||"AI assistant failed"});
   }
 }
