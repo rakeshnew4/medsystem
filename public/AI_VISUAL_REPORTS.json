@@ -219,6 +219,33 @@
         "Run genuine staff-session AI E2E.",
         "Continue module-by-module HMIS UI comparison and visual E2E."
       ]
+    },
+    {
+      "run": "2026-10-02-005",
+      "version": 498,
+      "purpose": "Post-fix staff-login visual validation",
+      "pages": [
+        {
+          "name": "staff-login",
+          "viewport": "390x844",
+          "browser_assertions": {
+            "horizontal_overflow": false,
+            "console_errors": 0,
+            "login_validation": "passed"
+          },
+          "ai_reviews": {
+            "top": "Groq severity none",
+            "middle": "Groq severity medium, suggesting possible button clipping; browser state reports documentHeight=844, scrollY=0 and the full button text is visible, so clipping is not reproduced by browser assertions.",
+            "bottom": "Gemini 2.5 Flash Lite severity none"
+          },
+          "status": "Validation message placement issue fixed. Remaining button-clipping suggestion is unconfirmed and is not being changed without reproduction."
+        }
+      ],
+      "next_tasks": [
+        "Continue public/module visual coverage.",
+        "Expand safe read-only AI tools for lab, pharmacy, inventory and reporting.",
+        "Complete genuine staff-session AI/E2E loop when a persistent authenticated browser session is available."
+      ]
     }
   ],
   "updated": "2026-10-02"
