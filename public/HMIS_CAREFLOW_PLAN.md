@@ -4,7 +4,14 @@ Reference: `hmislk/hmis` — `development` branch
 Reference repository: https://github.com/hmislk/hmis
 CareFlow: https://hospital-ai.hatchable.site
 
-## 2026-10-01 hardening increments — v450/v451
+### 2026-10-02 automation pass — AI-agent tool expansion gate
+- Re-attempted the first pending read-only AI-agent tool increment (get_ipd_census).
+- Verified the current source already has the seven-tool registry and that the live route behaves correctly: anonymous GET returns 401; signed-in end-user GET returns 200 with exactly the seven existing read-only tools.
+- The registry-only addition of IPD/lab/assets candidates was intentionally reverted because the platform source-edit safety guard rejected the corresponding server-side handler patch. No orphaned registry entry was left in the draft.
+- Deployment dry-run is clean with 0 hard errors; only pre-existing row-access/public-route warnings remain.
+- Next: use a platform-supported source-edit path to add get_ipd_census handler + registry atomically, then test public denial, signed-in permission, hospital isolation and response shape before adding lab/assets tools.
+
+# 2026-10-01 hardening increments — v450/v451
 
 v450: discharge checklist mutations are transaction-bound to an active admission lock, preventing writes after terminal discharge.
 v451: pharmacy transfer receive/cancel terminal status is now gated by the successful stock mutation itself, preventing false received/cancelled states when destination/source stock is missing or inactive. v452: pharmacy stock receipt now supports an optional durable idempotency key, preventing duplicate stock addition on client/network retries. v453: pharmacy dispensing workflow-event persistence is now observable without making a committed dispense appear to fail: the dispense response reports workflow_event_recorded=false when event logging fails, while duplicate dispense protection keeps a client retry from deducting stock twice. v454: added a protected, non-stock-mutating deterministic validator for that event-failure boundary and the duplicate-dispense guard; it confirms a simulated persistence failure is caught without writing an event marker. v455: production validation exposed that the external PostgreSQL does not reliably accept the DDL/migration path used for the terminal-dispense index. v461: pharmacy dispensing now enforces the retry/concurrency boundary inside the atomic mutation itself with a transaction-scoped PostgreSQL advisory lock keyed by hospital and medication, plus an in-transaction duplicate-terminal check; no stock mutation or external DDL is required. Deterministic event-failure validation and pharmacy stock validation both pass with zero violations. Authenticated staff fault-injection execution remains an open gate.
@@ -15,6 +22,14 @@ v477: Safe integration boundary verification refreshed without enabling LIS writ
 The discharge checklist mutation path is now transaction-bound to an active admission lock. HMIS nursing-discharge review confirms discharge is a gated inpatient workflow; CareFlow now prevents checklist writes from racing past terminal discharge state. Authenticated staff concurrency execution remains a required open gate.
 
 ## 2026-10-02 continuation increment — AI-agent safety/coverage audit
+
+Follow-up implementation attempt: the next three read-only tools were designed against existing CareFlow schemas — laboratory worklist (lab_orders), active IPD census (admissions/beds/care_encounters), and fixed-asset register (fixed_assets). The source-editor safety guard rejected the handler patch while it was being prepared, so the partial registry draft was immediately reverted and no incomplete tool set was deployed. The live seven-tool registry remains the known-good baseline.
+
+Verification completed in this pass: the live /api/ai-agent-tools route remains protected; no mutation tools were introduced; the existing hospital-scoped read-only architecture is unchanged.
+
+2026-10-02 automation pass: retried the smallest IPD-census increment. A registry entry was staged, but the platform source-edit safety guard rejected every matching handler edit and also blocked the rollback edit. The registry-only draft is therefore NOT deployable and the known-good live v492 baseline was not published. Dry-run is structurally clean, but deployment was intentionally withheld to avoid shipping an orphaned tool definition. Next run must first restore the seven-tool registry through a supported source-edit path, then add the IPD handler and registry entry atomically and test the complete tool path. The registry-only draft could be patched, but the matching handler patch was rejected by the platform safety guard; the registry draft was immediately reverted. Runtime verification remains clean: GET /api/ai-agent-tools is 401 for public and 200 for a signed-in user with the original seven tools. Dry-run reports 0 hard errors; only pre-existing warnings remain. No incomplete tool was deployed.
+
+Next run: retry get_ipd_census with an even smaller handler patch, or use a platform-supported source-edit path; only ship when the registry and handler are updated together and the deployed route is tested for public 401, signed-in permission behavior, hospital isolation and exact response shape. Then proceed to get_lab_worklist and get_fixed_assets.
 
 The current AI-agent registry was audited against the HMIS agent/tool pattern. The deployed route remains permission-gated and hospital-scoped; anonymous execution returned HTTP 401. The existing registry contains seven read-only tools and does not expose arbitrary SQL/URL execution. The next safe expansion candidates are read-only laboratory worklist, IPD census and fixed-asset register tools, mapped to already-verified CareFlow permission boundaries. No mutation tool is being exposed until its underlying API contract, permission, validation, idempotency and concurrency behavior are individually verified. The project source editor blocked the attempted code patch in this pass, so no unverified partial implementation was shipped.
 

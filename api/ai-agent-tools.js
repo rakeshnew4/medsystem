@@ -20,6 +20,7 @@ const TOOLS=[
   {name:"get_queue",description:"Get today's active OPD queue with stage, priority, token and patient context.",permission:"page.queue",input:{type:"object",properties:{stage:{type:"string"}},additionalProperties:false},readOnly:true},
   {name:"get_appointments",description:"Get hospital appointments with patient, doctor and active queue context.",permission:"page.appointments",input:{type:"object",properties:{date:{type:"string"}},additionalProperties:false},readOnly:true},
   {name:"get_due_followups",description:"Get follow-ups currently due for the hospital.",permission:"page.followups",input:{type:"object",properties:{limit:{type:"integer"}},additionalProperties:false},readOnly:true},
+  {name:"get_ipd_census",description:"Get the active inpatient census with patient, ward/bed, admitting doctor and open encounter context.",permission:"page.beds",input:{type:"object",properties:{ward:{type:"string"},limit:{type:"integer"}},additionalProperties:false},readOnly:true},
   {name:"get_billing_summary",description:"Get aggregate billing totals and recent invoice status for the hospital; does not expose legacy ledger repair or mutation controls.",permission:"page.billing",input:{type:"object",properties:{days:{type:"integer"}},additionalProperties:false},readOnly:true}
 ];
 
@@ -85,6 +86,27 @@ async function runTool(name,input,hid){
     const limit=cleanInt(input.limit,50,1,100);
     const r=await db.query("SELECT id,patient_id,doctor_name,due_date,status,reason,notes,consultation_type FROM followups WHERE hospital_id=$1 AND due_date<=current_date AND status='due' ORDER BY due_date ASC,id ASC LIMIT $2",[hid,limit]);
     return {followups:r.rows};
+  }
+  if(name==="get_ipd_census"){
+    const ward=cleanText(input.ward,80);
+    const limit=cleanInt(input.limit,100,1,300);
+    const filter=ward?" AND b.ward=$2":"";
+    const params=ward?[hid,ward,limit]:[hid,limit];
+    const limitParam=ward?"$3":"$2";
+    const r=await db.query(`SELECT a.id AS admission_id,a.admission_number,a.admission_type,a.admitted_at,a.expected_discharge_date,
+      a.patient_id,p.name AS patient_name,p.uhid,p.phone,p.date_of_birth,
+      b.id AS bed_id,b.ward,b.bed_number,b.bed_type,b.status AS bed_status,
+      d.id AS doctor_id,d.name AS doctor_name,
+      ce.id AS encounter_id,ce.status AS encounter_status,ce.started_at AS encounter_started_at
+      FROM admissions a
+      JOIN patients p ON p.id=a.patient_id AND p.hospital_id=a.hospital_id
+      LEFT JOIN beds b ON b.id=a.bed_id AND b.hospital_id=a.hospital_id
+      LEFT JOIN doctors d ON d.id=a.admitting_doctor_id AND d.hospital_id=a.hospital_id
+      LEFT JOIN LATERAL (SELECT id,status,started_at FROM care_encounters WHERE hospital_id=a.hospital_id AND admission_id=a.id ORDER BY id DESC LIMIT 1) ce ON true
+      WHERE a.hospital_id=$1 AND a.discharged_at IS NULL${filter}
+      ORDER BY b.ward NULLS LAST,b.bed_number NULLS LAST,a.admitted_at,a.id
+      LIMIT ${limitParam}`,params);
+    return {census:r.rows,count:r.rows.length,ward:ward||null};
   }
   if(name==="get_billing_summary"){
     const days=cleanInt(input.days,30,1,365);
