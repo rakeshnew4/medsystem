@@ -10,6 +10,13 @@ This file is the executable test checklist for the workflow-by-workflow HMIS imp
 - Do not manually invoke the scheduler during verification because the worker also processes WhatsApp reminders.
 - Actual object PUT remains open until MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY and MINIO_BUCKET are configured in Hatchable secrets.
 
+### TC-ARCHIVE-005 — Archive/notification scheduler isolation
+- Verify `/api/archive-worker` is scheduler-gated and is scheduled at minute 30 of each hour.
+- Verify `/api/notifications-worker` remains scheduler-gated at minute 0 of each hour.
+- Verify the archive routine is shared through `lib/archive.js`, so notification execution cannot prevent the archive scheduler from running.
+- Do not manually invoke either scheduler during verification because the notification worker can send WhatsApp reminders.
+- Actual MinIO PUT remains an infrastructure gate until the configured secret-backed endpoint is available.
+
 For every workflow:
 1. Validate the intended happy path.
 2. Validate role and permission boundaries.

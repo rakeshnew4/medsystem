@@ -100,7 +100,15 @@ For each domain:
 - [ ] 14 Integrations / REST / FHIR / LIS
 - [ ] 15 Reporting / analytics
 
-## Current implementation status — 2026-10-01
+## Current implementation status
+
+### 2026-10-02 — Timed archive isolation
+- Report/document archiving is now isolated from WhatsApp delivery.
+- Shared MinIO/S3-compatible archive logic lives in `lib/archive.js`.
+- `api/archive-worker.js` runs at minute 30 of every hour; `api/notifications-worker.js` remains at minute 0.
+- Archive keys remain deterministic and hospital-scoped for operational JSON reports, audit/billing-audit events, fixed-asset reports, invoice PDFs, lab PDFs and latest prescription PDFs.
+- Actual MinIO object upload remains an infrastructure gate until the four required MinIO secrets are populated; missing configuration degrades the archive result without blocking other scheduled workflows.
+- Published in v508. — 2026-10-01
 
 - **Laboratory backend hardening — v440:** result verification now atomically updates the lab order, creates its clinical report, and advances the linked queue entry in one database statement; a report-insert failure can no longer leave a verified lab order without its report. Authenticated laboratory E2E remains open.
 - **IPD discharge hardening — v441:** updating a nonexistent discharge checklist now returns HTTP 404 instead of a successful response containing an error object. Authenticated IPD E2E remains open.
