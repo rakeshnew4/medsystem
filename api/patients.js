@@ -58,11 +58,16 @@ export default async function(req,res){
   const patientId=inserted.rows[0].id;
   const generatedUhid="UHID-"+String(patientId).padStart(6,"0");
   const r=await db.query("UPDATE patients SET uhid=$1,registration_source=$2,registration_source_locked=true WHERE id=$3 AND hospital_id=$4 RETURNING id,name,uhid,phone,email,date_of_birth,notes,status,created_at",[generatedUhid,String(b.source||"staff"),patientId,hid]);
-  try{
-   await db.query("INSERT INTO patient_identity(hospital_id,patient_id,title,sex,nic_passport,alternate_phone,address,area,blood_group,occupation,emergency_contact) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT(patient_id) DO UPDATE SET title=EXCLUDED.title,sex=EXCLUDED.sex,nic_passport=EXCLUDED.nic_passport,alternate_phone=EXCLUDED.alternate_phone,address=EXCLUDED.address,area=EXCLUDED.area,blood_group=EXCLUDED.blood_group,occupation=EXCLUDED.occupation,emergency_contact=EXCLUDED.emergency_contact,updated_at=now()",[hid,patientId,b.title||null,b.sex||null,b.nic_passport||null,b.alternate_phone||null,b.address||null,b.area||null,b.blood_group||null,b.occupation||null,b.emergency_contact||null]);
-  }catch(err){
-   console.error("[patients] identity registration failed",String(err?.message||err));
-   return res.status(500).json({error:"Patient identity registration failed",detail:String(err?.message||err)});
+  const identityFields=["title","sex","nic_passport","alternate_phone","address","area","blood_group","occupation","emergency_contact"];
+  const hasIdentity=identityFields.some(k=>String(b[k]??"").trim()!=="");
+  if(hasIdentity){
+   try{
+    const iv=identityFields.map(k=>b[k]??null);
+    await db.query("INSERT INTO patient_identity(hospital_id,patient_id,title,sex,nic_passport,alternate_phone,address,area,blood_group,occupation,emergency_contact) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT(patient_id) DO UPDATE SET title=EXCLUDED.title,sex=EXCLUDED.sex,nic_passport=EXCLUDED.nic_passport,alternate_phone=EXCLUDED.alternate_phone,address=EXCLUDED.address,area=EXCLUDED.area,blood_group=EXCLUDED.blood_group,occupation=EXCLUDED.occupation,emergency_contact=EXCLUDED.emergency_contact,updated_at=now()",[hid,patientId,...iv]);
+   }catch(err){
+    console.error("[patients] identity registration failed",String(err?.message||err));
+    return res.status(500).json({error:"Patient identity registration failed",detail:String(err?.message||err)});
+   }
   }
   await logWorkflowEvent(ctx,{patientId,eventType:"patient_registered",stage:"registration",entityType:"patient",entityId:patientId,metadata:{source:b.source||"staff"}});
   return res.json(r.rows[0]);
