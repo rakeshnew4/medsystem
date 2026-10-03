@@ -1702,8 +1702,8 @@ function workspaceVerifyLab(id,pid){
 }
 async function workspaceSaveLabVerification(e,id,pid){
  e.preventDefault();
- try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/lab',{method:'PUT',body:JSON.stringify({id,status:'verified',result_summary:b.result_summary})});await refreshPatientWorkspace(pid)}
- catch(x){alert(x.message)}
+ try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/lab',{method:'PUT',body:JSON.stringify({id,status:'verified',result_summary:b.result_summary})});showActionToast({title:'Lab result verified',body:'The verified result was saved.'});await refreshPatientWorkspace(pid)}
+ catch(x){showActionToast({title:'Lab result not saved',body:x.message,error:true})}
 }
 function workspaceDispenseMedicine(medication_id,pid){
  const m=(state.activePatientRecord?.pharmacy||[]).find(x=>Number(x.medication_id||x.id)===Number(medication_id))||{};
@@ -1816,7 +1816,7 @@ function workspaceFollowupForm(pid){
 }
 async function workspaceSaveFollowupForm(e,pid){
  e.preventDefault();
- try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/followups',{method:'POST',body:JSON.stringify({patient_id:pid,doctor_id:Number(b.doctor_id),due_date:b.due_date,consultation_type:b.consultation_type,reason:b.reason,notes:b.notes})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+ try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/followups',{method:'POST',body:JSON.stringify({patient_id:pid,doctor_id:Number(b.doctor_id),due_date:b.due_date,consultation_type:b.consultation_type,reason:b.reason,notes:b.notes})});showActionToast({title:'Follow-up scheduled',body:'The follow-up was saved.'});await refreshPatientWorkspace(pid)}catch(x){showActionToast({title:'Follow-up not saved',body:x.message,error:true})}
 }
 function workspaceInvoicePdf(pid,invoiceId){
  const body='<div class="record-section-note">Invoice document for this patient. The PDF is previewed here without leaving Patient Workspace.</div><iframe title="Invoice PDF" src="/api/invoice-pdf?id='+encodeURIComponent(invoiceId)+'" style="width:100%;height:68vh;min-height:420px;border:1px solid var(--border);border-radius:10px;background:#fff"></iframe>';

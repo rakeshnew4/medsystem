@@ -1,5 +1,15 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-03 — External adapter regression verification + Patient Workspace contract pass v629
+
+- Rechecked the live v628 external PostgreSQL boundary after retry hardening. Production logs for the last 2 hours contain 0 HTTP 5xx entries.
+- The adapter-backed database health/read path remains operational.
+- Signed-in app-user contract checks returned HTTP 200 for appointments, queue, follow-ups, and Patient Workspace when a hospital-scoped patient exists; adapter logs show successful requests and no opaque database failure.
+- Patient Workspace returned HTTP 200 with degraded_sections empty for the available app-user patient, confirming the core workspace aggregation is not currently failing at the database boundary.
+- This is contract/infrastructure evidence only. The available runner still does not provide a genuine hospital-staff browser session, so mutation click-through, persistence-after-reload and role-specific staff E2E remain open.
+- Dry-run remains 0 hard errors; existing row-access/public-route warnings are unchanged.
+- Next: inspect Patient Workspace mutation contracts against the live API methods/bodies, then run safe non-mutating validation for every Next Action state. Keep genuine staff E2E, MinIO upload, LIS/FHIR authenticated integration and financial reconciliation gates open.
+
 ## 2026-10-03 — External PostgreSQL adapter resilience v628
 
 - Deployed v628 with a narrowly scoped retry at the shared external PostgreSQL adapter boundary for the exact opaque HTTP 500 response "Database query failed". The retry is limited to one attempt; concrete SQL/application errors remain fail-fast.
