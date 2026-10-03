@@ -18,10 +18,16 @@ export default async function(req,res){
 
   // HMIS-aligned registration guard: review likely existing identities before creating another record.
   // Current CareFlow identity fields support exact phone matching and name+DOB matching.
-  const dup=await db.query(
-   "SELECT p.id,p.name,p.uhid,p.phone,p.email,p.date_of_birth,p.status FROM patients p LEFT JOIN patient_identity pi ON pi.patient_id=p.id AND pi.hospital_id=p.hospital_id WHERE p.hospital_id=$1 AND ((NULLIF($2,'') IS NOT NULL AND regexp_replace(COALESCE(p.phone,''),'\\\\D','','g')=regexp_replace($2,'\\\\D','','g')) OR (LOWER(TRIM(p.name))=LOWER(TRIM($3)) AND $4::date IS NOT NULL AND p.date_of_birth=$4::date) OR (NULLIF($5,'') IS NOT NULL AND LOWER(COALESCE(pi.nic_passport,''))=LOWER($5))) ORDER BY p.created_at DESC LIMIT 10",
-   [hid,phone,name,b.date_of_birth||null,String(b.nic_passport||"").trim()]
-  );
+  let dup;
+  try{
+   dup=await db.query(
+    "SELECT p.id,p.name,p.uhid,p.phone,p.email,p.date_of_birth,p.status FROM patients p LEFT JOIN patient_identity pi ON pi.patient_id=p.id AND pi.hospital_id=p.hospital_id WHERE p.hospital_id=$1 AND ((NULLIF($2,'') IS NOT NULL AND regexp_replace(COALESCE(p.phone,''),'\\\\D','','g')=regexp_replace($2,'\\\\D','','g')) OR (LOWER(TRIM(p.name))=LOWER(TRIM($3)) AND $4::date IS NOT NULL AND p.date_of_birth=$4::date) OR (NULLIF($5,'') IS NOT NULL AND LOWER(COALESCE(pi.nic_passport,''))=LOWER($5))) ORDER BY p.created_at DESC LIMIT 10",
+    [hid,phone,name,b.date_of_birth||null,String(b.nic_passport||"").trim()]
+   );
+  }catch(err){
+   console.error("[patients] duplicate check failed",String(err?.message||err));
+   return res.status(500).json({error:"Patient duplicate check failed",detail:String(err?.message||err)});
+  }
   if(dup.rows.length)return res.status(409).json({error:"Possible existing patient found",code:"POSSIBLE_DUPLICATE",matches:dup.rows});
 
   const inserted=await db.query("INSERT INTO patients(hospital_id,name,phone,email,date_of_birth,notes,status) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id",[hid,name,phone||null,b.email||null,b.date_of_birth||null,b.notes||null,b.status||"active"]);
