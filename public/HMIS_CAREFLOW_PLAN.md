@@ -1,5 +1,15 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-03 — Complete Book Appointment front-desk flow v656
+
+- Reworked the main Book Appointment action so it is the complete OPD front-desk transaction: find an existing patient or register a new patient inline, book the doctor/date/time, assign the OPD token, create the queue entry, and for today's booking open the OPD care encounter immediately.
+- Extended /api/appointments POST to create the patient record when no existing patient is selected and return patient + queue/token + encounter context.
+- OPD token allocation now accepts the appointment date, so future appointments receive their token for the correct appointment day.
+- The booking completion UI surfaces the UHID and OPD token; payment QR remains available as the next optional payment step.
+- Dry-run: 0 hard errors. Deployed live as v656.
+- Genuine hospital-staff mutation E2E remains open because the available synthetic app-user harness is not a genuine hospital-staff session.
+- Next: verify the integrated booking flow with a genuine receptionist/staff session, including new-patient persistence, token visibility in the queue, duplicate-patient behavior, and reload persistence.
+
 ## 2026-10-03 — Patient Workspace billing continuity v657
 
 - Continued the Patient Workspace mutation/persistence matrix after the staged pharmacy hardening.
