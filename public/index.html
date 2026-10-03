@@ -1717,10 +1717,14 @@ async function workspaceSaveFollowupForm(e,pid){
  e.preventDefault();
  try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/followups',{method:'POST',body:JSON.stringify({patient_id:pid,doctor_id:Number(b.doctor_id),due_date:b.due_date,consultation_type:b.consultation_type,reason:b.reason,notes:b.notes})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
 }
+function workspaceInvoicePdf(pid,invoiceId){
+ const body='<div class="record-section-note">Invoice document for this patient. The PDF is previewed here without leaving Patient Workspace.</div><iframe title="Invoice PDF" src="/api/invoice-pdf?id='+encodeURIComponent(invoiceId)+'" style="width:100%;height:68vh;min-height:420px;border:1px solid var(--border);border-radius:10px;background:#fff"></iframe>';
+ workspaceActionPanel({title:'Invoice PDF',body},pid,'billing');
+}
 function workspaceBilling(pid){
  const rows=state.activePatientRecord?.billing||[];
  if(!rows.length){workspaceActionPanel({title:'Billing',body:'<div class="empty">No invoices are recorded for this patient.</div>'},pid,'billing');return;}
- const html='<div class="record-section-note">Financial records for this patient. Payment mutations stay inside this window.</div>'+rows.slice(0,12).map(x=>'<div class="compact-record"><div><strong>'+esc(x.invoice_number||'Invoice')+'</strong><span>Total ₹'+Number(x.total||0).toFixed(2)+' · Paid ₹'+Number(x.paid||0).toFixed(2)+' · Due ₹'+Number(x.due??(Number(x.total||0)-Number(x.paid||0))).toFixed(2)+'</span></div>'+(Math.max(0,Number(x.due??(Number(x.total||0)-Number(x.paid||0)))>0)?'<button class="mini" onclick="workspacePayInvoice('+x.id+','+pid+','+Number(x.due??(Number(x.total||0)-Number(x.paid||0)))+')">Pay</button>':'<span class="status paid">Paid</span>')+'</div>').join('');
+ const html='<div class="record-section-note">Financial records for this patient. Payment mutations stay inside this window.</div>'+rows.slice(0,12).map(x=>'<div class="compact-record"><div><strong>'+esc(x.invoice_number||'Invoice')+'</strong><span>Total ₹'+Number(x.total||0).toFixed(2)+' · Paid ₹'+Number(x.paid||0).toFixed(2)+' · Due ₹'+Number(x.due??(Number(x.total||0)-Number(x.paid||0))).toFixed(2)+'</span></div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+(Math.max(0,Number(x.due??(Number(x.total||0)-Number(x.paid||0)))>0)?'<button class="mini" onclick="workspacePayInvoice('+x.id+','+pid+','+Number(x.due??(Number(x.total||0)-Number(x.paid||0)))+')">Pay</button>':'<span class="status paid">Paid</span>')+'<button class="mini" type="button" onclick="workspaceInvoicePdf('+pid+','+Number(x.id)+')">PDF</button></div></div>').join('');
  workspaceActionPanel({title:'Billing & payments',body:html},pid,'billing');
 }
 function workspacePayOutstanding(pid){
