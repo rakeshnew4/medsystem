@@ -48,7 +48,13 @@ export default async function(req,res){
   if(b.date_of_birth){cols.push("date_of_birth");vals.push(b.date_of_birth);marks.push("$"+(marks.length+1))}
   if(b.notes){cols.push("notes");vals.push(String(b.notes));marks.push("$"+(marks.length+1))}
   cols.push("status");vals.push(b.status||"active");marks.push("$"+(marks.length+1));
-  const inserted=await db.query("INSERT INTO patients("+cols.join(",")+") VALUES("+marks.join(",")+") RETURNING id",vals);
+  let inserted;
+  try{
+   inserted=await db.query("INSERT INTO patients("+cols.join(",")+") VALUES("+marks.join(",")+") RETURNING id",vals);
+  }catch(err){
+   console.error("[patients] patient insert failed",String(err?.message||err),{sql:"INSERT INTO patients("+cols.join(",")+") VALUES("+marks.join(",")+") RETURNING id",valueCount:vals.length});
+   return res.status(500).json({error:"Patient insert failed",detail:String(err?.message||err)});
+  }
   const patientId=inserted.rows[0].id;
   const generatedUhid="UHID-"+String(patientId).padStart(6,"0");
   const r=await db.query("UPDATE patients SET uhid=$1,registration_source=$2,registration_source_locked=true WHERE id=$3 AND hospital_id=$4 RETURNING id,name,uhid,phone,email,date_of_birth,notes,status,created_at",[generatedUhid,String(b.source||"staff"),patientId,hid]);
