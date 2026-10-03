@@ -57,6 +57,19 @@ async function archiveReports(hid){
       if(r.ok)results.pdf++;else results.failed++;
     }catch(e){results.failed++;}
   }
+  const prescriptionPatients=await db.query("SELECT DISTINCT m.patient_id FROM medications m WHERE m.hospital_id=$1 ORDER BY m.patient_id DESC LIMIT 20",[hid]);
+  for(const patient of prescriptionPatients.rows){
+    try{
+      const p=await db.query("SELECT p.name,p.uhid,p.phone,h.name hospital_name,h.phone hospital_phone,h.address hospital_address FROM patients p JOIN hospitals h ON h.id=p.hospital_id WHERE p.id=$1 AND p.hospital_id=$2",[patient.patient_id,hid]);
+      if(!p.rows[0])continue;
+      const meds=await db.query("SELECT m.medicine_name,m.dose,m.frequency,m.duration,m.instructions,d.name doctor_name FROM medications m LEFT JOIN doctors d ON d.id=m.doctor_id WHERE m.patient_id=$1 AND m.hospital_id=$2 ORDER BY m.prescribed_at DESC LIMIT 20",[patient.patient_id,hid]);
+      const a=p.rows[0];
+      const html='<!doctype html><html><body style="font-family:Arial;padding:32px"><h1>'+String(a.hospital_name||"CareFlow")+'</h1><h2>Prescription</h2><p>Patient: '+String(a.name)+' · '+String(a.uhid||"")+'</p><table style="width:100%"><tr><th>Medicine</th><th>Dose</th><th>Frequency</th><th>Duration</th><th>Instructions</th></tr>'+meds.rows.map(x=>'<tr><td>'+String(x.medicine_name)+'</td><td>'+String(x.dose||"")+'</td><td>'+String(x.frequency||"")+'</td><td>'+String(x.duration||"")+'</td><td>'+String(x.instructions||"")+'</td></tr>').join("")+'</table><p>Prescription decisions remain with the treating clinician.</p></body></html>';
+      const pdf=await browser.pdf("data:text/html,"+encodeURIComponent(html));
+      const r=await archiveObject(`hospitals/${hid}/prescriptions/patient-${patient.patient_id}/latest.pdf`,Buffer.from(pdf),"application/pdf");
+      if(r.ok)results.pdf++;else results.failed++;
+    }catch(e){results.failed++;}
+  }
   const labs=await db.query("SELECT l.id FROM lab_orders l WHERE l.hospital_id=$1 ORDER BY l.ordered_at DESC,l.id DESC LIMIT 20",[hid]);
   for(const lab of labs.rows){
     try{

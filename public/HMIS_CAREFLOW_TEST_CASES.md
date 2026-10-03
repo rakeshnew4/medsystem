@@ -394,6 +394,24 @@ Status: Implemented and deployed v500; signed-in app-user execution returned 200
 Expected: the read-only pharmacy summary uses the existing clinical-view permission boundary, stays hospital-scoped, bounds stock/dispensing rows to 300, and exposes no dispense/stock mutation operation.
 Status: Implemented and deployed v502 after correcting the query to the verified pharmacy_stock schema; signed-in app-user execution returned 200. Genuine pharmacist E2E remains pending.
 
+## TC-AI-TOOLS-011 — Reporting summary tool
+Expected: administrative reporting summary is permission-gated, hospital-scoped, bounded to 1–90 days, and returns appointment, patient, queue, billing, follow-up and active-IPD aggregates without mutation controls.
+Status: Implemented and deployed v504; signed-in app-user execution returned 200 for a 30-day report. Genuine administrator/staff E2E remains pending.
+
+# Document / Archive Continuity
+
+## TC-ARCHIVE-001 — MinIO archive configuration
+Expected: MinIO/S3-compatible endpoint, credentials, bucket and region are secret-backed; no archive credential is returned by application APIs.
+Status: Configuration contract added in v504; actual credential presence/upload remains an infrastructure configuration gate.
+
+## TC-ARCHIVE-002 — Scheduled rolling archive
+Expected: the scheduler archives hospital-scoped operational JSON, audit events, invoice PDFs, lab-report PDFs and latest prescription PDFs using deterministic object keys; retries overwrite the same object rather than creating uncontrolled duplicates.
+Status: Implemented in v504; scheduler is hourly because the platform minimum schedule interval is one hour. Live upload verification remains pending until MinIO credentials are configured.
+
+## TC-ARCHIVE-003 — Archive isolation
+Expected: archive object keys include the hospital scope and document/entity identity; no document is written under another hospital's prefix.
+Status: Implemented by deterministic hospitals/{hospital_id}/... object keys; authenticated staff/infrastructure E2E remains pending.
+
 # Completion gates
 
 Demo-mode E2E is now available through the explicit CARE_FLOW_DEMO_MODE secret. It may be used to exercise application workflows, role boundaries, invalid transitions, retries and concurrency without real OTP authentication, and all results must be labeled demo E2E.
