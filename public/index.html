@@ -2339,6 +2339,11 @@ async function workspaceSaveIPDAdmission(e,pid,id){
   e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/ipd',{method:'PUT',body:JSON.stringify({action:'update-admission',id,admission_type:b.admission_type,expected_discharge_date:b.expected_discharge_date||null,notes:b.notes||''})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
 }
 async function transferIPDBed(id){
+  const activePid=Number(state.activePatientRecord?.patient?.id||0);
+  if(activePid){
+    const admission=(state.activePatientRecord?.ipd?.admissions||[]).find(a=>Number(a.id)===Number(id)&&!a.discharged_at);
+    if(admission)return workspaceIPDTransferModal(activePid,id);
+  }
   const available=state.beds.filter(b=>b.status==='available');
   if(!available.length)return alert('No available beds.');
   const list=available.map(b=>b.id+': '+b.ward+' · '+b.bed_number+' ('+b.bed_type+')').join('\n');
