@@ -11,7 +11,8 @@ function demoRole(req){const r=String(req.cookies?.careflow_demo_role||req.heade
 export default async function(req,res){
   const user=await auth.getUser(req);
 
-  if(!user&&demoEnabled()){
+  const demoUser=!!user&&(String(user.id)==="careflow-demo"||String(user.email||"").toLowerCase()==="demo@careflow.test");
+  if(demoEnabled()&&(!user||demoUser)){
     const h=await db.query("SELECT id FROM hospitals ORDER BY id LIMIT 1");
     if(!h.rows[0])return res.status(503).json({signed_in:false,error:"Demo mode requires an initialized hospital"});
     const role=demoRole(req);
