@@ -47,7 +47,9 @@ export default async function(req,res){
   if(b.email){cols.push("email");vals.push(String(b.email).trim());marks.push("$"+(marks.length+1))}
   if(b.date_of_birth){cols.push("date_of_birth");vals.push(b.date_of_birth);marks.push("$"+(marks.length+1))}
   if(b.notes){cols.push("notes");vals.push(String(b.notes));marks.push("$"+(marks.length+1))}
-  cols.push("status");vals.push(b.status||"active");marks.push("$"+(marks.length+1));
+  cols.push("status","whatsapp_opt_in","created_at","updated_at");
+  vals.push(b.status||"active",Boolean(b.whatsapp_opt_in),new Date().toISOString(),new Date().toISOString());
+  marks.push("$"+(marks.length+1),"$"+(marks.length+2),"$"+(marks.length+3),"$"+(marks.length+4));
   let inserted;
   try{
    const seq=await db.query("SELECT nextval('patients_id_seq') AS id");
