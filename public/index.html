@@ -211,7 +211,7 @@ body.workspace-modal-open{overflow:hidden}
     <div class="nav-group open">
       <button class="nav-group-toggle" onclick="toggleNavGroup(this)">Clinical & Diagnostics <span>⌄</span></button>
       <div class="nav-sub">
-        <button data-section="doctor-room">Doctor Consultation</button>
+        <!-- Doctor Room removed: consultation now lives in Patient Workspace. -->
         <button data-section="doctors">Doctors</button>
         <button data-section="lab">Laboratory</button>
         <button data-section="pharmacy">Pharmacy</button>
@@ -297,7 +297,7 @@ body.workspace-modal-open{overflow:hidden}
   <button class="module-card" type="button" onclick="showSection('patients')"><div class="module-card-head"><div class="module-icon">P</div><span class="module-arrow">→</span></div><strong>Patient Lookup</strong><span>Search registered patients and open their workspace.</span><span class="module-status">Patient workspace</span></button>
   <button class="module-card" type="button" onclick="showSection('appointments')"><div class="module-card-head"><div class="module-icon">A</div><span class="module-arrow">→</span></div><strong>Appointments & OPD</strong><span>Appointments, check-in and outpatient flow.</span><span class="module-status">OPD</span></button>
   <button class="module-card" type="button" onclick="showSection('queue')"><div class="module-card-head"><div class="module-icon">Q</div><span class="module-arrow">→</span></div><strong>Queue & Tokens</strong><span>Worklists, priorities and next-patient dispatch.</span><span class="module-status">OPD Queue</span></button>
-  <button class="module-card" type="button" onclick="showSection('doctor-room')"><div class="module-card-head"><div class="module-icon">D</div><span class="module-arrow">→</span></div><strong>Clinical Care</strong><span>Doctor room, consultation, orders and follow-up.</span><span class="module-status">Clinical</span></button>
+  <!-- Doctor Room module removed: use Patient Workspace consultation. -->
   <button class="module-card" type="button" onclick="showSection('lab')"><div class="module-card-head"><div class="module-icon">L</div><span class="module-arrow">→</span></div><strong>Laboratory</strong><span>Orders, sample collection, results and verification.</span><span class="module-status">Diagnostics</span></button>
   <button class="module-card" type="button" onclick="showSection('pharmacy')"><div class="module-card-head"><div class="module-icon">Rx</div><span class="module-arrow">→</span></div><strong>Pharmacy & Stock</strong><span>Dispensing, batches, transfers, bin card and stock.</span><span class="module-status">Pharmacy</span></button>
   <button class="module-card" type="button" onclick="showSection('beds')"><div class="module-card-head"><div class="module-icon">B</div><span class="module-arrow">→</span></div><strong>Admissions & Beds</strong><span>Admissions, bed occupancy, transfers and discharge.</span><span class="module-status">Inpatient</span></button>
@@ -335,21 +335,7 @@ body.workspace-modal-open{overflow:hidden}
   </div>
 </section>
 
-<section id="doctor-room" class="section">
-  <div class="doctor-room-layout">
-    <div class="card panel doctor-worklist">
-      <div class="panel-head"><div><h2 class="panel-title">Doctor Room</h2><div id="doctorRoomSubtitle" class="room-subtitle">Your consultation workspace</div></div><button class="btn" onclick="loadDoctorRoom()">Refresh</button></div>
-      <div id="doctorRoomStats" class="room-stats"></div>
-      <div class="room-tabs"><button class="btn primary" id="roomWaitingTab" onclick="setDoctorRoomTab('waiting')">Waiting</button><button class="btn" id="roomTodayTab" onclick="setDoctorRoomTab('today')">Today's appointments</button></div>
-      <div class="queue-toolbar" style="margin:10px 0"><div class="queue-search"><span>⌕</span><input id="doctorRoomSearch" type="search" placeholder="Search patient, UHID or token…" oninput="renderDoctorRoom()"></div><button class="btn" onclick="document.getElementById('doctorRoomSearch').value='';renderDoctorRoom()">Clear</button></div>
-      <div id="doctorRoomList"></div>
-    </div>
-    <div class="card panel doctor-workspace">
-      <div id="doctorWorkspaceEmpty" class="doctor-empty"><div class="doctor-empty-icon">+</div><h3>Select a patient</h3><p>Choose a patient from the queue to review history, vitals, prescriptions and complete the visit.</p></div>
-      <div id="doctorWorkspace" style="display:none"></div>
-    </div>
-  </div>
-</section>
+<!-- Doctor Room removed. Doctor consultation is opened from Patient Workspace. -->
 
 <section id="appointments" class="section">
   <div class="cf-module-header">
@@ -600,17 +586,17 @@ async function api(path,opts={}){
     return j;
   }finally{if(show)hideCareFlowLoader()}
 }
-const VALID_SECTIONS=['dashboard','reception-desk','queue','doctor-room','appointments','patients','doctors','beds','followups','billing','lab','theatre','pharmacy','assets','display','analytics','staff','communication','setup','integrations'];
+const VALID_SECTIONS=['dashboard','reception-desk','queue','appointments','patients','doctors','beds','followups','billing','lab','theatre','pharmacy','assets','display','analytics','staff','communication','setup','integrations'];
 const ROLE_DEFAULT_SECTIONS={admin:'dashboard',doctor:'dashboard',nurse:'dashboard',receptionist:'dashboard',lab:'dashboard',pharmacy:'dashboard',billing:'dashboard',store:'dashboard',pending:'dashboard'};
-const SECTION_TITLES={dashboard:'Hospital overview','reception-desk':'OPD Desk',queue:'Patient queue','doctor-room':'Doctor Room',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',lab:'Lab investigations',theatre:'Operation Theatre / Procedures',pharmacy:'Pharmacy',assets:'Inventory / fixed assets',display:'Displays & ads',analytics:'Admin insights',staff:'Staff',communication:'Staff communication',setup:'Hospital setup',integrations:'Integrations'};
-const SECTION_PERMISSIONS={dashboard:'page.dashboard','reception-desk':'action.patient.create',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',theatre:'action.theatre.manage',pharmacy:'action.pharmacy.manage',assets:'action.assets.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup',integrations:'page.setup'};
+const SECTION_TITLES={dashboard:'Hospital overview','reception-desk':'OPD Desk',queue:'Patient queue',appointments:'Appointments',patients:'Patients',doctors:'Doctors',beds:'Beds & admissions',followups:'Follow-ups',billing:'Billing & payments',lab:'Lab investigations',theatre:'Operation Theatre / Procedures',pharmacy:'Pharmacy',assets:'Inventory / fixed assets',display:'Displays & ads',analytics:'Admin insights',staff:'Staff',communication:'Staff communication',setup:'Hospital setup',integrations:'Integrations'};
+const SECTION_PERMISSIONS={dashboard:'page.dashboard','reception-desk':'action.patient.create',queue:'page.queue',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',theatre:'action.theatre.manage',pharmacy:'action.pharmacy.manage',assets:'action.assets.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup',integrations:'page.setup'};
 function staffStorageKey(kind){return 'careflow:'+kind+':'+encodeURIComponent(state.session?.user?.email||'default')}
 function saveWorkingContext(ctx){const value={...ctx,updatedAt:Date.now()};try{localStorage.setItem(staffStorageKey('workingContext'),JSON.stringify(value))}catch(e){}try{sessionStorage.setItem(staffStorageKey('workingContext'),JSON.stringify(value))}catch(e){}renderResumeBar()}
 function readWorkingContext(){try{const raw=sessionStorage.getItem(staffStorageKey('workingContext'))||localStorage.getItem(staffStorageKey('workingContext'));if(!raw)return null;const v=JSON.parse(raw);if(!v||!v.section)return null;if(v.updatedAt&&Date.now()-Number(v.updatedAt)>24*60*60*1000){clearWorkingContext();return null}return v}catch(e){return null}}
 function clearWorkingContext(){try{localStorage.removeItem(staffStorageKey('workingContext'))}catch(e){}try{sessionStorage.removeItem(staffStorageKey('workingContext'))}catch(e){}state.doctorRoomPatient=null;state.activePatientRecord=null;renderResumeBar()}
 function workingContextLabel(c){if(!c)return '';const p=c.patientName||((state.patients||[]).find(x=>Number(x.id)===Number(c.patientId))?.name)||'Patient';const map={doctor:{consultation:'Consultation',clinical:'Clinical notes',prescription:'Prescription',followup:'Follow-up',vitals:'Vitals'},nurse:{ward:'Ward',vitals:'Vitals'},lab:{investigation:'Investigation',sample_collected:'Sample collection',processing:'Processing',verify:'Result verification'},pharmacy:{prescription:'Prescription',dispense:'Dispensing'},receptionist:{registration:'Registration',checkin:'Check-in'},billing:{invoice:'Invoice',payment:'Payment'}};const role=state.session?.staff?.role||'';return p+(c.action&&map[role]?.[c.action]?' · '+map[role][c.action]:'')}
 function renderResumeBar(){const el=document.getElementById('resumeContextBar');if(!el)return;const c=readWorkingContext();if(!c){el.style.display='none';return}el.style.display='flex';el.innerHTML='<div><strong>Resume</strong><span>'+esc(workingContextLabel(c))+'</span></div><button class="mini" onclick="resumeWorkingContext()">Resume</button><button class="mini" onclick="clearWorkingContext()">Clear</button>'}
-function resumeWorkingContext(){const c=readWorkingContext();if(!c)return;if(c.section==='doctor-room'&&c.patientId){showSection('doctor-room');loadDoctorRoom().then(()=>selectDoctorPatient(c.patientId,c.queueId||null,c.appointmentId||null,c.action||null)).catch(()=>{})}else if(c.section==='patients'&&c.patientId){(c.mode==='clinical'?openClinical(c.patientId,c.action||null):openPatientWorkspace(c.patientId)).catch(()=>{})}else if(c.section==='queue'&&c.patientId){showSection('queue');setTimeout(()=>openClinical(c.patientId,c.action||null),50)}else showSection(c.section)}
+function resumeWorkingContext(){const c=readWorkingContext();if(!c)return;/* legacy doctor-room resume path removed */ if(c.section==='patients'&&c.patientId){(c.mode==='clinical'?openClinical(c.patientId,c.action||null):openPatientWorkspace(c.patientId)).catch(()=>{})}else if(c.section==='queue'&&c.patientId){showSection('queue');setTimeout(()=>openClinical(c.patientId,c.action||null),50)}else showSection(c.section)}
 function restoreWorkingContext(){const c=readWorkingContext();if(!c)return false;if(!VALID_SECTIONS.includes(c.section)||!canSection(c.section))return false;resumeWorkingContext();return true}
 function roleDefaultSection(){return ROLE_DEFAULT_SECTIONS[state.session?.staff?.role]||'dashboard'}
 function setReceptionMode(mode){openReceptionPanel(mode==='appointment'?'appointment':'walkin')}
@@ -837,7 +823,7 @@ function renderRoleWorkspace(){
   const role=state.session?.staff?.role||'admin';
   const configs={
     admin:{title:'',sub:'',actions:[]},
-    doctor:{title:'Doctor Workspace',sub:'Consultation queue, patient records and clinical workflow',actions:[['doctor-room','My Queue'],['patients','Patients'],['theatre','Theatre'],['followups','Follow-ups'],['appointments','Appointments']]},
+    doctor:{title:'Doctor Workspace',sub:'Patient-first consultation workspace',actions:[['patients','Patients'],['theatre','Theatre'],['followups','Follow-ups'],['appointments','Appointments']]},
     nurse:{title:'Nursing Station',sub:'Ward patients, beds and the next nursing action',actions:[['beds','Ward & Beds'],['queue','OPD Queue'],['patients','Patients'],['theatre','Theatre'],['lab','Investigations']]},
     receptionist:{title:'OPD Desk',sub:'Registration, appointments, queue and patient flow',actions:[['queue','Queue'],['appointments','Appointments'],['patients','Patients'],['billing','Billing']]},
     lab:{title:'Lab Workbench',sub:'Samples, processing, verification and patient context',actions:[['lab','Lab Queue'],['patients','Patients'],['queue','OPD Queue'],['billing','Billing']]},
@@ -849,7 +835,7 @@ function renderRoleWorkspace(){
   const globalAppt=document.querySelector('.appointment-action');if(globalAppt)globalAppt.style.display=role==='receptionist'?'none':'';
   if(role==='receptionist'){el.style.display='none';return;}
   if(!cfg||role==='admin'){el.style.display='none';return;}
-  const roleSectionTitles={nurse:{beds:'Nursing Station · Ward'},receptionist:{queue:'OPD Desk · Queue'},lab:{lab:'Lab Workbench'},pharmacy:{pharmacy:'Pharmacy Desk'},billing:{billing:'Billing Desk'},doctor:{'doctor-room':'Doctor Room'}};
+  const roleSectionTitles={nurse:{beds:'Nursing Station · Ward'},receptionist:{queue:'OPD Desk · Queue'},lab:{lab:'Lab Workbench'},pharmacy:{pharmacy:'Pharmacy Desk'},billing:{billing:'Billing Desk'},doctor:{patients:'Doctor · Patients'}};
   Object.entries(roleSectionTitles[role]||{}).forEach(([id,title])=>{const h=document.querySelector('#'+id+' .panel-title');if(h)h.textContent=title});
   const buttons=cfg.actions.filter(x=>canSection(x[0])).map(x=>'<button class="workspace-nav-btn '+(document.querySelector('.section.active')?.id===x[0]?'active':'')+'" onclick="showSection(\''+x[0]+'\');closeMobileNav()">'+esc(x[1])+'</button>').join('');
   el.innerHTML='<div class="workspace-identity"><div class="workspace-icon">+</div><div><strong>'+esc(cfg.title)+'</strong><span>'+esc(cfg.sub)+'</span></div></div><div class="workspace-nav">'+buttons+'</div>';
@@ -991,7 +977,7 @@ async function checkSession(){
 }
 function can(p){return !!(state.session?.permissions?.[p])}
 function applyPermissions(){
-  const pageMap={dashboard:'page.dashboard',queue:'page.queue','doctor-room':'action.clinical.view',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',theatre:'action.theatre.manage',pharmacy:'action.pharmacy.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup',integrations:'page.setup'};
+  const pageMap={dashboard:'page.dashboard',queue:'page.queue',appointments:'page.appointments',patients:'page.patients',doctors:'page.doctors',beds:'page.beds',followups:'page.followups',billing:'page.billing',lab:'action.clinical.view',theatre:'action.theatre.manage',pharmacy:'action.pharmacy.manage',display:'page.setup',analytics:'page.admin_insights',staff:'page.staff',communication:'page.communication',setup:'page.setup',integrations:'page.setup'};
   document.querySelectorAll('.nav button').forEach(b=>{const p=pageMap[b.dataset.section];b.style.display=can(p)?'':'none'});
   const aiBall=document.getElementById('aiAssistantBall');if(aiBall)aiBall.style.display=can('action.ai.use')?'flex':'none';
   document.querySelectorAll('button').forEach(b=>{
@@ -1010,7 +996,7 @@ function applyPermissions(){
     if(p)b.style.display=can(p)?'':'none';
   });
   const staffNav=document.querySelector('.nav button[data-section="staff"]');if(staffNav&&state.session?.staff?.role!=='admin')staffNav.style.display='none';
-  const roomNav=document.querySelector('.nav button[data-section="doctor-room"]');if(roomNav)roomNav.style.display=(state.session?.staff?.role==='doctor'||state.session?.staff?.role==='admin')?'':'none';
+  /* Doctor Room navigation removed; consultation is Patient Workspace based. */
 }
 async function ensureRoleLogin(){
   try{
@@ -1075,7 +1061,7 @@ async function loadSectionData(id,force=false){
     dashboard:async()=>{if(!p['page.dashboard'])return;state.dashboard=await api('/dashboard?from='+encodeURIComponent(dr.from)+'&to='+encodeURIComponent(dr.to));renderAll()},
     'reception-desk':async()=>{if(!p['action.patient.create'])return;[state.doctors,state.patients,state.appointments]=await Promise.all([api('/doctors'),api('/patients'),api('/appointments')]);renderReceptionDesk()},
     queue:async()=>{if(!p['page.queue'])return;state.queue=await api('/queue');renderQueue();renderAll()},
-    'doctor-room':async()=>{if(!p['action.clinical.view'])return;await loadDoctorRoom()},
+    /* Doctor Room loader removed; consultation is Patient Workspace based. */
     appointments:async()=>{if(!p['page.appointments'])return;state.appointments=await api('/appointments');renderAll()},
     patients:async()=>{if(!p['page.patients'])return;state.patients=await api('/patients');renderAll()},
     doctors:async()=>{if(!p['page.doctors'])return;state.doctors=await api('/doctors');renderAll()},
@@ -1499,8 +1485,8 @@ async function saveDoctorVisit(complete){const s=state.doctorRoomPatient;if(!s)r
 async function saveDoctorPrescription(e){e.preventDefault();const s=state.doctorRoomPatient;if(!s)return;const b=Object.fromEntries(new FormData(e.target).entries());const visit=s.record?.visits?.find(v=>v.visit_status==='open'&&Number(v.patient_id)===Number(s.id));if(!visit)return alert('Start the consultation before adding a prescription.');saveWorkingContext({section:'doctor-room',patientId:s.id,patientName:s.patient?.name||'',queueId:s.queueId,appointmentId:s.appointmentId,tab:state.doctorRoomTab||'waiting',action:'prescription'});try{await api('/clinical',{method:'POST',body:JSON.stringify({type:'medicine',patient_id:s.id,visit_id:visit.id,encounter_id:visit.encounter_id||null,...b})});await selectDoctorPatient(s.id,s.queueId,s.appointmentId)}catch(e){alert(e.message)}}
 async function saveDoctorLabOrder(e){e.preventDefault();const s=state.doctorRoomPatient;if(!s)return;const b=Object.fromEntries(new FormData(e.target).entries());const visit=s.record?.visits?.find(v=>v.visit_status==='open'&&Number(v.patient_id)===Number(s.id));if(!visit)return alert('Start the consultation before ordering a laboratory investigation.');saveWorkingContext({section:'doctor-room',patientId:s.id,patientName:s.patient?.name||'',queueId:s.queueId,appointmentId:s.appointmentId,tab:state.doctorRoomTab||'waiting',action:'lab'});try{await api('/clinical',{method:'POST',body:JSON.stringify({type:'lab',patient_id:s.id,visit_id:visit.id,queue_entry_id:s.queueId||null,encounter_id:visit.encounter_id||null,test_name:b.test_name,notes:b.notes||null})});await selectDoctorPatient(s.id,s.queueId,s.appointmentId);alert('Laboratory investigation ordered.')}catch(e){alert(e.message)}}
 async function saveDoctorFollowup(e){e.preventDefault();const s=state.doctorRoomPatient;if(!s)return;const b=Object.fromEntries(new FormData(e.target).entries());saveWorkingContext({section:'doctor-room',patientId:s.id,patientName:s.patient?.name||'',queueId:s.queueId,appointmentId:s.appointmentId,tab:state.doctorRoomTab||'waiting',action:'followup'});try{const r=await api('/followups',{method:'POST',body:JSON.stringify({patient_id:s.id,doctor_id:state.doctorRoom?.doctor?.id||null,...b})});alert(b.consultation_type==='online'?'Online follow-up scheduled.':'Follow-up scheduled.');await selectDoctorPatient(s.id,s.queueId,s.appointmentId)}catch(e){alert(e.message)}}
-async function openClinical(pid,action){try{const p=state.patients.find(x=>Number(x.id)===Number(pid));saveWorkingContext({section:'patients',patientId:Number(pid),patientName:p?.name||'',mode:'clinical',action:action||'clinical'});const r=await api('/clinical?patient_id='+pid);document.getElementById('clinicalPatientName').textContent=(p?.name||'Patient')+' · clinical documentation';document.getElementById('clinicalBody').innerHTML='<div class="clinical-grid"><div class="card panel"><div class="panel-head"><h3 class="panel-title">Vitals</h3><button class="btn primary" onclick="openClinicalVitals('+pid+')">+ Add vitals</button></div>'+clinicalVitals(r.vitals)+'</div><div class="card panel"><div class="panel-head"><h3 class="panel-title">Doctor summaries</h3><button class="btn primary" onclick="openClinicalVisit('+pid+')">+ Add summary</button></div>'+clinicalVisits(r.visits)+'</div><div class="card panel"><div class="panel-head"><h3 class="panel-title">Prescriptions</h3><button class="btn primary" onclick="openClinicalMedicine('+pid+')">+ Add prescription</button></div>'+clinicalMeds(r.medications)+'</div><div class="card panel"><div class="panel-head"><h3 class="panel-title">Follow-ups</h3><button class="btn primary" onclick="openClinicalFollowup('+pid+')">+ Schedule</button></div>'+clinicalFollowups(pid)+'</div></div>';openModal('clinicalModal')}catch(e){alert(e.message)}}
-async function openClinical(pid){
+async function legacyOpenClinical(pid,action){try{const p=state.patients.find(x=>Number(x.id)===Number(pid));saveWorkingContext({section:'patients',patientId:Number(pid),patientName:p?.name||'',mode:'clinical',action:action||'clinical'});const r=await api('/clinical?patient_id='+pid);document.getElementById('clinicalPatientName').textContent=(p?.name||'Patient')+' · clinical documentation';document.getElementById('clinicalBody').innerHTML='<div class="clinical-grid"><div class="card panel"><div class="panel-head"><h3 class="panel-title">Vitals</h3><button class="btn primary" onclick="openClinicalVitals('+pid+')">+ Add vitals</button></div>'+clinicalVitals(r.vitals)+'</div><div class="card panel"><div class="panel-head"><h3 class="panel-title">Doctor summaries</h3><button class="btn primary" onclick="openClinicalVisit('+pid+')">+ Add summary</button></div>'+clinicalVisits(r.visits)+'</div><div class="card panel"><div class="panel-head"><h3 class="panel-title">Prescriptions</h3><button class="btn primary" onclick="openClinicalMedicine('+pid+')">+ Add prescription</button></div>'+clinicalMeds(r.medications)+'</div><div class="card panel"><div class="panel-head"><h3 class="panel-title">Follow-ups</h3><button class="btn primary" onclick="openClinicalFollowup('+pid+')">+ Schedule</button></div>'+clinicalFollowups(pid)+'</div></div>';openModal('clinicalModal')}catch(e){alert(e.message)}}
+async function legacyOpenClinicalRecord(pid){
   try{
     saveWorkingContext({section:'patients',patientId:Number(pid),mode:'clinical'});
     const p=state.patients.find(x=>Number(x.id)===Number(pid));
@@ -1552,7 +1538,7 @@ function renderPatientDirectory(){
  }).join(''):'<div class="empty">No patients match this search.</div>';
 }
 function patientAge(dob){return doctorRoomAge(dob)}
-function patientCareTeamActions(p,s){
+function legacyPatientCareTeamActions(p,s){
  const role=s.role||state.session?.staff?.role||'staff',q=String(p.queue_stage||'').toLowerCase(),id=p.id;
  const clinical=!!s.permissions?.clinical,billing=!!s.permissions?.billing,pharmacy=!!s.permissions?.pharmacy;
  const groups=[
@@ -1600,12 +1586,12 @@ function patientCareTeamActions(p,s){
 function scrollToPatientSection(cls){const el=document.querySelector('.'+cls);if(el)el.scrollIntoView({behavior:'smooth',block:'center'})}
 function patientWorkspaceActionButtons(p){
  const s=state.activePatientRecord||{}, id=p.id;
- const q='<button class="btn patient-action" onclick="workspaceQueuePanel('+id+')"><span class="patient-action-icon">≡</span><span>Queue</span></button>';
+ const q='';
  const a='<button class="btn patient-action" onclick="editPatient('+id+')"><span class="patient-action-icon">✎</span><span>Edit</span></button>';
  const vit=s.permissions?.clinical?'<button class="btn patient-action" onclick="workspaceVitals('+id+')"><span class="patient-action-icon">♡</span><span>Vitals</span></button>':'';
  const finance=s.permissions?.billing?'<button class="btn patient-action" onclick="workspaceInvoice('+id+')"><span class="patient-action-icon">₹</span><span>Bill</span></button>':'';
  const ipd=(s.ipd?.admissions||[]).some(a=>!a.discharged_at)?'<button class="btn patient-action" onclick="workspaceIPDPanel('+id+', '+Number((s.ipd?.admissions||[]).find(a=>!a.discharged_at)?.id||0)+')"><span class="patient-action-icon">B</span><span>IPD</span></button>':'';
- const clinical='<button class="btn primary patient-action patient-action-primary" onclick="openClinical('+id+')"><span class="patient-action-icon">↗</span><span>Clinical</span></button>';
+ const clinical='';
  return '<div class="patient-quick-actions">'+q+a+vit+ipd+finance+clinical+'</div>';
 }
 function workspaceInsurancePanel(pid){
@@ -1637,11 +1623,9 @@ function workspaceFocusConsultation(pid){
 }
 async function workspaceAIListen(pid){
  try{
-   await openPatientWorkspace(pid);
-   const card=document.querySelector('#patientWorkspaceBody .ai-clinical-card');
-   if(card){card.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>document.getElementById('aiScribeInput')?.focus(),250);return;}
    await workspaceOpenDoctor(pid);
-   setTimeout(()=>document.querySelector('#patientWorkspaceActionModal .ai-clinical-card')?.scrollIntoView({behavior:'smooth',block:'center'}),150);
+   setTimeout(()=>document.querySelector('#patientWorkspaceActionModal .consultation-ai-card')?.scrollIntoView({behavior:'smooth',block:'center'}),80);
+   setTimeout(()=>document.getElementById('aiScribeInput')?.focus(),180);
  }catch(e){alert(e.message)}
 }
 function patientNextActions(p,s){
@@ -1746,19 +1730,22 @@ function workspaceActionPanel(html,pid,anchorRole){
 function workspaceOpenOpd(pid){openOpdRegistration(pid)}
 async function workspaceOpenDoctor(pid){
  try{
+  const active=state.activePatientRecord?.patient;
+  const cached=active&&Number(active.id)===Number(pid)?state.activePatientRecord:null;
   const q=(state.queue||[]).find(x=>Number(x.patient_id)===Number(pid));
-  const patient=state.activePatientRecord?.patient||state.patients.find(x=>Number(x.id)===Number(pid))||{};
-  const r=await api('/clinical?patient_id='+encodeURIComponent(pid));
+  const patient=cached?.patient||state.patients.find(x=>Number(x.id)===Number(pid))||{};
+  const r=cached?.clinical||await api('/clinical?patient_id='+encodeURIComponent(pid),{loading:false});
   state.doctorRoomPatient={id:Number(pid),queueId:q?.id||patient.active_queue_id||null,appointmentId:q?.appointment_id||null,patient,record:r};
-  saveWorkingContext({section:'patients',patientId:Number(pid),patientName:patient.name||'',mode:'workspace',queueId:q?.id||null,appointmentId:q?.appointment_id||null,action:'consultation'});
+  saveWorkingContext({section:'patients',patientId:Number(pid),patientName:patient.name||'',mode:'workspace',queueId:q?.id||patient.active_queue_id||null,appointmentId:q?.appointment_id||null,action:'consultation'});
   const visit=(r.visits||[]).find(v=>v.visit_status==='open');
   const latest=r.vitals?.[0];
   const consultation='<div class="workspace-card consultation-card">'+
-    '<div class="panel-head"><div><h3 class="panel-title">Doctor consultation</h3><div class="record-section-note">Complete the consultation here without leaving Patient Workspace.</div></div><span class="role-pill">Doctor</span></div>'+
+    '<div class="panel-head"><div><h3 class="panel-title">Doctor consultation</h3><div class="record-section-note">Consult, listen, document and place orders here. No separate Doctor Room is required.</div></div><span class="role-pill">Consultation</span></div>'+
     '<div class="consultation-context"><span>'+esc(patient.uhid||'No UHID')+'</span><span>'+esc(patient.phone||'No phone')+'</span><span>'+esc(q?.token||'No active token')+'</span></div>'+
-    (!visit?'<div class="next-action primary"><div><strong>Consultation not started</strong><span>Start the consultation to enable clinical note, prescription and investigation actions.</span></div><button class="btn primary" type="button" onclick="workspaceDoctorStartConsultation('+pid+')">Start</button></div>':
+    (!visit?'<div class="next-action primary"><div><strong>Consultation not started</strong><span>Start the consultation to enable notes, AI listening, prescriptions and investigations.</span></div><button class="btn primary" type="button" onclick="workspaceDoctorStartConsultation('+pid+')">Start consultation</button></div>':
       '<textarea id="doctorConsultationNote" rows="7" placeholder="Assessment, findings, plan and instructions…">'+esc(visit.clinical_notes||'')+'</textarea>'+
       '<div class="consultation-footer"><button class="btn" type="button" onclick="workspaceSaveDoctorVisit(false,'+pid+')">Save draft</button><button class="btn primary" type="button" onclick="workspaceSaveDoctorVisit(true,'+pid+')">Complete</button></div>'+
+      '<div class="workspace-card consultation-ai-card" style="margin-top:10px"><div class="panel-head"><div><h3 class="panel-title">AI Listen & Summary</h3><div class="record-section-note">Dictate or paste the consultation. Generate a structured draft, review it, then use it in the consultation note.</div></div></div><textarea id="aiScribeInput" rows="4" placeholder="Start Dictate and speak naturally, or paste the consultation here…"></textarea><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn" type="button" onclick="toggleClinicalDictation()">🎙 Listen</button><button class="btn primary" type="button" onclick="runClinicalScribe()">Generate summary</button></div><div id="aiScribeDraft" style="margin-top:10px"></div></div>'+
       '<div class="workspace-grid consultation-tools">'+
         '<div class="workspace-card"><div class="panel-head"><h3 class="panel-title">Vitals</h3><button class="mini" type="button" onclick="workspaceVitals('+pid+')">Update</button></div>'+(latest?'<div class="vitals-strip"><div><strong>'+esc((latest.blood_pressure_systolic||'—')+'/'+(latest.blood_pressure_diastolic||'—'))+'</strong><span>BP</span></div><div><strong>'+esc(latest.pulse||'—')+'</strong><span>Pulse</span></div><div><strong>'+esc(latest.temperature||'—')+'</strong><span>Temp</span></div><div><strong>'+esc(latest.spo2||'—')+'</strong><span>SpO₂</span></div></div>':'<div class="empty">No vitals recorded.</div>')+'</div>'+
         '<div class="workspace-card"><div class="panel-head"><h3 class="panel-title">Prescription</h3></div><form class="form-grid compact-form" onsubmit="workspaceDoctorPrescription(event,'+pid+','+visit.id+')"><div class="field"><label>Medicine</label><input name="medicine_name" required></div><div class="field"><label>Dose</label><input name="dose" placeholder="500 mg"></div><div class="field"><label>Frequency</label><input name="frequency" placeholder="1-0-1"></div><div class="field"><label>Duration</label><input name="duration" placeholder="5 days"></div><div class="field full"><label>Instructions</label><input name="instructions" placeholder="After food"></div><div class="field full"><button class="btn primary">Add Rx</button></div></form></div>'+
@@ -1972,11 +1959,11 @@ function renderPatientWorkspace(){
    '<div class="patient-workspace-grid"><div class="patient-workspace-column">'+
      '<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Today / current care</h3><div class="record-section-note">Current operational context and recent care status.</div></div></div>'+patientCurrentCare(p,activeAdm,latestVitals,lastVisit,s)+'</div>'+
      (s.permissions.clinical?patientTriageSummary(s.triage||[]):'')+
-     (s.role==='doctor'&&s.permissions.clinical?'<div class="workspace-card ai-clinical-card"><div class="panel-head"><div><h3 class="panel-title">🎙 AI Listen Summary</h3><div class="record-section-note">Review and approve the documentation draft before saving.</div></div></div><textarea id="aiScribeInput" rows="5" placeholder="Conversation transcript will appear here…"></textarea><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn" onclick="toggleClinicalDictation()">🎙 Start Listening</button><button class="btn primary" onclick="runClinicalScribe()">Stop & Summarize</button></div><div id="aiScribeDraft" style="margin-top:10px"></div></div><div class="workspace-card consultation-card"><div class="panel-head"><div><h3 class="panel-title">Doctor consultation</h3><div class="record-section-note">Review the AI draft or write/edit the final clinical note.</div></div></div><textarea id="doctorConsultationNote" rows="8" placeholder="Chief complaint, history, examination, assessment, plan…">'+esc(lastVisit?.visit_status==='open'?lastVisit.clinical_notes||'':'')+'</textarea><div class="consultation-footer"><button class="btn" onclick="saveDoctorVisit(false)">Save draft</button><button class="btn primary" onclick="saveDoctorVisit(true)">Save & complete visit</button></div></div>':'')+
+     /* Consultation and AI are opened together from the Patient Workspace action modal. */
      (s.permissions.theatre?'<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Operation Theatre / Procedures</h3><div class="record-section-note">Procedure actions for the selected admission.</div></div><button class="mini" onclick="workspaceTheatre('+p.id+')">+ Schedule</button></div>'+patientTheatre(s.theatre?.procedures||[])+'</div>':'')+
    '</div><div class="patient-workspace-column">'+
      ''+
-     (s.permissions.clinical?'<div class="workspace-card"><div class="panel-head"><div><h3 class="panel-title">Clinical actions</h3><div class="record-section-note">Open the clinical record or continue with orders.</div></div><button class="mini" onclick="openClinical('+p.id+')">Full clinical record</button></div>'+patientClinicalSummary(c)+'</div>':'')+
+     (s.permissions.clinical?'<div class="workspace-card"><div class="panel-head"><h3 class="panel-title">Clinical summary</h3></div>'+patientClinicalSummary(c)+'</div>':'')+
    '</div></div>'+
  '</section>'+
  '<section class="patient-workspace-pane" data-pworkspace-pane="reports" style="display:none">'+
@@ -3103,12 +3090,12 @@ function patientCareTeamActions(p,s){
   const sections=[
     section('01','nurse','Nursing','Vitals, triage and patient movement.',[
       {label:'Record vitals',onclick:'workspaceVitals('+id+')'},
-      {label:'Queue',onclick:'workspaceQueuePanel('+id+')'},
+      /* Queue is managed by OPD Queue; not a Nursing action. */
       {label:'Ward',onclick:'workspaceWardPanel('+id+')'}
     ]),
     section('02','doctor','Doctor','Consultation, clinical documentation and treatment.',[
       {label:'Open consultation',onclick:'workspaceOpenDoctor('+id+')'},
-      {label:'AI Listen Summary',onclick:'workspaceAIListen('+id+')'}
+      /* AI listening is embedded inside Consultation. */
     ]),
     section('03','lab','Laboratory','Investigations, sample processing and reports.',[
       {label:'Laboratory',onclick:'workspaceLab('+id+')'}
@@ -3148,7 +3135,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     appointments:['Appointments','Day view, doctor sessions, check-in and appointment status.','OPD · Scheduling'],
     queue:['OPD Queue & Tokens','Dispatch patients through the operational queue with clear stage and priority.','OPD · Front Desk'],
     followups:['Follow-ups','Track due follow-ups and route patients back into care.','OPD · Continuity'],
-    'doctor-room':['Doctor Consultation','Patient-first clinical workspace for the active encounter.','Clinical · EMR'],
+    /* Doctor Consultation metadata removed; use Patient Workspace. */
     doctors:['Doctors & Schedules','Doctor directory, availability and OPD session context.','Clinical · Scheduling'],
     lab:['Laboratory','Worklist-first investigation processing, verification and reporting.','Diagnostics · LIS'],
     pharmacy:['Pharmacy','Dispensing, stock, transfers and medicine history.','Diagnostics · Pharmacy'],
