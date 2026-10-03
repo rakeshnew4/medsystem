@@ -32,6 +32,16 @@
 .cf-role-login{position:fixed;inset:0;z-index:4900;display:none;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#0b241e,#123f34 55%,#0d3028);color:#fff}.cf-role-login.show{display:flex}.cf-role-card{width:min(460px,100%);background:rgba(255,255,255,.97);color:#17352f;border-radius:24px;padding:30px;box-shadow:0 30px 90px rgba(0,0,0,.35)}.cf-role-brand{display:flex;align-items:center;gap:12px;margin-bottom:24px}.cf-role-mark{width:46px;height:46px;border-radius:14px;background:#117e68;color:#fff;display:grid;place-items:center;font-size:22px;font-weight:900}.cf-role-card h1{margin:0;font-size:25px}.cf-role-sub{margin:6px 0 22px;color:#647872;font-size:13px}.cf-role-grid{display:grid;gap:13px}.cf-role-grid label{display:block;font-size:12px;font-weight:800;margin-bottom:6px;color:#405950}.cf-role-grid select,.cf-role-grid input{width:100%;box-sizing:border-box;padding:13px;border:1px solid #cbdad5;border-radius:11px;font:inherit;background:#fff}.cf-role-login-btn{width:100%;margin-top:5px;border:0;border-radius:12px;padding:14px;background:#117e68;color:#fff;font-weight:850;font-size:14px;cursor:pointer}.cf-role-hint{margin-top:15px;padding:11px 12px;border-radius:10px;background:#f1f7f4;color:#61746e;font-size:11px;line-height:1.5}.cf-role-error{min-height:18px;color:#b42318;font-size:12px;font-weight:700}.cf-loader{position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;background:rgba(12,18,17,.78);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .16s ease,visibility .16s ease}.cf-loader.show{opacity:1;visibility:visible;pointer-events:auto}.cf-loader-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:min(320px,calc(100vw - 48px));padding:24px 26px;background:rgba(10,30,26,.72);border:1px solid rgba(255,255,255,.12);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.28);backdrop-filter:blur(12px)}.cf-loader-mark{position:relative;width:64px;height:64px;border:4px solid rgba(255,255,255,.18);border-top-color:#12866f;border-right-color:#075c4d;border-radius:50%;animation:cfSpin .55s linear infinite;filter:drop-shadow(0 4px 12px rgba(0,0,0,.35))}.cf-loader-mark:before,.cf-loader-mark:after{content:'';position:absolute;left:50%;top:50%;background:linear-gradient(180deg,#27b59a,#08715f);border-radius:5px;transform:translate(-50%,-50%)}.cf-loader-mark:before{width:8px;height:36px}.cf-loader-mark:after{width:36px;height:8px}.cf-loader-core{position:absolute;left:50%;top:50%;width:10px;height:10px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 0 0 3px rgba(39,181,154,.2)}.cf-loader-label{display:block;color:#fff;font-size:15px;font-weight:800;letter-spacing:.02em}.cf-loader-sub{display:block;width:100%;color:rgba(255,255,255,.72);font-size:11px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cf-loader-progress{width:100%;height:5px;overflow:hidden;border-radius:999px;background:rgba(255,255,255,.14)}.cf-loader-progress-bar{height:100%;width:8%;border-radius:999px;background:linear-gradient(90deg,#27b59a,#8be3d1);box-shadow:0 0 12px rgba(39,181,154,.45);transition:width .28s ease;position:relative}.cf-loader-progress-bar:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-100%);animation:cfProgressShimmer 1.1s ease-in-out infinite}.cf-loader-percent{font-size:10px;color:rgba(255,255,255,.58);font-variant-numeric:tabular-nums}@keyframes cfSpin{to{transform:rotate(360deg)}}@keyframes cfProgressShimmer{to{transform:translateX(100%)}}@media(prefers-reduced-motion:reduce){.cf-loader-mark{animation-duration:2.5s}.cf-loader-progress-bar:after{animation:none}}.u12-validation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.u12-validation-summary,.u12-validation-item{border:1px solid var(--border);border-radius:10px;padding:11px 12px;background:var(--surface-soft,#f8faf9)}.u12-validation-summary{grid-column:1/-1;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.u12-validation-summary.ok{border-color:#b8ddd2}.u12-validation-summary.bad{border-color:#efc0bb}.u12-validation-item{display:flex;justify-content:space-between;gap:10px}.ok-text{color:#08715f}.bad-text{color:#b42318;font-weight:800}.u12-admin-availability .table-wrap{margin-top:10px}@media(max-width:700px){.u12-validation-grid{grid-template-columns:1fr}.u12-validation-summary{display:block}.u12-validation-summary span{display:block;margin-top:4px}.u12-admin-availability .u12-staff-toolbar{grid-template-columns:1fr}.u12-admin-availability table{min-width:640px}}
 /* Patient Workspace visual pass — compact commands, stable mobile hierarchy, HMIS-style report separation. */
 .patient-workspace-header{display:flex;flex-direction:column;gap:10px}
+body.workspace-modal-open{overflow:hidden}
+.patient-workspace-float{position:fixed;inset:0;z-index:4200;display:flex;align-items:center;justify-content:center;padding:24px}
+.patient-workspace-float-backdrop{position:absolute;inset:0;background:rgba(10,28,24,.48);backdrop-filter:blur(4px)}
+.patient-workspace-float-card{position:relative;z-index:1;width:min(720px,calc(100vw - 32px));max-height:min(82vh,760px);display:flex;flex-direction:column;background:var(--surface,#fff);border:1px solid var(--border);border-radius:20px;box-shadow:0 28px 90px rgba(7,40,33,.28);overflow:hidden}
+.patient-workspace-float-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface-soft,#f8faf9)}
+.patient-workspace-float-head .panel-title{margin:2px 0 0}
+.patient-workspace-float-body{padding:20px;overflow:auto}
+.patient-workspace-float-body .form-grid{margin:0}
+.patient-workspace-float-body .compact-record{background:var(--surface-soft,#f8faf9);border:1px solid var(--border);border-radius:12px;padding:12px}
+@media(max-width:600px){.patient-workspace-float{padding:10px}.patient-workspace-float-card{width:100%;max-height:92vh;border-radius:16px}.patient-workspace-float-head{padding:14px 15px}.patient-workspace-float-body{padding:15px}}
 .patient-workspace-header .patient-quick-actions{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:7px!important;width:100%}
 .patient-workspace-header .patient-action{min-width:0!important;min-height:40px!important;height:40px!important;padding:8px 9px!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:6px!important;white-space:nowrap!important;line-height:1!important;font-size:11px!important}
 .patient-workspace-header .patient-action-icon{flex:0 0 auto;font-size:13px}
@@ -1439,7 +1449,7 @@ function patientCareTeamActions(p,s){
   ]},
   {role:'doctor',label:'Doctor',step:'02',items:[
    ['Bring into doctor room','Start the consultation and mark the patient as in the doctor room.',q==='doctor','doctorStartFromQueue('+id+','+(p.active_queue_id||0)+')',clinical],
-   ['Open consultation','Open the full consultation workspace for this patient.',q==='doctor'||q==='in_room','workspaceOpenDoctor('+id+')',clinical],
+   ['Open consultation','Open the consultation controls inside this patient workspace.',q==='doctor'||q==='in_room','workspaceFocusConsultation('+id+')',clinical],
    ['AI Listen Summary','Capture the consultation and prepare a documentation draft.','in_room'===q,'scrollToPatientSection(\'ai-clinical-card\')',clinical],
    ['Prescription','Add or review medicines.',clinical,'workspacePrescription('+id+')',clinical],
    ['Investigation','Order or review investigations.',clinical,'workspaceLab('+id+')',clinical],
@@ -1450,13 +1460,13 @@ function patientCareTeamActions(p,s){
    ['Review procedures','Review this patient\'s scheduled and completed procedures.',true,'workspaceTheatre('+id+')',!!s.permissions?.theatre]
   ]},
   {role:'lab',label:'Lab',step:'04',items:[
-   ['Open lab work','Review investigations and update sample/result workflow.',q==='lab'||!!(s.clinical?.lab_orders?.length),'showSection(\'lab\')',clinical]
+   ['Open lab work','Review investigations and update sample/result workflow in a floating patient window.',q==='lab'||!!(s.clinical?.lab_orders?.length),'workspaceLab('+id+')',clinical]
   ]},
   {role:'pharmacy',label:'Pharmacy',step:'05',items:[
-   ['Open dispensing','Review prescriptions and dispense medicines.',q==='pharmacy'||!!(s.pharmacy?.length),'showSection(\'pharmacy\')',pharmacy]
+   ['Open dispensing','Review prescriptions and dispense medicines in a floating patient window.',q==='pharmacy'||!!(s.pharmacy?.length),'workspacePharmacy('+id+')',pharmacy]
   ]},
   {role:'billing',label:'Billing',step:'06',items:[
-   ['Open billing','Review invoices and payments.',true,'showSection(\'billing\')',billing]
+   ['Open billing','Review invoices and payments in a floating patient window.',true,'workspaceBilling('+id+')',billing]
   ]}
  ];
  const html=groups.map(g=>{
@@ -1548,7 +1558,7 @@ function patientNextActions(p,s){
  return actions.length?'<div class="next-actions"><div class="next-actions-head"><div><h3 class="panel-title">Next action</h3><div class="record-section-note">Workflow transitions stay inside this Patient Workspace. Mutating actions update the database and refresh the workspace; review states only focus existing workspace content.</div></div><span class="status active">'+esc(prettyStatus(q||'registered'))+'</span></div>'+actions.join('')+'</div>':'';
 }
 async function workspaceLabStatus(id,status,pid){
- try{await api('/lab',{method:'PUT',body:JSON.stringify({id,status})});await refreshPatientWorkspace(pid)}
+ try{await api('/lab',{method:'PUT',body:JSON.stringify({id,status})});closePatientWorkspaceActionModal();await refreshPatientWorkspace(pid)}
  catch(x){alert(x.message)}
 }
 function workspaceVerifyLab(id,pid){
@@ -1569,22 +1579,19 @@ async function workspaceSaveDispense(medication_id,pid,quantity){
  try{await api('/pharmacy',{method:'POST',body:JSON.stringify({patient_id:pid,medication_id,quantity:Number(quantity||1)})});await refreshPatientWorkspace(pid)}
  catch(x){alert(x.message)}
 }
+function closePatientWorkspaceActionModal(){
+ const modal=document.getElementById('patientWorkspaceActionModal');
+ if(modal)modal.remove();
+ document.body.classList.remove('workspace-modal-open');
+}
 function patientWorkspacePanel(title,body){
- return '<div class="workspace-card patient-action-panel"><div class="panel-head"><h3 class="panel-title">'+esc(title)+'</h3><button class="btn" type="button" onclick="this.closest(\'.patient-action-panel\').remove()">Cancel</button></div>'+body+'</div>';
+ return '<div id="patientWorkspaceActionModal" class="patient-workspace-float" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><div class="patient-workspace-float-backdrop" onclick="closePatientWorkspaceActionModal()"></div><div class="patient-workspace-float-card"><div class="patient-workspace-float-head"><div><div class="kicker">PATIENT WORKSPACE</div><h3 class="panel-title">'+esc(title)+'</h3></div><button class="btn" type="button" aria-label="Close" onclick="closePatientWorkspaceActionModal()">Close</button></div><div class="patient-workspace-float-body">'+body+'</div></div></div>';
 }
 function workspaceActionPanel(html,pid,anchorRole){
- const area=document.getElementById('patientWorkspaceActionArea');
- if(!area)return;
- const panel=patientWorkspacePanel(html.title,html.body);
- const anchor=anchorRole?area.parentElement?.querySelector('.care-team-group[data-care-role="'+anchorRole+'"]'):null;
- if(anchor){
-   anchor.insertAdjacentHTML('afterend',panel);
-   const next=anchor.nextElementSibling;
-   setTimeout(()=>next?.scrollIntoView({behavior:'smooth',block:'center'}),30);
- }else{
-   area.insertAdjacentHTML('beforeend',panel);
-   setTimeout(()=>area.lastElementChild?.scrollIntoView({behavior:'smooth',block:'center'}),30);
- }
+ closePatientWorkspaceActionModal();
+ document.body.insertAdjacentHTML('beforeend',patientWorkspacePanel(html.title,html.body));
+ document.body.classList.add('workspace-modal-open');
+ setTimeout(()=>document.querySelector('#patientWorkspaceActionModal input, #patientWorkspaceActionModal select, #patientWorkspaceActionModal textarea')?.focus(),40);
 }
 function workspaceOpenOpd(pid){openOpdRegistration(pid)}
 function workspaceOpenDoctor(pid){
@@ -1619,6 +1626,12 @@ function workspaceFollowupForm(pid){
 async function workspaceSaveFollowupForm(e,pid){
  e.preventDefault();
  try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/followups',{method:'POST',body:JSON.stringify({patient_id:pid,doctor_id:Number(b.doctor_id),due_date:b.due_date,consultation_type:b.consultation_type,reason:b.reason,notes:b.notes})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+}
+function workspaceBilling(pid){
+ const rows=state.activePatientRecord?.billing||[];
+ if(!rows.length){workspaceActionPanel({title:'Billing',body:'<div class="empty">No invoices are recorded for this patient.</div>'},pid,'billing');return;}
+ const html='<div class="record-section-note">Financial records for this patient. Payment mutations stay inside this window.</div>'+rows.slice(0,12).map(x=>'<div class="compact-record"><div><strong>'+esc(x.invoice_number||'Invoice')+'</strong><span>Total ₹'+Number(x.total||0).toFixed(2)+' · Paid ₹'+Number(x.paid||0).toFixed(2)+' · Due ₹'+Number(x.due??(Number(x.total||0)-Number(x.paid||0))).toFixed(2)+'</span></div>'+(Math.max(0,Number(x.due??(Number(x.total||0)-Number(x.paid||0)))>0)?'<button class="mini" onclick="workspacePayInvoice('+x.id+','+pid+','+Number(x.due??(Number(x.total||0)-Number(x.paid||0)))+')">Pay</button>':'<span class="status paid">Paid</span>')+'</div>').join('');
+ workspaceActionPanel({title:'Billing & payments',body:html},pid,'billing');
 }
 function workspacePayOutstanding(pid){
  const rows=state.activePatientRecord?.billing||[];
@@ -1833,10 +1846,13 @@ function patientPharmacy(a){return a.length?a.slice(0,8).map(x=>'<div class="com
 function patientInsurance(a){return a.length?a.slice(0,6).map(x=>'<div class="compact-record"><div><strong>'+esc(x.payer_name)+'</strong><span>'+esc(x.claim_number||x.policy_number||'No claim number')+'</span></div><div>'+status(x.status||'pending')+'<small>Claimed ₹'+Number(x.claimed_amount||0).toFixed(2)+'</small></div></div>').join(''):'<div class="empty">No insurance / TPA claims.</div>'}
 function patientFollowups(a){return a.length?a.slice(0,8).map(x=>'<div class="compact-record"><div><strong>'+fmtDate(x.due_date)+'</strong><span>'+esc(x.doctor_name||'Doctor')+'</span></div><div>'+status(x.status||'due')+'<small>'+esc(x.notes||'')+'</small></div>'+(x.status!=='completed'?'<button class="mini" onclick="workspaceCompleteFollowup('+x.id+','+x.patient_id+')">Complete</button>':'')+'</div>').join(''):'<div class="empty">No follow-ups scheduled.</div>'}
 function patientTimeline(a){return a.length?a.slice(0,20).map(x=>'<div class="patient-timeline-row"><i></i><div><strong>'+esc(String(x.event_type||'event').replaceAll('_',' '))+'</strong><span>'+esc(x.stage||'')+(x.actor_name?' · '+esc(x.actor_name):'')+(x.metadata?.status?' · '+esc(x.metadata.status):'')+'</span><small>'+new Date(x.created_at).toLocaleString('en-IN')+'</small></div></div>').join(''):'<div class="empty">No workflow events recorded.</div>'}
-async function workspacePayInvoice(id,pid,due){
- const amount=prompt('Payment amount',''+Number(due||0).toFixed(2));if(amount===null)return;
- const method=prompt('Payment method','upi');if(method===null)return;
- try{const s=state.activePatientRecord?.billing||[],inv=s.find(x=>Number(x.id)===Number(id));const already=Number(inv?.paid||0);await api('/billing',{method:'PUT',body:JSON.stringify({id,amount:Number(amount),payment_method:method})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+function workspacePayInvoice(id,pid,due){
+ const b='<form class="form-grid" onsubmit="workspaceSavePayment(event,'+id+','+pid+')"><div class="field full"><label>Invoice</label><input value="Due ₹'+Number(due||0).toFixed(2)+'" disabled></div><div class="field"><label>Payment amount</label><input name="amount" type="number" min="0.01" max="'+Number(due||0).toFixed(2)+'" step="0.01" value="'+Number(due||0).toFixed(2)+'" required></div><div class="field"><label>Payment method</label><select name="payment_method"><option value="cash">Cash</option><option value="upi" selected>UPI</option><option value="card">Card</option><option value="bank_transfer">Bank transfer</option></select></div><div class="field full"><button class="btn primary">Record payment</button></div></form>';
+ workspaceActionPanel({title:'Record payment',body:b},pid,'billing');
+}
+async function workspaceSavePayment(e,id,pid){
+ e.preventDefault();
+ try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/billing',{method:'PUT',body:JSON.stringify({id,amount:Number(b.amount),payment_method:b.payment_method})});closePatientWorkspaceActionModal();await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
 }
 async function workspaceCompleteFollowup(id,pid){
  try{await api('/followups',{method:'PUT',body:JSON.stringify({id,status:'completed'})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
