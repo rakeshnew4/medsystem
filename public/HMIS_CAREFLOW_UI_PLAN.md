@@ -222,6 +222,15 @@ HMIS references: `Privileges.java`, `UserPrivilageController.java`, `ConfigOptio
 - [x] Inventory reports — v437: existing fixed-asset and pharmacy closing-stock report contracts are surfaced as optional inventory snapshot hooks when the staff permission allows.
 - [ ] Authenticated reporting E2E — genuine hospital-staff execution remains open.
 
+### AI-AGENT-01 — Staff Assistant Tooling
+- [x] Existing CareFlow Assistant upgraded to a bounded tool-calling agent using the shared server-side tool registry.
+- [x] Read-only tools: hospital overview, patient search, Patient Workspace, OPD queue, appointments, due follow-ups, IPD census and billing summary.
+- [x] Every tool is hospital-scoped and mapped to an existing CareFlow permission; the model cannot execute arbitrary SQL, URLs or code.
+- [x] Assistant UI now advertises live operational-data capability and explicitly keeps clinical decisions with clinicians.
+- [x] Tool loop is bounded to five iterations; only the final assistant response is persisted as chat output.
+- [ ] Add mutation tools only after permission, validation, idempotency/concurrency and audit contracts are verified; sensitive actions require explicit confirmation.
+- [ ] Complete genuine staff-session E2E for assistant + tool execution.
+
 ### UI-15 — Global Responsive Shell Hardening
 - [x] Mobile sidebar drawer geometry — fixed overlay drawer uses viewport-safe sizing, touch scrolling and transform-based opening below the responsive breakpoint.
 - [x] Mobile backdrop — full viewport touch-safe backdrop remains behind the drawer and above the workspace.

@@ -373,6 +373,13 @@ Expected: patient, queue, appointment, follow-up and billing tool queries are co
 Expected: tool input cannot become arbitrary SQL, URL fetches, code execution or unregistered tool dispatch.
 
 ## TC-AI-TOOLS-005 — Mutation gate
+Expected: no write tool is exposed until its underlying CareFlow API/function has verified permission, validation, idempotency/concurrency and audit behavior. Sensitive operations must require explicit confirmation.
+
+## TC-AI-TOOLS-006 — Assistant tool loop
+Expected: the signed-in staff Assistant can request one of the declared read-only tools, the server executes it under the staff permission and hospital scope, and the model receives only the tool result. The loop is bounded; arbitrary SQL, URL fetching, code execution and unregistered tool names are unavailable.
+
+## TC-AI-TOOLS-007 — Assistant fallback
+Expected: if LiteLLM/tool execution fails, the assistant returns a controlled error and does not fabricate current hospital data or persist a false operational answer.
 Expected: no write/mutation tool is exposed until its underlying CareFlow API/function contract has verified permission, validation, idempotency/concurrency and audit behavior.
 
 # Completion gates

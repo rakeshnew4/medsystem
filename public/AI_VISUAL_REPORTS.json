@@ -163,6 +163,62 @@
         "Continue HMIS module/UI comparison and visual E2E coverage.",
         "Attempt genuine staff OTP/browser E2E when a persistent staff session is available."
       ]
+    },
+    {
+      "run": "2026-10-02-004",
+      "version": 496,
+      "purpose": "Staff AI tool-calling agent + assistant UI validation",
+      "pages": [],
+      "ai_agent": {
+        "route": "/api/ai-assistant",
+        "architecture": "Existing CareFlow Assistant upgraded to a bounded LiteLLM tool-calling loop.",
+        "tools": [
+          "get_hospital_overview",
+          "search_patients",
+          "get_patient_workspace",
+          "get_queue",
+          "get_appointments",
+          "get_due_followups",
+          "get_ipd_census",
+          "get_billing_summary"
+        ],
+        "tool_count": 8,
+        "boundaries": [
+          "staff permission required",
+          "hospital scoped",
+          "read-only tools only",
+          "maximum five tool iterations",
+          "no arbitrary SQL, URLs or code",
+          "clinical decisions remain outside the assistant"
+        ]
+      },
+      "ui": {
+        "assistant_examples": "Added live-data examples for queue, patient search, appointments and IPD census.",
+        "safety_copy": "Assistant UI explicitly states that clinical decisions remain with clinicians."
+      },
+      "verification": {
+        "dry_run": "passed",
+        "deployment": "v496 live",
+        "agent_tool_discovery": "200 for signed-in user harness; 401 anonymous",
+        "assistant_route": "reached authentication/hospital setup boundary in user harness; no production staff session was fabricated",
+        "opd_token_invalid": "404 intended error"
+      },
+      "hmis_comparison": {
+        "finding": "HMIS has a dedicated AI chat surface and AnthropicApiService agent loop with declared tools and server-side tool handlers. CareFlow now follows the same model-to-tool-to-server-handler pattern while retaining CareFlow's hospital/role permission layer.",
+        "reference_examples": [
+          "admission-number management with explicit confirmation before reset",
+          "admission search",
+          "clinical metadata",
+          "item requests",
+          "configuration management"
+        ]
+      },
+      "next_tasks": [
+        "Map laboratory, pharmacy, inventory and reporting read-only contracts into additional tools.",
+        "Add mutation tools only with explicit confirmation and verified idempotency/audit boundaries.",
+        "Run genuine staff-session AI E2E.",
+        "Continue module-by-module HMIS UI comparison and visual E2E."
+      ]
     }
   ],
   "updated": "2026-10-02"
