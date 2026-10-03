@@ -315,7 +315,8 @@ async function runTarget(target,width,height,demoRole=null){
   return browser.session(async page=>{
     await page.setViewport({width,height});
     if(demoRole){
-      await page.setCookie({name:"careflow_demo_role",value:String(demoRole).toLowerCase(),domain:"hospital-ai.hatchable.site",path:"/",secure:true,httpOnly:false});
+      await page.goto("https://hospital-ai.hatchable.site/",{waitUntil:"domcontentloaded"});
+      await page.setCookie({name:"careflow_demo_role",value:String(demoRole).toLowerCase(),path:"/",secure:true,httpOnly:false});
     }
     await page.goto(target.url,{waitUntil:"domcontentloaded"});
     await new Promise(r=>setTimeout(r,800));
