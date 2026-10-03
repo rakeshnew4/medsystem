@@ -1,5 +1,19 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-02 planned workstream — reporting, authentication, MinIO and integrations
+
+- Reporting increment shipped in v511: added three read-only AI tools to the existing hospital-scoped registry:
+  - `get_opd_report` — bounded 1–90 day OPD series with appointment outcomes, unique patients and completed doctor visits.
+  - `get_doctor_performance_report` — bounded 1–90 day doctor-level appointment/visit metrics.
+  - `get_daily_operations_report` — bounded 1–31 day queue, laboratory, IPD and pharmacy daily operational series.
+- HMIS reference check: the current `development` branch exposes a substantial analytics/reporting surface including OPD summaries, bill/financial summaries, day-end summaries and report-list/report-view flows. CareFlow follows the same concept of dedicated reporting views over transactional workflows rather than giving the AI arbitrary query access. citeturn0search0
+- Tests passed in the signed-in app-user contract: all three new tools returned HTTP 200 and read-only responses. OPD days=999 clamps to 90; daily-operations days=0 clamps to 1; anonymous AI-agent access remains HTTP 401. Existing `get_reporting_summary` also returned HTTP 200.
+- Data observation: seeded appointment rows currently show appointment status completion counts of 0 while completed doctor visits exist. The new report intentionally exposes these as separate fields (`completed` vs `completed_visits`) rather than inventing appointment-status changes.
+- Authentication gate: `/api/e2e-bootstrap` cannot establish a staff session through the available signed-in app-user runner (HTTP 401). Genuine hospital-staff browser/session E2E therefore remains open and is not marked complete.
+- MinIO gate: configuration probe shows MINIO_ACCESS_KEY, MINIO_SECRET_KEY, MINIO_BUCKET and MINIO_REGION are present, but MINIO_ENDPOINT is absent. The archive worker correctly returns `configured:false, skipped:true` and performs no upload attempts. Actual MinIO upload verification therefore remains blocked on the missing endpoint configuration.
+- Integration gate: public FHIR capability documentation remains available, FHIR Patient remains Bearer-key protected, and LIS result ingestion remains disabled pending authenticated adapter verification. No mutation/integration write was enabled.
+- Next: complete genuine staff-session workflow gates when a real hospital staff authentication session is available; once MINIO_ENDPOINT is populated, run the archive worker against the real target and verify object creation; then verify the authenticated FHIR/integration client and LIS adapter contract without exposing mutation tools prematurely.
+
 ## 2026-10-02 continuation increment — archive observability hardening
 
 - Re-tested the deployed `get_ipd_census` AI read-only tool through the signed-in app-user contract: HTTP 200, hospital-scoped census returned, bounded result respected. This is contract verification only; genuine hospital-staff E2E remains open.
