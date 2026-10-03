@@ -100,6 +100,91 @@ body.workspace-modal-open{overflow:hidden}
 .consultation-context span{display:inline-flex;align-items:center;padding:5px 8px;border:1px solid var(--border);border-radius:999px;font-size:10px;color:var(--muted);background:var(--surface-soft,#f8faf9)}
 @media(max-width:900px){.consultation-tools{grid-template-columns:1fr}}
 @media(max-width:700px){.patient-quick-actions .patient-action{min-width:78px;padding:7px 8px!important}.care-team-buttons .mini{min-width:70px!important;padding:7px 8px!important}}
+/* Patient Workspace final action-row correction: horizontal, never wrapped. */
+.patient-workspace-header .patient-quick-actions{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:8px!important;
+  width:100%!important;
+  max-width:100%!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  white-space:nowrap!important;
+  padding:2px 2px 7px!important;
+  scrollbar-width:thin;
+  -webkit-overflow-scrolling:touch;
+}
+.patient-workspace-header .patient-quick-actions::-webkit-scrollbar,
+.patient-workspace-tabs::-webkit-scrollbar,
+.care-team-buttons::-webkit-scrollbar{height:4px}
+.patient-workspace-header .patient-quick-actions .patient-action{
+  flex:0 0 auto!important;
+  width:auto!important;
+  min-width:88px!important;
+  height:40px!important;
+  min-height:40px!important;
+  padding:8px 12px!important;
+  justify-content:center!important;
+  white-space:nowrap!important;
+}
+.patient-workspace-header .patient-quick-actions .patient-action-primary{
+  min-width:104px!important;
+}
+.patient-workspace-tabs{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:6px!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  white-space:nowrap!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+  scrollbar-width:thin;
+}
+.patient-workspace-tabs .mini{
+  flex:0 0 auto!important;
+  width:auto!important;
+  min-width:132px!important;
+  white-space:nowrap!important;
+}
+.patient-workspace-tabs .mini.active{
+  min-width:150px!important;
+}
+.patient-workspace-header .patient-header-status{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  gap:8px!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  white-space:nowrap!important;
+  scrollbar-width:none;
+  padding-bottom:2px;
+}
+.patient-workspace-header .patient-header-status::-webkit-scrollbar{display:none}
+.care-team-buttons{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  white-space:nowrap!important;
+  justify-content:flex-start!important;
+  scrollbar-width:thin;
+}
+@media(max-width:700px){
+  .patient-workspace-header .patient-quick-actions .patient-action{
+    min-width:84px!important;
+    height:38px!important;
+    min-height:38px!important;
+    padding:7px 10px!important;
+  }
+  .patient-workspace-tabs .mini{
+    min-width:126px!important;
+  }
+}
 </style>
 </head>
 <body>
@@ -3026,8 +3111,7 @@ function patientCareTeamActions(p,s){
       {label:'AI Listen Summary',onclick:'workspaceAIListen('+id+')'}
     ]),
     section('03','lab','Laboratory','Investigations, sample processing and reports.',[
-      {label:'Lab',onclick:'workspaceLab('+id+')'},
-      {label:'Open investigation',onclick:'workspaceLab('+id+')'}
+      {label:'Laboratory',onclick:'workspaceLab('+id+')'}
     ]),
     section('04','pharmacy','Pharmacy','Prescription dispensing and medicine handover.',[
       {label:'Pharmacy',onclick:'workspacePharmacy('+id+')'}
