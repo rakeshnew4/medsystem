@@ -1,5 +1,18 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-03 — Patient Workspace IPD/laboratory contract pass v639
+
+- Continued the Patient Workspace mutation-contract audit using the HMIS inpatient/clinical workflow as the reference.
+- Found and fixed a real IPD workspace contract mismatch: the admission editor exposed `day_care`, while the verified `/api/ipd` update-admission contract accepts `general`, `emergency`, `elective`, `maternity`, `surgical` and `medical`.
+- Admission editing now uses the shared bottom success/error notification instead of a browser alert and refreshes the same Patient Workspace after save.
+- Found and fixed a real Next Action laboratory mismatch: the workspace offered `ordered → sample_collected`, but the client-side allowed list omitted `sample_collected`. The UI now matches the live `/api/lab` transition contract.
+- Dry-run: 0 hard errors.
+- Anonymous `/api/ipd` verification correctly returned HTTP 401; protected staff mutation execution was not fabricated.
+- Deployed live as v639.
+- Existing deployment warning about unused native Hatchable migrations remains architectural because CareFlow routes application SQL through its external PostgreSQL adapter.
+- Genuine hospital-staff browser E2E, mutation persistence/reload and role-specific click-through remain open.
+- Next: continue the Patient Workspace audit with nursing-handoff/Next Action validation and remaining IPD discharge/edit error paths, then repeat the complete click → save → refresh matrix when a genuine staff session is available.
+
 ## 2026-10-03 — Patient Workspace prescription contract fix v635
 
 - Audited Patient Workspace mutation payloads against the live backend handlers using the HMIS consultation-to-medication workflow as the reference.

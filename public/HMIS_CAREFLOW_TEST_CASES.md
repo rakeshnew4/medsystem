@@ -1,5 +1,19 @@
 # HMIS → CareFlow Test Cases
 
+## TC-UX-CONTRACT-004 — Patient Workspace IPD admission editor
+
+- Expected: Patient Workspace admission editing exposes only admission types accepted by `/api/ipd` and saves through `PUT /api/ipd` with the active admission id.
+- Expected: success remains inside Patient Workspace and refreshes the same patient context; failures use the shared bottom error notification.
+- Verified: source contract audit + dry-run; deployed v639.
+- Remaining: genuine hospital-staff click/save/reload execution.
+
+## TC-UX-CONTRACT-005 — Patient Workspace laboratory Next Action transition
+
+- Expected: when the active lab order is `ordered`, Next Action offers sample collection; `sample_collected` then offers processing; processing then offers verification.
+- Expected: each transition matches the server-side `ordered → sample_collected → processing → verified` contract.
+- Verified: client/server contract audit + dry-run; deployed v639.
+- Remaining: genuine lab-staff click-through and persistence/reload execution.
+
 This file is the executable test checklist for the workflow-by-workflow HMIS implementation.
 
 ## Test policy

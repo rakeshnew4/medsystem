@@ -53,6 +53,9 @@ HMIS references: OPD Patient Lookup/Registration, EMR patient lookup, patient pr
 - [x] Patient Workspace modal-first actions — v541: vitals, triage, pharmacy, billing/payment, IPD, theatre, prescription, investigation and follow-up operations open as floating patient-context windows; successful mutations close the window and refresh the same workspace. Care Team Lab/Pharmacy/Billing/consultation actions no longer navigate away.
 - [x] IPD workspace prompt cleanup — v545: bed transfer and IPD admission entry points now use floating workspace windows with the existing /api/beds contract.
 - [x] IPD workspace prompt cleanup — v545: Patient Workspace bed-transfer and IPD-admission entry points now open floating workspace windows instead of browser prompts, using the existing `/api/beds` mutation contract; no new backend transition was introduced.
+- [x] IPD admission editor contract pass — v639: admission-type options now match the verified `/api/ipd` update-admission contract; save/error feedback stays inside the workspace notification surface.
+- [x] Laboratory Next Action transition contract pass — v639: ordered → sample_collected is now enabled in the workspace client and matches `/api/lab` transition rules.
+- [ ] Authenticated Patient Workspace click/save/reload E2E for IPD admission editing and laboratory transitions remains open until a genuine hospital staff session is available.
 
 ### UI-02 — Appointments / OPD
 HMIS references: OPD patient lookup, token, queue, OPD billing.
