@@ -320,7 +320,7 @@ async function runTarget(target,width,height,demoRole=null){
       await page.evaluate(role=>localStorage.setItem("careflowDemoRole",String(role).toLowerCase()),demoRole);
     }
     const targetUrl=demoRole?"https://hospital-ai.hatchable.site/login?demo_role="+encodeURIComponent(demoRole)+"&next="+encodeURIComponent(target.url.replace("https://hospital-ai.hatchable.site","")):target.url;
-    await page.goto(targetUrl,{waitUntil:"domcontentloaded"});
+    try{await page.goto(targetUrl,{waitUntil:"domcontentloaded"})}catch(error){if(!String(error?.message||error).includes("ERR_ABORTED"))throw error}
     await new Promise(r=>setTimeout(r,800));
     if(target.name==="ai-flow-agent")return {flow_agent:await runFlowAgent(page,width,height)};
 
