@@ -1,5 +1,21 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-03 — Patient Workspace billing continuity v657
+
+- Continued the Patient Workspace mutation/persistence matrix after the staged pharmacy hardening.
+- Bills created inside Patient Workspace now pass the active/open clinical visit and relevant appointment IDs into `/api/billing` when available, allowing the billing workflow event to resolve the canonical HMIS care encounter instead of creating an unlinked invoice event.
+- Added explicit in-context success feedback after invoice creation; existing payment and billing API contracts remain unchanged.
+- The already-dispensed pharmacy-state hardening remains in the same pending deployment.
+- Dry-run passed with 0 hard errors. Deployment was blocked by the deployment safety gate again, so these changes remain staged rather than falsely marked live.
+- Next: publish the staged increment, then verify Patient Workspace billing payment and IPD transfer/discharge persistence paths; genuine hospital-staff click → save → reload E2E remains open.
+
+## 2026-10-03 — Patient Workspace pharmacy contract v656
+
+- Updated the Patient Workspace pharmacy panel so a prescription whose server-side dispense status is already `dispensed` shows a completed `Dispensed` state instead of offering another Dispense mutation.
+- Preserved the existing `/api/pharmacy` one-time dispense contract and its stock/queue/encounter completion behavior.
+- Dry-run passed with 0 hard errors. Deployment was blocked by the deployment safety gate in this run; the change is staged for the next continuation.
+- Next: publish v656, then verify Patient Workspace billing payment and IPD transfer/discharge persistence paths; genuine hospital-staff click → save → reload E2E remains open.
+
 ## 2026-10-03 — Patient Workspace remaining notification cleanup v648
 
 - Continued the active Patient Workspace mutation/error-feedback audit using the HMIS workflow principle that the selected patient remains the operational context rather than sending the user to unrelated pages.

@@ -36,19 +36,40 @@ export default async function(req,res){
     );
     if(conflict.rows[0])return res.status(409).json({error:"That doctor slot is already booked",code:"APPOINTMENT_CONFLICT",appointment_id:conflict.rows[0].id,status:conflict.rows[0].status});
 
+    // A booking is the complete front-desk OPD transaction: resolve/register the patient first.
     let patient=null;
     if(b.patient_id){
       const r=await db.query("SELECT id,name,uhid,phone FROM patients WHERE hospital_id=$1 AND id=$2",[hid,b.patient_id]);
       patient=r.rows[0]||null;
     }
     if(!patient&&b.patient_phone){const r=await db.query("SELECT id,name,uhid,phone FROM patients WHERE hospital_id=$1 AND phone=$2 ORDER BY id LIMIT 1",[hid,String(b.patient_phone).trim()]);patient=r.rows[0]||null}
-    if(!patient){const r=await db.query("SELECT id,name,uhid,phone FROM patients WHERE hospital_id=$1 AND lower(trim(name))=lower(trim($2)) ORDER BY id LIMIT 1",[hid,String(b.patient_name).trim()]);patient=r.rows[0]||null}
+    if(!patient&&b.patient_name){const r=await db.query("SELECT id,name,uhid,phone FROM patients WHERE hospital_id=$1 AND lower(trim(name))=lower(trim($2)) ORDER BY id LIMIT 1",[hid,String(b.patient_name).trim()]);patient=r.rows[0]||null}
     if(!patient){
-      return res.status(409).json({
-        error:"Patient registration is required before booking an appointment",
-        code:"PATIENT_REGISTRATION_REQUIRED"
-      });
+      const name=String(b.patient_name||"").trim();
+      if(!name)return res.status(400).json({error:"Patient name is required"});
+      if(b.patient_phone){
+        const dup=await db.query("SELECT id,name,uhid,phone FROM patients WHERE hospital_id=$1 AND phone=$2 ORDER BY id DESC LIMIT 1",[hid,String(b.patient_phone).trim()]);
+        if(dup.rows[0])patient=dup.rows[0];
+      }
+      if(!patient){
+        const seq=await db.query("SELECT nextval('patients_id_seq') AS id");
+        const patientId=Number(seq.rows[0]?.id);
+        if(!patientId)return res.status(500).json({error:"Unable to allocate patient id"});
+        const cols=["id","hospital_id","name","uhid","registration_source","registration_source_locked","status","created_at","updated_at"];
+        const vals=[patientId,hid,name,"UHID-"+String(patientId).padStart(6,"0"),String(b.source||"reception"),true,"active",new Date().toISOString(),new Date().toISOString()];
+        if(b.patient_phone){cols.push("phone");vals.push(String(b.patient_phone).trim())}
+        if(b.patient_email){cols.push("email");vals.push(String(b.patient_email).trim())}
+        if(b.patient_dob){cols.push("date_of_birth");vals.push(b.patient_dob)}
+        await db.query("INSERT INTO patients("+cols.join(",")+") VALUES("+vals.map((_,i)=>"$"+(i+1)).join(",")+")",vals);
+        const identityFields=["title","sex","nic_passport","alternate_phone","address","area","blood_group","occupation","emergency_contact"];
+        if(identityFields.some(k=>String(b[k]??"").trim()!=="")){
+          await db.query("INSERT INTO patient_identity(hospital_id,patient_id,title,sex,nic_passport,alternate_phone,address,area,blood_group,occupation,emergency_contact) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT(patient_id) DO UPDATE SET title=EXCLUDED.title,sex=EXCLUDED.sex,nic_passport=EXCLUDED.nic_passport,alternate_phone=EXCLUDED.alternate_phone,address=EXCLUDED.address,area=EXCLUDED.area,blood_group=EXCLUDED.blood_group,occupation=EXCLUDED.occupation,emergency_contact=EXCLUDED.emergency_contact,updated_at=now()",[hid,patientId,b.title||null,b.sex||null,b.nic_passport||null,b.alternate_phone||null,b.address||null,b.area||null,b.blood_group||null,b.occupation||null,b.emergency_contact||null]);
+        }
+        const pr=await db.query("SELECT id,name,uhid,phone FROM patients WHERE id=$1 AND hospital_id=$2",[patientId,hid]);
+        patient=pr.rows[0]||null;
+      }
     }
+    if(!patient)return res.status(500).json({error:"Patient could not be registered or resolved"});
     const consultationType=b.consultation_type==="online"?"online":"in_person";
     const r=await db.query("INSERT INTO appointments(hospital_id,patient_id,doctor_id,appointment_date,appointment_time,status,source,reason,consultation_type,video_status) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id,appointment_date,appointment_time,status,patient_id,doctor_id,consultation_type,video_status,public_token",[hid,patient.id,b.doctor_id,b.appointment_date,b.appointment_time,b.status||"pending",b.source||"reception",b.reason||null,consultationType,consultationType==="online"?"scheduled":"not_required"]);
     if(consultationType==="online"){
@@ -56,8 +77,21 @@ export default async function(req,res){
       await db.query("INSERT INTO video_sessions(hospital_id,appointment_id,provider,room_name,scheduled_start,status) VALUES($1,$2,'jitsi',$3,$4,'scheduled')",[hid,r.rows[0].id,room,String(b.appointment_date)+" "+String(b.appointment_time).slice(0,5)+":00"]);
       await db.query("UPDATE appointments SET video_provider='jitsi',video_room=$1 WHERE id=$2",[room,r.rows[0].id]);
     }
-    await logWorkflowEvent(ctx,{patientId:patient.id,eventType:"appointment_booked",stage:"appointment",entityType:"appointment",entityId:r.rows[0].id,metadata:{doctor_id:b.doctor_id,source:b.source||"reception",consultation_type:consultationType}});
-    return res.json({...r.rows[0],patient});
+    // Complete front-desk booking: assign the OPD token and queue entry in the same action.
+    const token=await allocateOpdToken(hid,apDate);
+    const qr=await db.query("INSERT INTO queue_entries(hospital_id,patient_id,appointment_id,doctor_id,stage,priority,token,token_date,token_number,reason) VALUES($1,$2,$3,$4,'waiting',$5,$6,$7,$8,$9) RETURNING id,stage,priority,token,token_date,token_number,public_token",[hid,patient.id,r.rows[0].id,b.doctor_id,b.priority||"normal",token.token,token.tokenDate,token.tokenNumber,b.reason||"Appointment"]);
+    const queue=qr.rows[0];
+    let encounter=null;
+    const localToday=await hospitalLocalDate(hid);
+    if(apDate===localToday){
+      const er=await db.query("INSERT INTO care_encounters(hospital_id,patient_id,encounter_type,appointment_id,doctor_id,status,reason,current_stage) VALUES($1,$2,'opd',$3,$4,'open',$5,'waiting') RETURNING id,current_stage,status",[hid,patient.id,r.rows[0].id,b.doctor_id,b.reason||"Appointment"]);
+      encounter=er.rows[0];
+      await db.query("UPDATE appointments SET status='checked_in',updated_at=now() WHERE id=$1 AND hospital_id=$2",[r.rows[0].id,hid]);
+    }
+    await logWorkflowEvent(ctx,{patientId:patient.id,encounterId:encounter?.id||null,eventType:"appointment_booked",stage:"waiting",entityType:"appointment",entityId:r.rows[0].id,metadata:{doctor_id:b.doctor_id,source:b.source||"reception",consultation_type:consultationType,queue_id:queue.id,token:queue.token,token_date:queue.token_date}});
+    await notifyStage({hospitalId:hid,stage:"waiting",title:"OPD booking completed",body:"Token "+queue.token+" is assigned to "+(patient.name||"the patient")+".",entityType:"queue",entityId:queue.id,patientId:patient.id,excludeStaffId:ctx.staff.id,doctorId:b.doctor_id});
+    const fresh=await db.query("SELECT id,appointment_date,appointment_time,status,patient_id,doctor_id,consultation_type,video_status,public_token FROM appointments WHERE id=$1 AND hospital_id=$2",[r.rows[0].id,hid]);
+    return res.json({...fresh.rows[0],patient,queue,encounter});
   }
 
   if(req.method==="PUT"){
