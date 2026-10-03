@@ -60,13 +60,14 @@ async function callVision(url,key,model,png,meta){
 }
 
 async function liteLLMReview(png,meta){
-  const base=String(process.env.LITELLM_URL||"").trim().replace(/\/$/,"");
+  let base=String(process.env.LITELLM_URL||"").trim().replace(/\/$/,"");
   const key=String(process.env.LITELLM_API_KEY||"").trim();
   if(!base||!key)return {status:"not_configured",provider:"litellm"};
-  // Keep the visual fallback deterministic: LiteLLM routes this model name
-  // to the configured Gemini 2.5 Flash Lite backend. No /models discovery call is needed.
-  const model=String(process.env.LITELLM_MODEL||"gemini-2.5-flash-lite").trim();
-  if(!model)return {status:"no_model",provider:"litellm"};
+  // Hatchable secrets may contain host:port without a scheme.
+  if(!/^https?:\/\//i.test(base))base="http://"+base;
+  // Deliberately pin the visual fallback to Gemini 2.5 Flash Lite.
+  // Do not let an unrelated LITELLM_MODEL secret silently change visual QA.
+  const model="gemini-2.5-flash-lite";
   const endpoint=base.endsWith("/v1")?base+"/chat/completions":base+"/v1/chat/completions";
   try{
     return {provider:"litellm",...(await callVision(endpoint,key,model,png,meta))};
