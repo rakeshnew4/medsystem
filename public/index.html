@@ -575,6 +575,9 @@ function hideCareFlowLoader(force=false){
 }
 async function api(path,opts={}){
   const show=opts.loading===true;const requestOpts={...opts};delete requestOpts.loading;
+  const method=String(requestOpts.method||'GET').toUpperCase();
+  const shouldNotify=requestOpts.notify!==false&&method!=='GET'&&!String(path).includes('/staff-notifications');
+  delete requestOpts.notify;
   if(show)showCareFlowLoader('Loading…');
   try{
     const roleToken=localStorage.getItem('careflowRoleToken')||'';
@@ -585,7 +588,11 @@ async function api(path,opts={}){
     const r=await fetch(API+path,{headers:{...baseHeaders,...(requestOpts.headers||{})},...requestOpts});
     let j={};try{j=await r.json()}catch{}
     if(!r.ok)throw Object.assign(Error(j.error||'Request failed'),{status:r.status,data:j});
+    if(shouldNotify)showActionToast({title:'Saved',body:actionFeedbackLabel(path,method)});
     return j;
+  }catch(e){
+    if(shouldNotify)showActionToast({title:'Action failed',body:e?.message||'The change could not be saved.',error:true});
+    throw e;
   }finally{if(show)hideCareFlowLoader()}
 }
 const VALID_SECTIONS=['dashboard','reception-desk','queue','appointments','patients','doctors','beds','followups','billing','lab','theatre','pharmacy','assets','display','analytics','staff','communication','setup','integrations'];
@@ -1900,7 +1907,14 @@ async function workspaceSavePrescription(e,pid){
  e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());b.patient_id=pid;b.type='medicine';await api('/clinical',{method:'POST',body:JSON.stringify(b)});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
 }
 async function workspaceSaveLab(e,pid){
- e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());b.patient_id=pid;await api('/lab',{method:'POST',body:JSON.stringify(b)});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
+ e.preventDefault();
+ try{
+  const b=Object.fromEntries(new FormData(e.target).entries());
+  const visit=(state.activePatientRecord?.clinical?.visits||[]).find(v=>v.visit_status==='open'&&Number(v.patient_id)===Number(pid));
+  if(!visit)throw new Error('Start the doctor consultation before ordering an investigation.');
+  await api('/clinical',{method:'POST',body:JSON.stringify({type:'lab',patient_id:Number(pid),visit_id:Number(visit.id),queue_entry_id:state.activePatientRecord?.patient?.active_queue_id||null,encounter_id:visit.encounter_id||null,test_name:b.test_name,notes:b.notes||null})});
+  await refreshPatientWorkspace(pid);
+ }catch(x){alert(x.message)}
 }
 async function workspaceSaveInvoice(e,pid){
  e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/billing',{method:'POST',body:JSON.stringify({patient_id:pid,items:[{description:b.description,quantity:1,unit_price:Number(b.amount||0)}],paid:Number(b.paid||0),payment_method:b.payment_method||null,notes:b.notes||null})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
@@ -2978,6 +2992,18 @@ async function pollNotifications(){
   }catch(e){}
   clearTimeout(notificationPollTimer);
   notificationPollTimer=setTimeout(pollNotifications,30000);
+}
+function actionFeedbackLabel(path,method){
+  const p=String(path||'').split('?')[0].replace(/^\\//,'');
+  const labels={queue:'Queue updated',vitals:'Vitals saved',triage:'Triage saved',clinical:'Clinical record saved',lab:'Laboratory workflow updated',pharmacy:'Pharmacy workflow updated',followups:'Follow-up saved',patients:'Patient details saved',billing:'Billing record saved',appointments:'Appointment updated',beds:'Admission / bed updated',nursing-handoff:'Nursing handoff saved',theatre:'Procedure updated'};
+  return labels[p]||((method==='DELETE')?'Record deleted':'Changes saved');
+}
+function showActionToast(n){
+  const host=document.getElementById('workflowToastHost');if(!host)return;
+  const el=document.createElement('div');el.className='workflow-toast '+(n.error?'is-error':'is-success');
+  el.setAttribute('role','status');el.innerHTML='<span class="workflow-toast-icon">'+(n.error?'!':'✓')+'</span><span><strong>'+esc(n.title||'Saved')+'</strong><small>'+esc(n.body||'')+'</small></span>';
+  host.appendChild(el);
+  setTimeout(()=>el.remove(),6000);
 }
 function showWorkflowToast(n){
   const host=document.getElementById('workflowToastHost');if(!host)return;
