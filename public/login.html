@@ -79,7 +79,7 @@ button.secondary{background:#eef4f1;color:#315248}.msg{min-height:22px;margin:14
     }catch(e){}
     return false;
   }
-  if(!A){say('Authentication is unavailable. Please refresh.',true);submit.disabled=true;return}
+  if(!A){tryDemoEntry().then(done=>{if(!done){say('Authentication is unavailable. Please refresh.',true);submit.disabled=true}});return}
   tryDemoEntry().then(done=>{if(!done)A.getSession().then(s=>{if(s&&s.user)next()}).catch(()=>{})});
 
   if(A.attachPasskeyAutofill){
