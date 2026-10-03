@@ -18,6 +18,7 @@ export default async function(req,res){
     if(!b.patient_id)return res.status(400).json({error:"Patient is required"});
     const acuity=String(b.acuity||"routine");
     if(!priorityForAcuity[acuity])return res.status(400).json({error:"Invalid triage acuity"});
+    if(b.pain_score!==undefined&&b.pain_score!==null&&b.pain_score!==""&&(!Number.isInteger(Number(b.pain_score))||Number(b.pain_score)<0||Number(b.pain_score)>10))return res.status(400).json({error:"Pain score must be an integer from 0 to 10"});
 
     let queueId=b.queue_entry_id?Number(b.queue_entry_id):null;
     let encounterId=b.encounter_id?Number(b.encounter_id):null;

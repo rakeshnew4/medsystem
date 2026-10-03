@@ -5,8 +5,13 @@ export const access="user"; export const methods=["GET","POST","PUT"];
 export default async function(req,res){
  const ctx=await requirePermission(req,res,req.method==="GET"?"action.clinical.view":"action.vitals.record"); if(!ctx)return;
  const b=req.body||{};
+ const numericRanges={
+  blood_pressure_systolic:[40,300],blood_pressure_diastolic:[20,200],pulse:[20,250],temperature:[25,45],weight_kg:[0.5,500],height_cm:[20,250],spo2:[50,100],respiratory_rate:[4,80]
+ };
+ const invalidVitals=Object.entries(numericRanges).find(([key,[min,max]])=>b[key]!==undefined&&b[key]!==null&&b[key]!==""&&(!Number.isFinite(Number(b[key]))||Number(b[key])<min||Number(b[key])>max));
  if(req.method==="POST"||req.method==="PUT"){
   if(!b.patient_id)return res.status(400).json({error:"Patient is required"});
+  if(invalidVitals)return res.status(400).json({error:"Invalid vital sign value",field:invalidVitals[0]});
   if(req.method==="PUT"){
    const r=await db.query("UPDATE vitals SET blood_pressure_systolic=$1,blood_pressure_diastolic=$2,pulse=$3,temperature=$4,weight_kg=$5,height_cm=$6,spo2=$7,respiratory_rate=$8,notes=$9,encounter_id=COALESCE($10::bigint,encounter_id) WHERE id=$11 AND hospital_id=$12 RETURNING *",[b.blood_pressure_systolic||null,b.blood_pressure_diastolic||null,b.pulse||null,b.temperature||null,b.weight_kg||null,b.height_cm||null,b.spo2||null,b.respiratory_rate||null,b.notes||null,b.encounter_id||null,b.id,ctx.hospitalId]); return res.json(r.rows[0]||{error:"Vitals not found"});
   }
