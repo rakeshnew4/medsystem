@@ -1,5 +1,22 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-02 — Patient Workspace UX/flow correction v606
+
+- Fixed the Patient Workspace follow-up completion 500. Root cause: PUT completion omitted `due_date`, and the API converted the missing value to an empty PostgreSQL date. The handler now validates the follow-up id, preserves the existing due date/notes when omitted, and updates only supplied fields.
+- Fixed Nursing → Ward admission/transfer bed selection by returning hospital-scoped available beds in the Patient Workspace payload and using that list in the floating admission/transfer forms.
+- Clarified Nursing → Queue: it is a patient-context status panel showing current stage, token, priority and doctor; it does not itself change the queue stage.
+- Redesigned Patient Lookup filters so All/Active/OPD/IPD sit below the search field in a horizontal scroll row.
+- Patient Workspace Edit now stays in the floating workspace when editing the selected patient; save updates the DB and refreshes the same workspace.
+- Enlarged the Doctor consultation floating window and reflowed its internal consultation tools to prevent overlap.
+- Fixed AI Listen Summary action: it now opens the Patient Workspace AI scribe area instead of routing through the legacy clinical entry point. Existing browser SpeechRecognition + /api/ai-clinical scribe contract is reused; transcript can still be typed/pasted when browser speech recognition is unavailable.
+- Removed duplicate Doctor actions from the care-team action row: Open consultation remains the main entry, with AI Listen Summary as the second direct action; prescription, investigation and follow-up remain inside the consultation workspace.
+- Removed duplicate Pharmacy/Dispense buttons: Pharmacy is the single entry and the dispensing action remains inside its floating pharmacy panel.
+- Removed duplicate Bill/Review Account buttons: Billing is the single entry and account/payment review remains inside its floating billing panel.
+- Deployment dry-run: 0 hard errors.
+- Live deployment: v606.
+- Automated API verification limitation: the available `as:user` harness resolves to a different hospital context than the existing demo/test rows, so follow-up and Patient Workspace test IDs returned scoped 404s. No real staff session was fabricated and no workflow was marked E2E-complete from that result.
+- Next: run the authenticated Patient Workspace matrix with the user's genuine hospital staff session: Queue/ Ward bed selection → Edit patient → Doctor consultation → AI Listen → Rx/Lab/Follow-up → Pharmacy → Billing, including save/refresh persistence and desktop/mobile visual checks.
+
 ## 2026-10-02 — nursing/vitals validation hardening shipped in v592
 
 - Continued the HMIS-aligned nursing/vitals workflow after repairing the external triage schema.
