@@ -21,7 +21,7 @@ export default async function(req,res){
  if(expiryDate&&!/^\d{4}-\d{2}-\d{2}$/.test(expiryDate))return res.status(400).json({error:"expiry_date must use YYYY-MM-DD"});
  let r;
  try {
-  const existing=await db.query("SELECT * FROM pharmacy_stock WHERE hospital_id=$1 AND medicine_name=$2 AND batch_no=$3 AND ((expiry_date=$4) OR (expiry_date IS NULL AND $4 IS NULL)) LIMIT 1",[ctx.hospitalId,name,batch,expiryDate]);
+  const existing=await db.query("SELECT * FROM pharmacy_stock WHERE hospital_id=$1 AND medicine_name=$2 AND batch_no=$3 LIMIT 1",[ctx.hospitalId,name,batch]);
   if(existing.rows[0]){
    const before=Number(existing.rows[0].quantity||0), after=before+qty;
    await db.transaction([
