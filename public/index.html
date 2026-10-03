@@ -1451,12 +1451,12 @@ function patientCareTeamActions(p,s){
 function scrollToPatientSection(cls){const el=document.querySelector('.'+cls);if(el)el.scrollIntoView({behavior:'smooth',block:'center'})}
 function patientWorkspaceActionButtons(p){
  const s=state.activePatientRecord||{}, id=p.id;
- const q=p.today_token?'<button class="btn" onclick="movePatient('+id+',\'waiting\');refreshPatientWorkspace('+id+')">Queue</button>':'<button class="btn" onclick="openOpdRegistration('+id+')">Register OPD</button>';
- const a='<button class="btn" onclick="editPatient('+id+')">Edit patient</button>';
- const ap='<button class="btn" onclick="patientWorkspaceAppointments('+id+')">Appointments</button>';
- const clinical=s.permissions?.clinical?'<button class="btn" onclick="workspaceVitals('+id+')">+ Vitals</button><button class="btn" onclick="workspacePrescription('+id+')">+ Prescription</button><button class="btn" onclick="workspaceLab('+id+')">+ Lab order</button>':'';
- const finance=s.permissions?.billing?'<button class="btn" onclick="workspaceInvoice('+id+')">+ Bill</button>':'';
- return '<div class="patient-quick-actions">'+a+q+ap+clinical+finance+'<button class="btn primary" onclick="openClinical('+id+')">Full clinical record</button></div>';
+ const q=p.today_token?'<button class="btn patient-action" onclick="movePatient('+id+',\'waiting\');refreshPatientWorkspace('+id+')"><span class="patient-action-icon">≡</span><span>Queue</span></button>':'<button class="btn patient-action" onclick="openOpdRegistration('+id+')"><span class="patient-action-icon">＋</span><span>Register OPD</span></button>';
+ const a='<button class="btn patient-action" onclick="editPatient('+id+')"><span class="patient-action-icon">✎</span><span>Edit patient</span></button>';
+ const ap='<button class="btn patient-action" onclick="patientWorkspaceAppointments('+id+')"><span class="patient-action-icon">▦</span><span>Appointments</span></button>';
+ const clinical=s.permissions?.clinical?'<button class="btn patient-action" onclick="workspaceVitals('+id+')"><span class="patient-action-icon">♡</span><span>Vitals</span></button><button class="btn patient-action" onclick="workspacePrescription('+id+')"><span class="patient-action-icon">＋</span><span>Prescription</span></button><button class="btn patient-action" onclick="workspaceLab('+id+')"><span class="patient-action-icon">⌁</span><span>Lab order</span></button>':'';
+ const finance=s.permissions?.billing?'<button class="btn patient-action" onclick="workspaceInvoice('+id+')"><span class="patient-action-icon">₹</span><span>Bill</span></button>':'';
+ return '<div class="patient-quick-actions">'+a+q+ap+clinical+finance+'<button class="btn primary patient-action patient-action-primary" onclick="openClinical('+id+')"><span class="patient-action-icon">↗</span><span>Full clinical record</span></button></div>';
 }
 function patientNextActions(p,s){
  const clinical=!!s.permissions?.clinical, billing=!!s.permissions?.billing, pharmacy=!!s.permissions?.pharmacy;
