@@ -68,3 +68,24 @@ expose = true
 [[secret]]
 name = "CARE_FLOW_DEMO_MODE"
 expose = true
+
+# MinIO/S3-compatible archive target for reports, audit records and generated documents.
+[[secret]]
+name = "MINIO_ENDPOINT"
+expose = true
+
+[[secret]]
+name = "MINIO_ACCESS_KEY"
+expose = true
+
+[[secret]]
+name = "MINIO_SECRET_KEY"
+expose = true
+
+[[secret]]
+name = "MINIO_BUCKET"
+expose = true
+
+[[secret]]
+name = "MINIO_REGION"
+expose = true
