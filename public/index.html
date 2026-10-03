@@ -1505,9 +1505,7 @@ function patientCareTeamActions(p,s){
 function scrollToPatientSection(cls){const el=document.querySelector('.'+cls);if(el)el.scrollIntoView({behavior:'smooth',block:'center'})}
 function patientWorkspaceActionButtons(p){
  const s=state.activePatientRecord||{}, id=p.id;
- const q=p.today_token
-   ? '<button class="btn patient-action" onclick="workspaceQueuePanel(undefined)"><span class="patient-action-icon">≡</span><span>Queue</span></button>'
-   : '';
+ const q='<button class="btn patient-action" onclick="workspaceQueuePanel('+id+')"><span class="patient-action-icon">≡</span><span>Queue</span></button>';
  const a='<button class="btn patient-action" onclick="editPatient('+id+')"><span class="patient-action-icon">✎</span><span>Edit</span></button>';
  const vit=s.permissions?.clinical?'<button class="btn patient-action" onclick="workspaceVitals('+id+')"><span class="patient-action-icon">♡</span><span>Vitals</span></button>':'';
  const finance=s.permissions?.billing?'<button class="btn patient-action" onclick="workspaceInvoice('+id+')"><span class="patient-action-icon">₹</span><span>Bill</span></button>':'';
@@ -1598,21 +1596,23 @@ async function workspaceLabStatus(id,status,pid){
  catch(x){alert(x.message)}
 }
 function workspaceVerifyLab(id,pid){
- const result=prompt('Enter the verified lab result / summary:');
- if(result===null)return;
- workspaceLabStatusWithResult(id,pid,result);
+ const body='<form class="form-grid" onsubmit="workspaceSaveLabVerification(event,'+id+','+pid+')"><div class="field full"><label>Verified result / summary</label><textarea name="result_summary" rows="5" required placeholder="Enter the verified laboratory result or summary"></textarea></div><div class="field full"><button class="btn primary">Verify result</button></div></form>';
+ workspaceActionPanel({title:'Verify laboratory result',body},pid,'lab');
 }
-async function workspaceLabStatusWithResult(id,pid,result_summary){
- try{await api('/lab',{method:'PUT',body:JSON.stringify({id,status:'verified',result_summary})});await refreshPatientWorkspace(pid)}
+async function workspaceSaveLabVerification(e,id,pid){
+ e.preventDefault();
+ try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/lab',{method:'PUT',body:JSON.stringify({id,status:'verified',result_summary:b.result_summary})});await refreshPatientWorkspace(pid)}
  catch(x){alert(x.message)}
 }
 function workspaceDispenseMedicine(medication_id,pid){
- const quantity=prompt('Quantity to dispense','1');
- if(quantity===null)return;
- workspaceSaveDispense(medication_id,pid,quantity);
+ const m=(state.activePatientRecord?.pharmacy||[]).find(x=>Number(x.medication_id||x.id)===Number(medication_id))||{};
+ const ordered=Number(m.quantity||m.prescribed_quantity||0),dispensed=Number(m.dispensed_quantity||0),remaining=Math.max(0,ordered-dispensed);
+ const body='<form class="form-grid" onsubmit="workspaceSaveDispense(event,'+medication_id+','+pid+')"><div class="field"><label>Medicine</label><input value="'+esc(m.medicine_name||'Medicine')+'" disabled></div><div class="field"><label>Remaining quantity</label><input value="'+(remaining||'As prescribed')+'" disabled></div><div class="field"><label>Quantity to dispense</label><input name="quantity" type="number" min="1" step="1" value="'+(remaining>0?remaining:1)+'" required></div><div class="field full"><label>Notes</label><textarea name="notes"></textarea></div><div class="field full"><button class="btn primary">Confirm dispensing</button></div></form>';
+ workspaceActionPanel({title:'Dispense medicine',body},pid,'pharmacy');
 }
-async function workspaceSaveDispense(medication_id,pid,quantity){
- try{await api('/pharmacy',{method:'POST',body:JSON.stringify({patient_id:pid,medication_id,quantity:Number(quantity||1)})});await refreshPatientWorkspace(pid)}
+async function workspaceSaveDispense(e,medication_id,pid){
+ e.preventDefault();
+ try{const b=Object.fromEntries(new FormData(e.target).entries());const quantity=Number(b.quantity||0);if(!Number.isFinite(quantity)||quantity<1)throw new Error('Enter a valid quantity.');await api('/pharmacy',{method:'POST',body:JSON.stringify({patient_id:Number(pid),medication_id:Number(medication_id),quantity,notes:b.notes||null})});await refreshPatientWorkspace(pid)}
  catch(x){alert(x.message)}
 }
 function closePatientWorkspaceActionModal(){
@@ -1677,6 +1677,7 @@ async function workspaceSaveDoctorVisit(complete,pid){
   const body={type:'visit',patient_id:Number(pid),clinical_notes:note,visit_status:complete?'completed':'open',queue_entry_id:s.queueId||null,appointment_id:s.appointmentId||null};
   if(open)await api('/clinical',{method:'PUT',body:JSON.stringify({type:'visit',id:open.id,clinical_notes:note,visit_status:body.visit_status,queue_entry_id:body.queue_entry_id,appointment_id:body.appointment_id})});
   else await api('/clinical',{method:'POST',body:JSON.stringify(body)});
+  if(complete&&s.queueId)await api('/queue',{method:'PUT',body:JSON.stringify({id:Number(s.queueId),stage:'completed'})});
   await refreshPatientWorkspace(pid); if(!complete)await workspaceOpenDoctor(pid);
  }catch(e){alert(e.message)}
 }
