@@ -1910,7 +1910,11 @@ async function workspaceSaveDischarge(e,pid,admissionId){
 async function workspaceCompleteDischarge(pid,admissionId){
  const d=state.activePatientRecord?.discharge;
  if(!d||!d.clinical_clearance||!d.reports_ready||!d.medication_reconciled||!d.billing_cleared||(d.payment_status!=='paid'&&!(d.payment_status==='approved'&&d.insurance_status==='approved'))){return workspaceDischargeChecklist(pid,admissionId)}
- if(!confirm('Discharge this patient and release the bed?'))return;
+ const body='<div class="care-banner"><div><strong>Discharge ready</strong><span>All recorded clinical, report, medication and billing checks are cleared.</span></div><div><strong>Bed</strong><span>Will be released after confirmation.</span></div></div><div class="record-section-note">This final action updates the admission and releases the current bed. It stays inside Patient Workspace.</div><div class="workspace-care-actions"><button class="btn" type="button" onclick="closePatientWorkspaceActionModal()">Cancel</button><button class="btn primary" type="button" onclick="workspaceConfirmDischarge('+pid+','+admissionId+')">Discharge patient</button></div>';
+ workspaceActionPanel({title:'Confirm discharge',body},pid,'ipd');
+}
+async function workspaceConfirmDischarge(pid,admissionId){
+ const d=state.activePatientRecord?.discharge||{};
  try{await api('/beds',{method:'PUT',body:JSON.stringify({action:'discharge',id:admissionId,discharge_summary:d.summary||null})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
 }
 function patientAppointments(a){return a.length?a.slice(0,8).map(x=>'<div class="compact-record"><div><strong>'+fmtDate(x.appointment_date)+' · '+fmtTime(x.appointment_time)+'</strong><span>'+esc(x.doctor_name||'Doctor')+' · '+esc(x.consultation_type||'in_person')+'</span></div><div>'+status(x.status)+(x.queue_stage?'<small>'+esc(prettyStatus(x.queue_stage))+'</small>':'')+(x.consultation_type==='online'&&x.public_token?'<button class="mini" onclick="openStaffVideo('+x.id+')">Join video</button>':'')+'</div></div>').join(''):'<div class="empty">No appointments found.</div>'}
