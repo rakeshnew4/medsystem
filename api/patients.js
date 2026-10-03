@@ -63,7 +63,9 @@ export default async function(req,res){
   }
   const patientId=inserted.rows[0].id;
   const generatedUhid="UHID-"+String(patientId).padStart(6,"0");
-  const r=await db.query("UPDATE patients SET uhid=$1,registration_source=$2,registration_source_locked=true WHERE id=$3 AND hospital_id=$4 RETURNING id,name,uhid,phone,email,date_of_birth,notes,status,created_at",[generatedUhid,String(b.source||"staff"),patientId,hid]);
+  await db.query("UPDATE patients SET uhid=$1,registration_source=$2,registration_source_locked=true WHERE id=$3 AND hospital_id=$4",[generatedUhid,String(b.source||"staff"),patientId,hid]);
+  const r=await db.query("SELECT id,name,uhid,phone,email,date_of_birth,notes,status,created_at FROM patients WHERE id=$1 AND hospital_id=$2",[patientId,hid]);
+  if(!r.rows[0])return res.status(500).json({error:"Patient registration could not be reloaded"});
   const identityFields=["title","sex","nic_passport","alternate_phone","address","area","blood_group","occupation","emergency_contact"];
   const hasIdentity=identityFields.some(k=>String(b[k]??"").trim()!=="");
   if(hasIdentity){
