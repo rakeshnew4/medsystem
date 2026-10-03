@@ -1,5 +1,16 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-03 — Patient Workspace mutation feedback + E2E runner recheck v626
+
+- Mutation feedback is now consistently visible at the bottom of the screen. POST/PUT/DELETE actions show success or error toasts without leaving Patient Workspace.
+- The shared frontend API helper now treats JSON `{error: ...}` responses as failures even if a route incorrectly returns HTTP 200.
+- Queue missing-item responses now correctly return HTTP 404 rather than HTTP 200 with an error payload.
+- Patient Workspace vitals, prescription, investigation, billing, check-in, discharge, payment and follow-up error paths now use the bottom notification surface instead of browser alerts.
+- Deployed v626 with 0 hard dry-run errors.
+- Re-ran the AI visual runner with LiteLLM/Gemini fallback. The mobile home surface rendered with no console errors, no horizontal overflow, and the visual reviewer reported no layout/readability/mobile defects. The AI flow agent still stops at the genuine staff-auth gate because the available browser session is not a hospital staff end-user session.
+- Queue smoke test for an invalid ID now returns HTTP 404 as expected; anonymous Patient Workspace remains HTTP 401.
+- Next: when a genuine hospital-staff session is available, execute the complete Patient Workspace click matrix and verify each mutation persists after refresh/reload. Continue safe API contract checks in parallel.
+
 ## 2026-10-03 — E2E authentication/visual runner hardening v622
 
 - Verified the explicit CARE_FLOW_DEMO_MODE role matrix on the deployed build for all 8 supported roles through the public staff-status contract; invalid role input falls back to admin. This is demo E2E evidence only and does not close genuine staff authentication.
