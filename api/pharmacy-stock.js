@@ -26,13 +26,13 @@ export default async function(req,res){
    const before=Number(existing.rows[0].quantity||0), after=before+qty;
    await db.transaction([
     {sql:"UPDATE pharmacy_stock SET quantity=$1,reorder_level=$2,unit=$3,expiry_date=$4,active=true,updated_at=CURRENT_TIMESTAMP WHERE id=$5",params:[after,reorderLevel,unit,expiryDate,existing.rows[0].id]},
-    {sql:"INSERT INTO pharmacy_stock_transactions(hospital_id,stock_id,transaction_type,quantity,quantity_before,quantity_after,performed_by,notes,idempotency_key) VALUES($1,$2,'receipt',$3,$4,$5,$6,$7,$8)",params:[ctx.hospitalId,existing.rows[0].id,qty,before,after,ctx.user.email,b.notes||null,idempotencyKey||null]}
+    {sql:"INSERT INTO pharmacy_stock_transactions(hospital_id,stock_id,transaction_type,quantity,quantity_before,quantity_after,performed_by,notes) VALUES($1,$2,'receipt',$3,$4,$5,$6,$7)",params:[ctx.hospitalId,existing.rows[0].id,qty,before,after,ctx.user.email,b.notes||null]}
    ]);
    r={rows:[{...existing.rows[0],quantity:after,reorder_level:reorderLevel,unit,expiry_date:expiryDate,active:true}]};
   }else{
    const ins=await db.query("INSERT INTO pharmacy_stock(hospital_id,medicine_name,batch_no,expiry_date,quantity,reorder_level,unit,active,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,true,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP) RETURNING *",[ctx.hospitalId,name,batch,expiryDate,qty,reorderLevel,unit]);
    const row=ins.rows[0];
-   await db.query("INSERT INTO pharmacy_stock_transactions(hospital_id,stock_id,transaction_type,quantity,quantity_before,quantity_after,performed_by,notes,idempotency_key) VALUES($1,$2,'receipt',$3,0,$4,$5,$6,$7)",[ctx.hospitalId,row.id,qty,qty,ctx.user.email,b.notes||null,idempotencyKey||null]);
+   await db.query("INSERT INTO pharmacy_stock_transactions(hospital_id,stock_id,transaction_type,quantity,quantity_before,quantity_after,performed_by,notes) VALUES($1,$2,'receipt',$3,0,$4,$5,$6)",[ctx.hospitalId,row.id,qty,qty,ctx.user.email,b.notes||null]);
    r={rows:[row]};
   }
  } catch(e) {
