@@ -30,7 +30,7 @@ export default async function(req,res){
  const existing=await db.query("SELECT id,status,quantity FROM pharmacy_dispenses WHERE hospital_id=$1 AND medication_id=$2 AND status='dispensed' ORDER BY dispensed_at DESC LIMIT 1",[ctx.hospitalId,medicationId]);
  if(existing.rows.length)return res.status(409).json({error:"This prescription has already been dispensed",dispense_id:existing.rows[0].id});
 
- const stock=await db.query("SELECT COALESCE(SUM(quantity),0) AS available FROM pharmacy_stock WHERE hospital_id=$1 AND active=true AND LOWER(TRIM(medicine_name))=LOWER(TRIM($2)) AND (expiry_date IS NULL OR expiry_date>=CURRENT_DATE)",[ctx.hospitalId,med.rows[0].medicine_name]);
+ const stock=await db.query("SELECT COALESCE(SUM(quantity),0) AS available FROM pharmacy_stock WHERE hospital_id=$1 AND active=true AND (LOWER(TRIM(medicine_name))=LOWER(TRIM($2)) OR LOWER(TRIM(medicine_name)) LIKE LOWER(TRIM($2))||' %') AND (expiry_date IS NULL OR expiry_date>=CURRENT_DATE)",[ctx.hospitalId,med.rows[0].medicine_name]);
  if(Number(stock.rows[0].available)<quantity){
   return res.status(409).json({error:"Insufficient non-expired stock",medicine_name:med.rows[0].medicine_name,requested_quantity:quantity,available_quantity:Number(stock.rows[0].available)});
  }
@@ -51,7 +51,7 @@ eligible AS (
         SUM(quantity) OVER () AS total_qty
  FROM pharmacy_stock, dispense_lock
  WHERE hospital_id=$1 AND active=true
-   AND LOWER(TRIM(medicine_name))=LOWER(TRIM($2))
+   AND (LOWER(TRIM(medicine_name))=LOWER(TRIM($2)) OR LOWER(TRIM(medicine_name)) LIKE LOWER(TRIM($2))||' %')
    AND (expiry_date IS NULL OR expiry_date>=CURRENT_DATE) AND quantity>0
  ORDER BY expiry_date NULLS LAST,id FOR UPDATE
 ),

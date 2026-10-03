@@ -59,7 +59,7 @@ export default async function(req,res){
    vals.unshift(patientId,"UHID-"+String(patientId).padStart(6,"0"),String(b.source||"staff"),true);
    marks.unshift("$1","$2","$3","$4");
    for(let i=4;i<marks.length;i++)marks[i]="$"+(i+1);
-   await db.query("INSERT INTO patients("+cols.join(",")+") VALUES("+marks.join(",")+")",vals);
+   await db.transaction([{sql:"INSERT INTO patients("+cols.join(",")+") VALUES("+marks.join(",")+")",params:vals}]);
    inserted={rows:[{id:patientId}]};
   }catch(err){
    console.error("[patients] patient insert failed",String(err?.message||err),{sql:"INSERT INTO patients("+cols.join(",")+") VALUES("+marks.join(",")+") RETURNING id",valueCount:vals.length});
