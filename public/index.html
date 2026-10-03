@@ -1904,7 +1904,15 @@ async function workspaceSaveVitals(e,pid){
  e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());const numeric=['blood_pressure_systolic','blood_pressure_diastolic','pulse','temperature','weight_kg','height_cm','spo2','respiratory_rate'];for(const k of numeric)if(b[k]!==''&&(!Number.isFinite(Number(b[k]))||Number(b[k])<0))throw new Error('Enter valid non-negative vital values.');b.patient_id=Number(pid);const qid=state.activePatientRecord?.patient?.active_queue_id;if(qid)b.queue_entry_id=Number(qid);await api('/vitals',{method:'POST',body:JSON.stringify(b)});await refreshPatientWorkspace(pid)}catch(x){showActionToast({title:'Vitals not saved',body:x.message,error:true})}
 }
 async function workspaceSavePrescription(e,pid){
- e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());b.patient_id=pid;b.type='medicine';await api('/clinical',{method:'POST',body:JSON.stringify(b)});await refreshPatientWorkspace(pid)}catch(x){showActionToast({title:'Prescription not saved',body:x.message,error:true})}
+ e.preventDefault();
+ try{
+  const b=Object.fromEntries(new FormData(e.target).entries());
+  const visit=(state.activePatientRecord?.clinical?.visits||[]).find(v=>v.visit_status==='open'&&Number(v.patient_id)===Number(pid));
+  if(!visit)throw new Error('Start the doctor consultation before prescribing a medicine.');
+  b.patient_id=Number(pid);b.type='medicine';b.visit_id=Number(visit.id);b.encounter_id=visit.encounter_id||null;
+  await api('/clinical',{method:'POST',body:JSON.stringify(b)});
+  await refreshPatientWorkspace(pid)
+ }catch(x){showActionToast({title:'Prescription not saved',body:x.message,error:true})}
 }
 async function workspaceSaveLab(e,pid){
  e.preventDefault();
