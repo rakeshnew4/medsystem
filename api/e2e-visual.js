@@ -122,6 +122,8 @@ async function safeUiActions(page,target){
   }
   if(target.name==="patient-workspace"){
     actions.push(await page.evaluate(async()=>{
+      const launcher=Array.from(document.querySelectorAll("button")).find(b=>(b.innerText||"").includes("Patient Lookup") && (b.innerText||"").includes("Search registered patients"));
+      if(launcher){launcher.click();await new Promise(r=>setTimeout(r,300));}
       const section=document.getElementById("patients");
       if(!section)return {type:"patient-workspace",ok:false,reason:"patient workspace section missing"};
       section.scrollIntoView({block:"start"});
