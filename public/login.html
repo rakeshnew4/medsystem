@@ -69,8 +69,18 @@ button.secondary{background:#eef4f1;color:#315248}.msg{min-height:22px;margin:14
 
   function say(t,err){msg.textContent=t||'';msg.className='msg'+(err?' err':'')}
   function next(){const n=new URLSearchParams(location.search).get('next')||'/';location.replace(n.charAt(0)==='/'&&n.indexOf('//')!==0?n:'/')}
+  async function tryDemoEntry(){
+    const role=String(new URLSearchParams(location.search).get('demo_role')||'').trim().toLowerCase();
+    if(!role)return false;
+    try{
+      const r=await fetch('/api/public-staff-status?demo_role='+encodeURIComponent(role),{credentials:'include'});
+      const s=await r.json();
+      if(s?.demo_mode&&s?.staff?.role===role){localStorage.setItem('careflowDemoRole',role);next();return true}
+    }catch(e){}
+    return false;
+  }
   if(!A){say('Authentication is unavailable. Please refresh.',true);submit.disabled=true;return}
-  A.getSession().then(s=>{if(s&&s.user)next()}).catch(()=>{});
+  tryDemoEntry().then(done=>{if(!done)A.getSession().then(s=>{if(s&&s.user)next()}).catch(()=>{})});
 
   if(A.attachPasskeyAutofill){
     try{A.attachPasskeyAutofill(email).then(r=>{if(r&&r.user)next()}).catch(()=>{})}catch(e){}
