@@ -221,10 +221,23 @@ async function runFlowAgent(page,width,height){
   const submit=sel=>page.evaluate(sel=>{const f=document.querySelector(sel);if(!f)return false;f.requestSubmit();return true},sel);
   const visible=sel=>page.evaluate(sel=>{const e=document.querySelector(sel);if(!e)return false;const r=e.getBoundingClientRect();return e.offsetParent!==null&&r.width>0&&r.height>0},sel);
   const closeAll=()=>page.evaluate(()=>{window.closePatientWorkspaceActionModal?.();["appointmentModal","patientModal","clinicalModal","vitalsModal"].forEach(id=>window.closeModal?.(id));document.getElementById("cfPaymentQrModal")?.remove()});
+  const authProbe=await page.evaluate(async()=>{
+    const out={};
+    for(const path of ["/api/patient-workspace?patient_id=126","/api/appointments"]){
+      try{const r=await fetch(path,{credentials:"include"});out[path]=r.status}catch(e){out[path]="error"}
+    }
+    return out;
+  });
+  if(Object.values(authProbe).some(v=>v===401||v===403)){
+    return {ok:false,blocked:"genuine signed-in hospital staff session required",authProbe,log:[{stage:"auth-gate",ok:false,reason:"Browser harness is not a genuine staff end-user session; mutating workflow execution is intentionally not faked."}]};
+  }
 
   let x=await aiChoose("appointment",["open_appointments","create_appointment"]);
   await add("ai-appointment-plan",["open_appointments","create_appointment"].includes(x.plan.action),{plan:x.plan});
-  await page.evaluate(()=>window.showSection?.("appointments")); await wait(600);
+  await page.evaluate(()=>{
+    const b=Array.from(document.querySelectorAll("button")).find(x=>(x.getAttribute("onclick")||"").includes("showSection('appointments')"));
+    if(b)b.click(); else window.showSection?.("appointments");
+  }); await wait(900);
   await page.evaluate(()=>window.openModal?.("appointmentModal")); await wait(900);
   const fixture=await page.evaluate(()=>{
     const patient={id:126,name:"E2E Test Patient",phone:"+919999000001"};
@@ -252,9 +265,14 @@ async function runFlowAgent(page,width,height){
 
   x=await aiChoose("patient-workspace",["open_patient_workspace","select_test_patient"]);
   await add("ai-workspace-plan",["open_patient_workspace","select_test_patient"].includes(x.plan.action),{plan:x.plan});
-  await page.evaluate(()=>window.showSection?.("patients")); await wait(500);
-  await page.evaluate(async()=>{const p=(window.state?.patients||[]).find(x=>Number(x.id)===126);if(p)await window.openPatientWorkspace?.(p.id,"ai-e2e")});
-  await wait(1400);
+  await page.evaluate(()=>{
+    const b=Array.from(document.querySelectorAll("button")).find(x=>(x.getAttribute("onclick")||"").includes("showSection('patients')"));
+    if(b)b.click(); else window.showSection?.("patients");
+  }); await wait(900);
+  await page.evaluate(()=>{
+    const b=Array.from(document.querySelectorAll("#patientDirectory button")).find(x=>(x.innerText||"").includes("E2E Test Patient"));
+    if(b)b.click();
+  }); await wait(1600);
   const ws=await audit("workspace-selected");
   await add("patient-workspace",ws.activeSection==="patients"&&ws.text.includes("E2E Test Patient"),{snapshot:ws});
 
