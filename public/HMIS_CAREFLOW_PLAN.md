@@ -1,5 +1,16 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-02 — nursing/vitals validation hardening shipped in v592
+
+- Continued the HMIS-aligned nursing/vitals workflow after repairing the external triage schema.
+- Added API-boundary validation to `api/vitals.js` for clinically impossible numeric ranges (BP, pulse, temperature, weight, height, SpO2 and respiratory rate). Invalid values now return HTTP 400 before any insert/update.
+- Added API-boundary validation to `api/triage.js` so pain score must be an integer from 0–10; invalid values return HTTP 400 before persistence.
+- Dry-run deployment validation: 0 hard errors. Existing row-access/public-route warnings are unchanged and were not part of this increment.
+- Live deployment: v592.
+- Current DB observation: triage_assessments=0, vitals=952, active queue entries=43, open encounters=16. No clinical data was inserted or modified by this increment.
+- The platform's function-execution verifier was unavailable in this run because its invocation was blocked by the execution safety layer, so live authenticated mutation success is not claimed. The source-level contract and deploy validator passed.
+- Next: continue Patient Workspace/nursing workflow verification, specifically the vitals → triage → nursing handoff → doctor queue transition, then proceed to the next HMIS module gate.
+
 ## 2026-10-02 — triage external-schema repair completed
 
 - Root cause isolated: the configured external PostgreSQL adapter had `patients` available but did not have the `triage_assessments` table. The application's native schema inspection had previously shown the table, which masked the external-database mismatch.
