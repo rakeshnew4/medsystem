@@ -35,12 +35,28 @@ async function archiveReports(hid){
   const results={json:0,pdf:0,failed:0,configured:true};
   if(!archiveConfig().endpoint||!archiveConfig().accessKey||!archiveConfig().secretKey){results.configured=false;return results;}
   const stamp=new Date().toISOString().slice(0,10);
-  const [analytics,insights,audit]=await Promise.all([
+  const [analytics,insights,audit,billingAudit,adminInsights,assetTransfers,assetRegister,assetWarranty,assetAmc]=await Promise.all([
     db.query("SELECT appointment_date::date AS day,count(*)::int appointments,count(*) FILTER(WHERE status='completed')::int completed,count(*) FILTER(WHERE status='no_show')::int no_shows FROM appointments WHERE hospital_id=$1 AND appointment_date>=current_date-29 AND appointment_date<=current_date GROUP BY 1 ORDER BY 1",[hid]),
     db.query("SELECT count(*)::int appointments,count(*) FILTER(WHERE status='completed')::int completed,count(*) FILTER(WHERE status='no_show')::int no_shows,count(*) FILTER(WHERE status='cancelled')::int cancelled FROM appointments WHERE hospital_id=$1 AND appointment_date>=current_date-29 AND appointment_date<=current_date",[hid]),
-    db.query("SELECT id,actor,action,entity_type,entity_id,details,created_at FROM audit_logs WHERE hospital_id=$1 ORDER BY created_at DESC,id DESC LIMIT 200",[hid])
+    db.query("SELECT id,actor,action,entity_type,entity_id,details,created_at FROM audit_logs WHERE hospital_id=$1 ORDER BY created_at DESC,id DESC LIMIT 200",[hid]),
+    db.query("SELECT id,actor,action,entity_type,entity_id,details,created_at FROM audit_logs WHERE hospital_id=$1 AND (entity_type='invoice' OR action ILIKE 'payment%' OR action ILIKE 'invoice%') ORDER BY created_at DESC,id DESC LIMIT 500",[hid]),
+    db.query("SELECT appointment_date::date AS day,count(*)::int appointments,count(*) FILTER(WHERE status='completed')::int completed,count(*) FILTER(WHERE status='no_show')::int no_shows,count(*) FILTER(WHERE status='cancelled')::int cancelled FROM appointments WHERE hospital_id=$1 AND appointment_date>=current_date-29 AND appointment_date<=current_date GROUP BY 1 ORDER BY 1",[hid]),
+    db.query("SELECT t.id,t.asset_id,a.asset_code,a.description,a.category,t.from_location,t.to_location,t.from_custodian_staff_id,t.to_custodian_staff_id,t.reason,t.transferred_by,t.transferred_at FROM fixed_asset_transfers t JOIN fixed_assets a ON a.id=t.asset_id AND a.hospital_id=t.hospital_id WHERE t.hospital_id=$1 ORDER BY t.transferred_at DESC,t.id DESC LIMIT 2000",[hid]),
+    db.query("SELECT id,asset_code,description,category,serial_number,purchase_date,purchase_price,depreciation_method,depreciation_rate,useful_life_years,current_value,location,status FROM fixed_assets WHERE hospital_id=$1 ORDER BY purchase_date NULLS LAST,asset_code LIMIT 2000",[hid]),
+    db.query("SELECT id,asset_code,description,category,serial_number,location,status,purchase_price,current_value,warranty_expiry AS expiry_date FROM fixed_assets WHERE hospital_id=$1 AND warranty_expiry IS NOT NULL ORDER BY warranty_expiry,asset_code LIMIT 1000",[hid]),
+    db.query("SELECT id,asset_code,description,category,serial_number,location,status,purchase_price,current_value,amc_expiry AS expiry_date FROM fixed_assets WHERE hospital_id=$1 AND amc_expiry IS NOT NULL ORDER BY amc_expiry,asset_code LIMIT 1000",[hid])
   ]);
-  for(const [name,data] of [["analytics",{period_days:30,daily:analytics.rows}],["operations",{period_days:30,summary:insights.rows[0]||{}}],["audit",{events:audit.rows}]]){
+  for(const [name,data] of [
+    ["analytics",{period_days:30,daily:analytics.rows}],
+    ["operations",{period_days:30,summary:insights.rows[0]||{}}],
+    ["audit",{events:audit.rows}],
+    ["billing-audit",{events:billingAudit.rows}],
+    ["admin-insights",{period_days:30,daily:adminInsights.rows}],
+    ["fixed-asset-transfers",{total:assetTransfers.rows.length,transfers:assetTransfers.rows}],
+    ["fixed-asset-register",{total:assetRegister.rows.length,assets:assetRegister.rows}],
+    ["fixed-asset-warranty",{total:assetWarranty.rows.length,assets:assetWarranty.rows}],
+    ["fixed-asset-amc",{total:assetAmc.rows.length,assets:assetAmc.rows}]
+  ]){
     const r=await archiveObject(`hospitals/${hid}/reports/${stamp}/${name}.json`,data,"application/json");
     if(r.ok)results.json++;else results.failed++;
   }

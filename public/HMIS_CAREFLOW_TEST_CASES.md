@@ -4,6 +4,12 @@ This file is the executable test checklist for the workflow-by-workflow HMIS imp
 
 ## Test policy
 
+### TC-ARCHIVE-004 — Expanded report archive coverage
+- Verify the hourly archive worker produces deterministic hospital-scoped keys for billing-audit, fixed-asset transfers/register/warranty/AMC JSON reports in addition to analytics, operations and audit archives.
+- Verify missing MinIO configuration degrades to `configured:false` without failing the worker's live notification workflow.
+- Do not manually invoke the scheduler during verification because the worker also processes WhatsApp reminders.
+- Actual object PUT remains open until MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY and MINIO_BUCKET are configured in Hatchable secrets.
+
 For every workflow:
 1. Validate the intended happy path.
 2. Validate role and permission boundaries.
