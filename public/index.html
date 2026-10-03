@@ -2328,7 +2328,7 @@ async function editIPDAdmission(id){
   const pid=Number(a.patient_id||state.activePatientRecord?.patient?.id||0);
   const body='<form class="form-grid" onsubmit="workspaceSaveIPDAdmission(event,'+pid+','+id+')"><div class="field"><label>Admission type</label><select name="admission_type"><option value="general">General</option><option value="emergency">Emergency</option><option value="surgical">Surgical</option><option value="observation">Observation</option><option value="day_care">Day care</option></select></div><div class="field"><label>Expected discharge</label><input name="expected_discharge_date" type="date" value="'+esc(a.expected_discharge_date?String(a.expected_discharge_date).slice(0,10):'')+'"></div><div class="field full"><label>Admission notes</label><textarea name="notes">'+esc(a.notes||'')+'</textarea></div><div class="field full"><button class="btn primary">Save admission</button></div></form>';
   workspaceActionPanel({title:'Edit admission',body},pid,'ipd');
-  document.querySelector('#patientWorkspaceActionModal select[name="admission_type"]')?.value=a.admission_type||'general';
+  const typeEl=document.querySelector('#patientWorkspaceActionModal select[name="admission_type"]'); if(typeEl) typeEl.value=a.admission_type||'general';
 }
 async function workspaceSaveIPDAdmission(e,pid,id){
   e.preventDefault();try{const b=Object.fromEntries(new FormData(e.target).entries());await api('/ipd',{method:'PUT',body:JSON.stringify({action:'update-admission',id,admission_type:b.admission_type,expected_discharge_date:b.expected_discharge_date||null,notes:b.notes||''})});await refreshPatientWorkspace(pid)}catch(x){alert(x.message)}
