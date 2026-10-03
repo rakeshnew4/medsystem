@@ -250,7 +250,8 @@ HMIS references: `Privileges.java`, `UserPrivilageController.java`, `ConfigOptio
 - [ ] Browser visual reproduction on an authenticated staff session — implementation is deployed, but the available automated browser gate could not establish a genuine staff session; this remains separate from UI implementation completion.
 - [x] Laboratory — rebuilt with HMIS-aligned persistent worklist/search controls and staged investigation register; existing ordered → sample → processing → verified contracts preserved.
 - [x] Pharmacy — rebuilt from HMIS dispensing workflow into prescription queue + stock/report separation; existing dispensing and stock contracts preserved.
-- [ ] Next module parity loop — Inpatient Admission Profile, then Billing. Each must be inspected against the corresponding HMIS screen/code before implementation.
+- [x] Inpatient Admission Profile — rebuilt around the verified HMIS `inward/admission_profile.xhtml` pattern: admission/BHT register, selected-admission identity/context, command actions, and separate bed board; existing Patient Workspace remains the detailed clinical/financial hub.
+- [ ] Next module parity loop — Billing. Inspect HMIS inpatient/OPD billing and final-bill code before implementation.
 
 ### UI-16 — Minimal role workspaces / hospital-home-first landing
 - [x] Role landing rule — all supported staff roles now resolve to the normal Hospital overview first instead of auto-opening a role-specific operational screen.
