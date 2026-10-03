@@ -51,6 +51,8 @@ HMIS references: OPD Patient Lookup/Registration, EMR patient lookup, patient pr
 - [x] Top-to-bottom Patient Workspace audit — v535: reviewed Encounter/Next Action → Care Workflow → Current Care → Clinical → Reports/History against HMIS EMR/BHT patterns; the workspace remains registered-patient-only, new-visit entry and appointment scheduling are outside the workspace, and the hidden appointment surface was removed.
 - [x] Next Action workspace-boundary pass — v539 draft: actionable transitions remain inside Patient Workspace, mutating actions refresh the patient record after database writes, and non-mutating waiting/review states no longer navigate to Queue/Doctor/Lab pages.
 - [x] Patient Workspace modal-first actions — v541: vitals, triage, pharmacy, billing/payment, IPD, theatre, prescription, investigation and follow-up operations open as floating patient-context windows; successful mutations close the window and refresh the same workspace. Care Team Lab/Pharmacy/Billing/consultation actions no longer navigate away.
+- [x] IPD workspace prompt cleanup — v545: bed transfer and IPD admission entry points now use floating workspace windows with the existing /api/beds contract.
+- [x] IPD workspace prompt cleanup — v545: Patient Workspace bed-transfer and IPD-admission entry points now open floating workspace windows instead of browser prompts, using the existing `/api/beds` mutation contract; no new backend transition was introduced.
 
 ### UI-02 — Appointments / OPD
 HMIS references: OPD patient lookup, token, queue, OPD billing.
