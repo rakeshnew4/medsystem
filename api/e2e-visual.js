@@ -1,4 +1,4 @@
-import { browser, storage } from "hatchable";
+import { browser, storage, ai } from "hatchable";
 
 export const access="admin";
 export const methods=["GET","POST"];
@@ -10,7 +10,8 @@ const TARGETS=[
   {name:"opd",url:"https://hospital-ai.hatchable.site/opd/"},
   {name:"opd-token",url:"https://hospital-ai.hatchable.site/opd/token/"},
   {name:"portal-home",url:"https://hospital-ai.hatchable.site/portal/"},
-  {name:"display",url:"https://hospital-ai.hatchable.site/display/"}
+  {name:"display",url:"https://hospital-ai.hatchable.site/display/"},
+  {name:"ai-flow-agent",url:"https://hospital-ai.hatchable.site/"}
 ];
 
 const VISION_PROMPT=(meta)=>`You are a meticulous senior hospital-HMIS UI/UX visual QA reviewer.
@@ -122,8 +123,11 @@ async function safeUiActions(page,target){
   }
   if(target.name==="patient-workspace"){
     actions.push(await page.evaluate(async()=>{
-      const launcher=Array.from(document.querySelectorAll("button")).find(b=>(b.innerText||"").includes("Patient Lookup") && (b.innerText||"").includes("Search registered patients"));
-      if(launcher){launcher.click();await new Promise(r=>setTimeout(r,300));}
+      if(typeof window.showSection==="function"){window.showSection("patients");await new Promise(r=>setTimeout(r,500));}
+      else {
+        const launcher=Array.from(document.querySelectorAll("button")).find(b=>(b.innerText||"").includes("Patient Lookup") && (b.innerText||"").includes("Search registered patients"));
+        if(launcher){launcher.click();await new Promise(r=>setTimeout(r,500));}
+      }
       const section=document.getElementById("patients");
       if(!section)return {type:"patient-workspace",ok:false,reason:"patient workspace section missing"};
       section.scrollIntoView({block:"start"});
@@ -180,11 +184,116 @@ async function captureState(page,target,width,height,scrollState){
   return {state,storage_key:key,review};
 }
 
+async function runFlowAgent(page,width,height){
+  const log=[];
+  const wait=ms=>new Promise(r=>setTimeout(r,ms));
+  const audit=async stage=>page.evaluate(stage=>({
+    stage,activeSection:document.querySelector(".section.active")?.id||null,
+    modals:Array.from(document.querySelectorAll(".modal.open,#patientWorkspaceActionModal,#patientModal,#clinicalModal")).map(x=>x.id),
+    buttons:Array.from(document.querySelectorAll("button")).filter(b=>b.offsetParent!==null).map(b=>(b.innerText||"").trim().replace(/\\s+/g," ")).filter(Boolean).slice(0,100),
+    text:(document.body.innerText||"").slice(0,2400)
+  }),stage);
+  const aiChoose=async(stage,allowed)=>{
+    try{
+      const context=await audit(stage);
+      const r=await ai.generateText({
+        model:"sonnet",maxSteps:1,purpose:"hospital-ui-e2e-controller",
+        system:"You are a deterministic hospital HMIS UI test controller. Choose exactly one allowed action. Never invent actions, never use real patient data, never make clinical decisions. Return JSON only.",
+        prompt:JSON.stringify({stage,allowed,context})
+      });
+      const raw=String(r?.text||r?.output_text||r||"").trim().replace(/^\\s*\\{/, "{").replace(/\\}\\s*$/, "}");
+      const plan=JSON.parse(raw);
+      return {plan,context};
+    }catch(e){return {plan:{action:"finish",reason:String(e?.message||e)},context:null};}
+  };
+  const add=async(stage,ok,details)=>log.push({stage,ok,...(details||{})});
+  const set=async(sel,value)=>page.evaluate(({sel,value})=>{
+    const e=document.querySelector(sel);if(!e)return false;
+    const proto=e.tagName==="SELECT"?HTMLSelectElement.prototype:HTMLInputElement.prototype;
+    const setter=Object.getOwnPropertyDescriptor(proto,"value")?.set;
+    if(setter)setter.call(e,String(value));else e.value=String(value);
+    e.dispatchEvent(new Event("input",{bubbles:true}));e.dispatchEvent(new Event("change",{bubbles:true}));return true;
+  },{sel,value});
+  const submit=sel=>page.evaluate(sel=>{const f=document.querySelector(sel);if(!f)return false;f.requestSubmit();return true},sel);
+  const visible=sel=>page.evaluate(sel=>{const e=document.querySelector(sel);if(!e)return false;const r=e.getBoundingClientRect();return e.offsetParent!==null&&r.width>0&&r.height>0},sel);
+  const closeAll=()=>page.evaluate(()=>{window.closePatientWorkspaceActionModal?.();["appointmentModal","patientModal","clinicalModal","vitalsModal"].forEach(id=>window.closeModal?.(id));document.getElementById("cfPaymentQrModal")?.remove()});
+
+  let x=await aiChoose("appointment",["open_appointments","create_appointment"]);
+  await add("ai-appointment-plan",["open_appointments","create_appointment"].includes(x.plan.action),{plan:x.plan});
+  await page.evaluate(()=>window.showSection?.("appointments")); await wait(600);
+  await page.evaluate(()=>window.openModal?.("appointmentModal")); await wait(900);
+  const fixture=await page.evaluate(()=>{
+    const p=(window.state?.patients||[]).find(x=>String(x.name)==="E2E Test Patient");
+    const d=(window.state?.doctors||[]).find(x=>x.active!==false);
+    return {patient:p?{id:p.id,name:p.name,phone:p.phone}:null,doctor:d?{id:d.id,name:d.name}:null};
+  });
+  await add("fixtures",!!fixture.patient&&!!fixture.doctor,fixture);
+  if(!fixture.patient||!fixture.doctor)return {ok:false,log};
+  await set("#apptPatientName",fixture.patient.name);
+  await page.evaluate(()=>window.selectAppointmentPatient?.(document.getElementById("apptPatientName")?.value));
+  await set("#apptDoctorSearch",fixture.doctor.name);
+  await set("#apptDoctor",fixture.doctor.id);
+  await set("#apptDate",await page.evaluate(()=>new Date().toISOString().slice(0,10)));
+  await set("#apptTime",await page.evaluate(()=>{const d=new Date(Date.now()+3600000);return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}));
+  await set("#apptReason","AI E2E workflow verification");
+  await set("#apptConsultationType","in_person");
+  await submit("#appointmentForm"); await wait(1400);
+  const apt=await page.evaluate(()=>({
+    modal:!!document.querySelector("#appointmentModal.open"),
+    qr:!!document.getElementById("cfPaymentQrModal"),
+    row:(window.state?.appointments||[]).find(x=>Number(x.patient_id)===126&&String(x.reason||"").includes("AI E2E workflow verification"))||null
+  }));
+  await add("create-appointment",!!apt.row,{result:apt}); await closeAll();
+
+  x=await aiChoose("patient-workspace",["open_patient_workspace","select_test_patient"]);
+  await add("ai-workspace-plan",["open_patient_workspace","select_test_patient"].includes(x.plan.action),{plan:x.plan});
+  await page.evaluate(()=>window.showSection?.("patients")); await wait(500);
+  await page.evaluate(async()=>{const p=(window.state?.patients||[]).find(x=>Number(x.id)===126);if(p)await window.openPatientWorkspace?.(p.id,"ai-e2e")});
+  await wait(1400);
+  const ws=await audit("workspace-selected");
+  await add("patient-workspace",ws.activeSection==="patients"&&ws.text.includes("E2E Test Patient"),{snapshot:ws});
+
+  x=await aiChoose("vitals",["open_vitals","save_vitals"]);
+  await add("ai-vitals-plan",["open_vitals","save_vitals"].includes(x.plan.action),{plan:x.plan});
+  const clicked=await page.evaluate(()=>{
+    const b=Array.from(document.querySelectorAll("#patientWorkspaceBody button,.patient-quick-actions button")).find(x=>(x.innerText||"").trim()==="Vitals");
+    if(!b)return false;b.click();return true;
+  });
+  await wait(400);
+  const vOpen=await visible("#patientWorkspaceActionModal");
+  await add("vitals-modal",clicked&&vOpen,{snapshot:await audit("vitals-modal")});
+  if(vOpen){
+    const vals={blood_pressure_systolic:"120",blood_pressure_diastolic:"80",pulse:"72",temperature:"36.7",weight_kg:"70",height_cm:"170",spo2:"98",respiratory_rate:"16",notes:"AI E2E TEST DATA — safe to reset"};
+    for(const [k,v] of Object.entries(vals))await set("#patientWorkspaceActionModal [name='"+k+"']",v);
+    await submit("#patientWorkspaceActionModal form"); await wait(1400);
+    const saved=await page.evaluate(()=>({modal:!!document.getElementById("patientWorkspaceActionModal"),text:(document.getElementById("patientWorkspaceBody")?.innerText||"").slice(0,2600)}));
+    await add("save-vitals",!saved.modal&&saved.text.includes("120")&&saved.text.includes("80"),{result:saved});
+  }
+
+  x=await aiChoose("next-action",["trigger_next_action","verify_workspace_buttons"]);
+  await add("ai-next-action-plan",["trigger_next_action","verify_workspace_buttons"].includes(x.plan.action),{plan:x.plan});
+  const next=await page.evaluate(()=>{
+    const buttons=Array.from(document.querySelectorAll("#patientWorkspaceBody button,.patient-workspace-main button")).filter(b=>b.offsetParent!==null);
+    const b=buttons.find(x=>/^(Do now|Next action)$/i.test((x.innerText||"").trim()));
+    if(!b)return {found:false};b.click();return {found:true,text:(b.innerText||"").trim()};
+  });
+  await wait(500);
+  await add("next-action-trigger",next.found,{result:next,after:await audit("after-next-action")});
+  await closeAll();
+
+  const buttons=await page.evaluate(()=>Array.from(document.querySelectorAll("#patients button,#patientWorkspaceBody button")).filter(b=>b.offsetParent!==null).map((b,i)=>({i,text:(b.innerText||"").trim().replace(/\\s+/g," "),disabled:b.disabled})).filter(x=>x.text));
+  const scroll=await page.evaluate(()=>({window:{y:Math.round(scrollY),height:innerHeight,doc:document.documentElement.scrollHeight},workspace:(()=>{const e=document.querySelector(".patient-workspace-main");return e?{client:e.clientHeight,scroll:e.scrollHeight,top:e.scrollTop}:null})(),horizontalOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}));
+  await add("workspace-button-audit",buttons.length>0,{count:buttons.length,buttons});
+  await add("workspace-scroll-audit",!scroll.horizontalOverflow,{result:scroll});
+  return {ok:log.every(x=>x.ok),log,final:await audit("final-workspace")};
+}
+
 async function runTarget(target,width,height){
   return browser.session(async page=>{
     await page.setViewport({width,height});
     await page.goto(target.url,{waitUntil:"domcontentloaded"});
-    await new Promise(r=>setTimeout(r,500));
+    await new Promise(r=>setTimeout(r,800));
+    if(target.name==="ai-flow-agent")return {flow_agent:await runFlowAgent(page,width,height)};
 
     const top=await captureState(page,target,width,height,"top");
     const interactions=await safeUiActions(page,target);
