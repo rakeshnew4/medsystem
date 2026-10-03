@@ -24,7 +24,7 @@ export default async function(req,res){
   r=await db.query(`WITH upsert AS (
    INSERT INTO pharmacy_stock(hospital_id,medicine_name,batch_no,expiry_date,quantity,reorder_level,unit)
    VALUES($1,$2,$3,$4,$5,$6,$7)
-   ON CONFLICT(hospital_id,medicine_name,batch_no) DO UPDATE SET quantity=pharmacy_stock.quantity+EXCLUDED.quantity,expiry_date=EXCLUDED.expiry_date,reorder_level=EXCLUDED.reorder_level,unit=EXCLUDED.unit,active=TRUE,updated_at=CURRENT_TIMESTAMP
+   ON CONFLICT DO UPDATE SET quantity=pharmacy_stock.quantity+EXCLUDED.quantity,expiry_date=EXCLUDED.expiry_date,reorder_level=EXCLUDED.reorder_level,unit=EXCLUDED.unit,active=TRUE,updated_at=CURRENT_TIMESTAMP
    RETURNING *
   ), ledger AS (
    INSERT INTO pharmacy_stock_transactions(hospital_id,stock_id,transaction_type,quantity,quantity_before,quantity_after,performed_by,notes,idempotency_key)
