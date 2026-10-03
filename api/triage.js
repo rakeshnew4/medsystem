@@ -57,7 +57,7 @@ export default async function(req,res){
 
   const pid=Number(req.query?.patient_id);
   if(pid){
-    const r=await db.query("SELECT t.*,COALESCE(s.display_name,t.assessed_by) AS assessor_name FROM triage_assessments t LEFT JOIN staff_profiles s ON lower(s.email)=lower(t.assessed_by) WHERE t.hospital_id=$1 AND t.patient_id=$2 ORDER BY t.assessed_at DESC LIMIT 50",[ctx.hospitalId,pid]);
+    const r=await db.query("SELECT t.*,COALESCE(t.assessed_by,'Unknown') AS assessor_name FROM triage_assessments t WHERE t.hospital_id=$1 AND t.patient_id=$2 ORDER BY t.assessed_at DESC LIMIT 50",[ctx.hospitalId,pid]);
     return res.json(r.rows);
   }
   const r=await db.query("SELECT t.*,p.name AS patient_name,p.uhid,q.token,q.stage,q.priority FROM triage_assessments t JOIN patients p ON p.id=t.patient_id LEFT JOIN queue_entries q ON q.id=t.queue_entry_id WHERE t.hospital_id=$1 ORDER BY t.assessed_at DESC LIMIT 200",[ctx.hospitalId]);
