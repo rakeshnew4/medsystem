@@ -382,6 +382,14 @@ Expected: the signed-in staff Assistant can request one of the declared read-onl
 Expected: if LiteLLM/tool execution fails, the assistant returns a controlled error and does not fabricate current hospital data or persist a false operational answer.
 Expected: no write/mutation tool is exposed until its underlying CareFlow API/function contract has verified permission, validation, idempotency/concurrency and audit behavior.
 
+## TC-AI-TOOLS-008 — Laboratory worklist tool
+Expected: the read-only laboratory worklist is permission-gated, hospital-scoped, bounded to 300 rows, accepts only known status filters, and returns patient/test/status/doctor/result context without exposing mutation controls.
+Status: Implemented and deployed v500; signed-in app-user execution returned 200 with bounded response. Genuine hospital-staff E2E remains pending.
+
+## TC-AI-TOOLS-009 — Fixed-asset register tool
+Expected: the read-only fixed-asset register is permission-gated, hospital-scoped, bounded to 300 rows, accepts only known lifecycle filters, and cannot create/update/transfer assets.
+Status: Implemented and deployed v500; signed-in app-user execution returned 200 with an empty current asset set. Genuine hospital-staff E2E remains pending.
+
 # Completion gates
 
 Demo-mode E2E is now available through the explicit CARE_FLOW_DEMO_MODE secret. It may be used to exercise application workflows, role boundaries, invalid transitions, retries and concurrency without real OTP authentication, and all results must be labeled demo E2E.

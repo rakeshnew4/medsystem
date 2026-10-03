@@ -1,6 +1,14 @@
 # CareFlow × HMIS Implementation Plan
 
-## 2026-10-02 continuation increment — lab agent-tool hardening (draft, not deployed)
+## 2026-10-02 continuation increment — AI read-only tool expansion v500
+
+- Completed and deployed the next two safe AI-agent tools: get_lab_worklist and get_fixed_assets.
+- get_lab_worklist reuses the existing action.clinical.view permission boundary, hospital-scoped lab_orders joins, bounded limit (1–300), known-status validation, and read-only patient/test/doctor/result context.
+- get_fixed_assets reuses the existing action.assets.manage server authorization boundary, hospital-scoped fixed_assets, bounded limit (1–300), known lifecycle filters, and read-only asset register fields. No create/update/transfer operation is reachable through the tool.
+- Deployed v500. Anonymous /api/ai-agent-tools returned 401; signed-in app-user execution returned 200 for both tools. These app-user checks are contract verification only and do not count as genuine hospital-staff E2E.
+- Next AI expansion candidates: pharmacy stock/dispensing read summary and reporting summaries, after checking their existing permissions and schemas. Mutation tools remain blocked until their underlying contracts pass permission, validation, idempotency/concurrency and audit review.
+
+# 2026-10-02 continuation increment — lab agent-tool hardening (draft, not deployed)
 
 - Inspected HMIS laboratory/LIMS architecture before the next agent-tool increment. HMIS is a modular HMIS with laboratory/LIMS support, and its LIMS middleware is explicitly an analyzer connector using REST plus HL7/ASTM boundaries. citeturn0search0turn0search9
 - Fixed a real CareFlow laboratory verification bug in `api/lab.js`: the post-verification audit event referenced an undefined local `report` variable; it now records the report ID returned by the atomic verification statement.
