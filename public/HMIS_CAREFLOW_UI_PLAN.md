@@ -259,7 +259,8 @@ HMIS references: `Privileges.java`, `UserPrivilageController.java`, `ConfigOptio
 - [x] Billing — rebuilt from HMIS final-bill structure into a persistent financial register/filter pane plus invoice register; payment state, invoice context and pending operational charges are visually separated while existing payment/audit contracts remain authoritative.
 - [x] Theatre — rebuilt from verified HMIS `theater/theatre_dashboard.xhtml`: live counters, theatre-room status, incoming/active/completed worklist, today's cases and schedule remain separate; existing CareFlow scheduled → in_progress → completed → ward-return transitions preserved.
 - [x] Inventory/Assets — rebuilt as an operational workbench with distinct asset register, stock catalogue, stock transfer and report surfaces. HMIS reference confirms inventory reporting separates consumption, stock transfers and cost-of-goods views; CareFlow's existing protected transfer contract remains authoritative.
-- [ ] Next module parity loop — Administration/Staff/Setup. Inspect exact HMIS department, staff and privilege screens before implementation.
+- [x] Administration/Staff/Setup parity — v543: verified HMIS `admin/staff/staff.xhtml`, `admin/institutions/departments.xhtml` and administration navigation/privilege references; CareFlow Staff now keeps Staff, Departments, Roles & permissions, Audit and Hospital Setup as distinct navigable surfaces, while the generic module-header injector skips Staff/Setup so administration headers do not stack. Existing backend contracts and authorization remain unchanged.
+- [ ] Browser visual reproduction on an authenticated staff session — the administration implementation is deployed, but the available browser gate still cannot establish a genuine hospital-staff session.
 
 ### UI-16 — Minimal role workspaces / hospital-home-first landing
 - [x] Role landing rule — all supported staff roles now resolve to the normal Hospital overview first instead of auto-opening a role-specific operational screen.
@@ -295,7 +296,7 @@ A module is UI-complete only when the UI reflects the verified HMIS workflow, al
 16. UI-15 Global Responsive Shell Hardening
 
 ## Current release gates
-- Live baseline: v537; visual/UI runner is deployed and operational.
+- Live baseline: v543; visual/UI runner is deployed and operational.
 - v537 Patient Workspace visual pass: compact six-column desktop action grid, three-column tablet and two-column mobile actions; Actions vs Reports & History tabs now have a clearer segmented treatment; workspace columns stack on smaller screens; Care Team action buttons are compact and non-wrapping on mobile.
 - Frontend main-script syntax parsing passes after the v469 interaction-regression repair.
 - Physical-device mobile verification remains open.
@@ -334,3 +335,4 @@ A module is UI-complete only when the UI reflects the verified HMIS workflow, al
 - 2026-10-02: OPD token visual-QA follow-up: replaced the missing-token dead-end with clear recovery actions (Back to OPD / Open Patient Portal) and a Retry path for token-load failures; tightened mobile spacing/contrast. This is a UI-only change and does not invent token retrieval behavior.
 - 2026-10-02: AI-agent foundation: added `api/ai-agent-tools.js`, a permission-gated, hospital-scoped read-only registry for hospital overview, patient search/workspace, OPD queue, appointments, due follow-ups and billing summary. The agent is not allowed to execute arbitrary SQL/URLs; future mutation tools must reuse and respect existing CareFlow API contracts.
 - 2026-10-02: v537 Patient Workspace visual pass: compact responsive command hierarchy, segmented Actions vs Reports & History navigation, stacked workspace columns at tablet/mobile widths, and denser Care Team controls. No backend workflow contracts changed; dry-run returned 0 errors.
+- 2026-10-02: v543 Administration/Staff/Setup parity increment: verified HMIS staff edit structure, department list/status/actions and administration privilege/navigation references. CareFlow now avoids duplicate generic headers on Staff/Setup and provides a compact administration sub-navigation linking Staff, Departments, Roles & permissions, Audit and Hospital Setup. No backend contract changes; dry-run returned 0 errors. Genuine authenticated staff visual E2E remains open.
