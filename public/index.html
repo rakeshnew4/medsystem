@@ -589,13 +589,11 @@ function renderReceptionLookup(q,mode){
   if(!rows.length){el.innerHTML=String(q||'').trim()?'<div class="reception-empty-hint">No patient found.</div>':'<div class="reception-empty-hint">Start typing to search.</div>';return}
   el.innerHTML=rows.map(p=>{
     const id=Number(p.id);
-    const actions=mode==='edit'
-      ? '<button type="button" class="reception-row-action" onclick="editPatient('+id+');closeReceptionPanel()">EDIT</button>'
-      : mode==='patient'
-        ? '<div class="reception-row-actions"><button type="button" class="reception-row-action" onclick="openPatientWorkspace('+id+');closeReceptionPanel()">OPEN</button><button type="button" class="reception-row-action secondary" onclick="editPatient('+id+');closeReceptionPanel()">EDIT</button></div>'
-        : ['billing','followup','admission'].includes(mode)
-          ? '<button type="button" class="reception-row-action" onclick="receptionContinueWithPatient(\''+mode+'\','+id+')">'+(mode==='billing'?'BILL':mode==='followup'?'SCHEDULE':'ADMIT')+'</button>'
-          : '<button type="button" class="reception-row-action" onclick="openPatientWorkspace('+id+');closeReceptionPanel()">OPEN</button>';
+    let actions='';
+    if(mode==='edit') actions='<button type="button" class="reception-row-action" onclick="editPatient('+id+');closeReceptionPanel()">EDIT</button>';
+    else if(mode==='patient') actions='<div class="reception-row-actions"><button type="button" class="reception-row-action" onclick="openPatientWorkspace('+id+');closeReceptionPanel()">OPEN</button><button type="button" class="reception-row-action secondary" onclick="editPatient('+id+');closeReceptionPanel()">EDIT</button></div>';
+    else if(['billing','followup','admission'].includes(mode)) actions='<button type="button" class="reception-row-action" onclick="receptionContinueWithPatient(&quot;'+mode+'&quot;,'+id+')">'+(mode==='billing'?'BILL':mode==='followup'?'SCHEDULE':'ADMIT')+'</button>';
+    else actions='<button type="button" class="reception-row-action" onclick="openPatientWorkspace('+id+');closeReceptionPanel()">OPEN</button>';
     return '<div class="reception-lookup-row"><div><strong>'+esc(p.name||'Patient')+'</strong><span>'+esc(p.uhid||'No UHID')+(p.phone?' · '+esc(p.phone):'')+'</span></div>'+actions+'</div>';
   }).join('');
 }
@@ -1544,8 +1542,8 @@ function patientNextActions(p,s){
  } else if(q==='lab'){
    if(clinical){
      const currentLab=(s.clinical?.lab_orders||[])[0];
-     if(currentLab?.status==='ordered')add('sample','Collect lab sample','Record the sample collection transition here.','workspaceLabStatus('+currentLab.id+',\\'sample_collected\\','+p.id+')');
-     else if(currentLab?.status==='sample_collected')add('processing','Start processing','Record that the sample has entered processing.','workspaceLabStatus('+currentLab.id+',\\'processing\\','+p.id+')');
+     if(currentLab?.status==='ordered')add('sample','Collect lab sample','Record the sample collection transition here.','workspaceLabStatus('+currentLab.id+',"sample_collected",'+p.id+')');
+     else if(currentLab?.status==='sample_collected')add('processing','Start processing','Record that the sample has entered processing.','workspaceLabStatus('+currentLab.id+',"processing",'+p.id+')');
      else if(currentLab?.status==='processing')add('verify','Verify result','Enter and save the verified laboratory result here.','workspaceVerifyLab('+currentLab.id+','+p.id+')');
      else if(currentLab?.status==='verified')add('review','Review result','Review the verified result in this workspace.','workspaceFocusConsultation('+p.id+')',false);
    }
