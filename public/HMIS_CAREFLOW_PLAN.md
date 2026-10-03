@@ -1,5 +1,15 @@
 # CareFlow × HMIS Implementation Plan
 
+## 2026-10-02 continuation increment — IPD census tool shipped (v493)
+
+- Completed the next AI-agent increment: added the missing server-side `get_ipd_census` handler to match the existing registry entry.
+- Tool is read-only, hospital-scoped through `ctx.hospitalId`, and protected by the existing `page.beds` permission boundary.
+- Supports optional ward filtering and bounded limit; returns active admissions with patient, ward/bed, admitting doctor and latest encounter context.
+- Dry-run passed with 0 hard errors.
+- Deployed successfully as v493. Anonymous `/api/ai-agent-tools` remains edge-gated (401); authenticated staff execution is still the open E2E gate because the available runner has no hospital staff session.
+- Next: test `get_ipd_census` through a genuine staff session, then add `get_lab_worklist` as the next read-only tool.
+
+
 Reference: `hmislk/hmis` — `development` branch
 Reference repository: https://github.com/hmislk/hmis
 CareFlow: https://hospital-ai.hatchable.site
