@@ -139,7 +139,7 @@
   <div id="stats" class="grid stats"></div>
   <div class="home-section-label"><h2>Hospital modules</h2><span>Open a worklist or workspace</span></div>
 <div class="module-launcher" aria-label="Hospital modules">
-  <button class="module-card" type="button" onclick="showSection('patients')"><div class="module-card-head"><div class="module-icon">P</div><span class="module-arrow">→</span></div><strong>Patient Registration</strong><span>Search, register and open the patient workspace.</span><span class="module-status">Patient / OPD</span></button>
+  <button class="module-card" type="button" onclick="showSection('patients')"><div class="module-card-head"><div class="module-icon">P</div><span class="module-arrow">→</span></div><strong>Patient Lookup</strong><span>Search registered patients and open their workspace.</span><span class="module-status">Patient workspace</span></button>
   <button class="module-card" type="button" onclick="showSection('appointments')"><div class="module-card-head"><div class="module-icon">A</div><span class="module-arrow">→</span></div><strong>Appointments & OPD</strong><span>Appointments, check-in and outpatient flow.</span><span class="module-status">OPD</span></button>
   <button class="module-card" type="button" onclick="showSection('queue')"><div class="module-card-head"><div class="module-icon">Q</div><span class="module-arrow">→</span></div><strong>Queue & Tokens</strong><span>Worklists, priorities and next-patient dispatch.</span><span class="module-status">OPD Queue</span></button>
   <button class="module-card" type="button" onclick="showSection('doctor-room')"><div class="module-card-head"><div class="module-icon">D</div><span class="module-arrow">→</span></div><strong>Clinical Care</strong><span>Doctor room, consultation, orders and follow-up.</span><span class="module-status">Clinical</span></button>
@@ -227,7 +227,7 @@
 <div id="clinicalModal" class="modal"><div class="modal-card patient-record-modal"><div class="patient-record-head"><div><div class="kicker">Patient record</div><h2 class="patient-record-name" id="clinicalPatientName">Patient</h2><div id="clinicalPatientMeta" class="patient-record-meta"></div></div><div class="patient-record-actions"><button class="btn" onclick="editPatientFromRecord()">Edit patient</button><button class="btn" onclick="closeModal('clinicalModal')">Close</button></div></div><div id="clinicalPatientSummary" class="patient-record-summary"></div><div id="clinicalBody"></div></div></div>
 
 <section id="patients" class="section">
-  <div class="patient-module-header"><div><h2>Patient Lookup & Workspace</h2><p>Search first, select the patient identity, then continue into OPD, clinical, IPD, pharmacy or billing.</p></div><div class="patient-module-header-actions"><button class="btn" onclick="showSection('appointments')">Appointments</button><button class="btn primary" onclick="openModal('patientRegisterModal')">+ New patient</button></div></div>
+  <div class="patient-module-header"><div><div class="kicker">REGISTERED PATIENTS · WORKSPACE</div><h2>Patient Lookup & Workspace</h2><p>Search the registered patient register, open a patient, and continue with their existing clinical, inpatient, pharmacy or billing operations.</p></div><div class="patient-module-header-actions"><span class="patient-module-scope">Registered patients only</span></div></div>
   <div class="patient-workspace-layout">
     <div class="card panel patient-directory">
       <div class="patient-lookup-toolbar"><div class="patient-lookup-search"><span aria-hidden="true">⌕</span><input id="patientWorkspaceSearch" placeholder="Search name, UHID, PHN, phone or identifier…" autocomplete="off" oninput="renderPatientDirectory()"></div><div class="patient-lookup-actions"><button class="mini active" data-pfilter="all" onclick="setPatientFilter('all',this)">All</button><button class="mini" data-pfilter="active" onclick="setPatientFilter('active',this)">Active</button><button class="mini" data-pfilter="opd" onclick="setPatientFilter('opd',this)">OPD</button><button class="mini" data-pfilter="ipd" onclick="setPatientFilter('ipd',this)">IPD</button></div></div>
@@ -1402,16 +1402,12 @@ function patientCareTeamActions(p,s){
  const role=s.role||state.session?.staff?.role||'staff',q=String(p.queue_stage||'').toLowerCase(),id=p.id;
  const clinical=!!s.permissions?.clinical,billing=!!s.permissions?.billing,pharmacy=!!s.permissions?.pharmacy;
  const groups=[
-  {role:'receptionist',label:'Reception',step:'01',items:[
-   ['Register / check-in','Start or check the OPD visit.',!p.today_token,'workspaceOpenOpd('+id+')',true],
-   ['Appointments','View and manage this patient\'s appointments.',true,'patientWorkspaceAppointments('+id+')',true]
-  ]},
-  {role:'nurse',label:'Nurse',step:'02',items:[
+  {role:'nurse',label:'Nursing',step:'01',items:[
    ['Record vitals','Record BP, pulse, temperature, SpO₂ and other measurements.',q==='waiting','workspaceVitals('+id+')',clinical],
    ['Triage assessment','Document acuity and nursing assessment before handoff.',q==='vitals','workspaceTriage('+id+')',clinical],
    ['Complete nursing','Send the patient to the doctor only after vitals and triage are recorded.',q==='vitals','workspaceCompleteNursing('+id+')',clinical]
   ]},
-  {role:'doctor',label:'Doctor',step:'03',items:[
+  {role:'doctor',label:'Doctor',step:'02',items:[
    ['Bring into doctor room','Start the consultation and mark the patient as in the doctor room.',q==='doctor','doctorStartFromQueue('+id+','+(p.active_queue_id||0)+')',clinical],
    ['Open consultation','Open the full consultation workspace for this patient.',q==='doctor'||q==='in_room','workspaceOpenDoctor('+id+')',clinical],
    ['AI Listen Summary','Capture the consultation and prepare a documentation draft.','in_room'===q,'scrollToPatientSection(\'ai-clinical-card\')',clinical],
@@ -1419,17 +1415,17 @@ function patientCareTeamActions(p,s){
    ['Investigation','Order or review investigations.',clinical,'workspaceLab('+id+')',clinical],
    ['Follow-up','Schedule the next visit.',true,'workspaceFollowupForm('+id+')',clinical]
   ]},
-  {role:'nurse',label:'Theatre',step:'04',items:[
+  {role:'nurse',label:'Theatre',step:'03',items:[
    ['Schedule procedure','Plan an inpatient clinical procedure and assign a theatre room.',!!(p.care_type==='ipd'&&activeAdm),'workspaceTheatre('+id+')',!!s.permissions?.theatre],
    ['Review procedures','Review this patient\'s scheduled and completed procedures.',true,'workspaceTheatre('+id+')',!!s.permissions?.theatre]
   ]},
-  {role:'lab',label:'Lab',step:'05',items:[
+  {role:'lab',label:'Lab',step:'03',items:[
    ['Open lab work','Review investigations and update sample/result workflow.',q==='lab'||!!(s.clinical?.lab_orders?.length),'showSection(\'lab\')',clinical]
   ]},
-  {role:'pharmacy',label:'Pharmacy',step:'05',items:[
+  {role:'pharmacy',label:'Pharmacy',step:'04',items:[
    ['Open dispensing','Review prescriptions and dispense medicines.',q==='pharmacy'||!!(s.pharmacy?.length),'showSection(\'pharmacy\')',pharmacy]
   ]},
-  {role:'billing',label:'Billing',step:'06',items:[
+  {role:'billing',label:'Billing',step:'05',items:[
    ['Open billing','Review invoices and payments.',true,'showSection(\'billing\')',billing]
   ]}
  ];
@@ -1438,26 +1434,27 @@ function patientCareTeamActions(p,s){
   const items=g.items.map(it=>{
    const ready=it[2]===true;
    const permitted=active&&it[4]===true;
-   const alwaysOpen=['AI Listen Summary','Prescription','Investigation','Follow-up','Appointments','Open billing'].includes(it[0]);
+   const alwaysOpen=['AI Listen Summary','Prescription','Investigation','Follow-up','Open billing','Review procedures'].includes(it[0]);
    const enabled=permitted&&it[3]&&(ready||alwaysOpen);
    const label=ready?'Do now':(permitted?(alwaysOpen?'Open':'Waiting'):'');
    return '<div class="care-team-action '+(active?'current-role':'')+(ready?' action-ready':'')+'"><div><strong>'+esc(it[0])+'</strong><span>'+esc(it[1])+'</span></div>'+(permitted&&it[3]?(enabled?'<button type="button" class="mini '+(ready?'primary':'')+'" onclick="'+it[3]+'">'+label+'</button>':'<button type="button" class="mini" disabled>Waiting</button>'):'<span class="care-team-hint">'+(active?'No permission':'Handled by '+g.label)+'</span>')+'</div>';
   }).join('');
   return '<section class="care-team-group '+(active?'current-role':'')+'"><div class="care-team-group-head"><div><span class="care-team-step">'+g.step+'</span><strong>'+esc(g.label)+'</strong></div><span>'+ (active?'YOUR ROLE':'CARE TEAM')+'</span></div>'+items+'</section>';
  }).join('');
- return '<div class="workspace-card care-team-actions-card"><div class="panel-head"><div><h3 class="panel-title">Care workflow</h3><div class="record-section-note">One patient file, one flow. Each department has a clear section and action. Your role is highlighted and actionable buttons appear when you have permission.</div></div></div><div class="care-team-flow">'+html+'</div></div>';
+ return '<div class="workspace-card care-team-actions-card"><div class="panel-head"><div><h3 class="panel-title">Care team workflow</h3><div class="record-section-note">This workspace starts with a registered patient. Follow their current care across nursing, clinical care, diagnostics, pharmacy, theatre and billing. Registration and appointment booking stay in their dedicated modules.</div></div></div><div class="care-team-flow">'+html+'</div></div>';
 }
 function scrollToPatientSection(cls){const el=document.querySelector('.'+cls);if(el)el.scrollIntoView({behavior:'smooth',block:'center'})}
 function patientWorkspaceActionButtons(p){
  const s=state.activePatientRecord||{}, id=p.id;
  const q=p.today_token
-   ? '<button class="btn patient-action" onclick="movePatient('+id+',\'waiting\');refreshPatientWorkspace('+id+')"><span class="patient-action-icon">≡</span><span>Queue</span></button>'
-   : '<button class="btn patient-action" onclick="openOpdRegistration('+id+')"><span class="patient-action-icon">＋</span><span>Register OPD</span></button>';
- const a='<button class="btn patient-action" onclick="editPatient('+id+')"><span class="patient-action-icon">✎</span><span>Edit</span></button>';
- const ap='<button class="btn patient-action" onclick="patientWorkspaceAppointments('+id+')"><span class="patient-action-icon">▦</span><span>Appointments</span></button>';
+   ? '<button class="btn patient-action" onclick="showSection(\'queue\')"><span class="patient-action-icon">≡</span><span>Queue</span></button>'
+   : '';
+ const a='<button class="btn patient-action" onclick="editPatient('+id+')"><span class="patient-action-icon">✎</span><span>Edit patient</span></button>';
  const vit=s.permissions?.clinical?'<button class="btn patient-action" onclick="workspaceVitals('+id+')"><span class="patient-action-icon">♡</span><span>Vitals</span></button>':'';
- const finance=s.permissions?.billing?'<button class="btn patient-action" onclick="workspaceInvoice('+id+')"><span class="patient-action-icon">₹</span><span>Bill</span></button>':'';
- return '<div class="patient-quick-actions">'+q+a+ap+vit+finance+'<button class="btn primary patient-action patient-action-primary" onclick="openClinical('+id+')"><span class="patient-action-icon">↗</span><span>Clinical record</span></button></div>';
+ const finance=s.permissions?.billing?'<button class="btn patient-action" onclick="workspaceInvoice('+id+')"><span class="patient-action-icon">₹</span><span>Billing</span></button>':'';
+ const ipd=(s.ipd?.admissions||[]).some(a=>!a.discharged_at)?'<button class="btn patient-action" onclick="workspaceIPDPanel('+id+', '+Number((s.ipd?.admissions||[]).find(a=>!a.discharged_at)?.id||0)+')"><span class="patient-action-icon">B</span><span>IPD</span></button>':'';
+ const clinical='<button class="btn primary patient-action patient-action-primary" onclick="openClinical('+id+')"><span class="patient-action-icon">↗</span><span>Clinical</span></button>';
+ return '<div class="patient-quick-actions">'+q+a+vit+ipd+finance+clinical+'</div>';
 }
 function patientNextActions(p,s){
  const clinical=!!s.permissions?.clinical, billing=!!s.permissions?.billing, pharmacy=!!s.permissions?.pharmacy;
@@ -1500,7 +1497,7 @@ function patientNextActions(p,s){
  } else if(outstanding>0&&billing){
    add('bill','Collect outstanding payment','₹'+outstanding.toFixed(2)+' remains due.','workspacePayOutstanding('+p.id+')');
  } else if(!p.today_token){
-   add('opd','Register OPD','Start an outpatient visit for this patient.','workspaceOpenOpd('+p.id+')');
+   add('record','Review patient record','No active OPD encounter is attached to this patient. Review the registered patient record or use the dedicated Appointments / OPD workflow to start a new visit.','openClinical('+p.id+')',false);
  } else {
    add('record','Review patient','Open the full patient record and current journey.','openClinical('+p.id+')',false);
  }
@@ -2783,61 +2780,54 @@ function patientCareTeamActions(p,s){
   const care=p.care_type==='ipd'?'IPD':'OPD';
   const queue=String(p.queue_stage||'').toLowerCase();
   const outstanding=(s.billing||[]).reduce((n,x)=>n+Math.max(0,Number(x.due??(Number(x.total||0)-Number(x.paid||0)))),0);
-  const stageMap={receptionist:0,nurse:1,doctor:2,lab:3,pharmacy:4,billing:5};
+  const stageMap={nurse:0,doctor:1,lab:2,pharmacy:3,billing:4};
   let currentStage=0;
-  if(s.ipd?.admissions?.some(a=>!a.discharged_at))currentStage=5;
-  else if(queue==='waiting')currentStage=1;
-  else if(queue==='vitals'||queue==='doctor'||queue==='in_room')currentStage=2;
-  else if(queue==='lab')currentStage=3;
-  else if(queue==='pharmacy')currentStage=4;
-  else if(outstanding>0)currentStage=5;
-  else if(p.today_token)currentStage=1;
+  if(s.ipd?.admissions?.some(a=>!a.discharged_at))currentStage=4;
+  else if(queue==='waiting'||queue==='vitals')currentStage=0;
+  else if(queue==='doctor'||queue==='in_room')currentStage=1;
+  else if(queue==='lab')currentStage=2;
+  else if(queue==='pharmacy')currentStage=3;
+  else if(outstanding>0)currentStage=4;
+  else if(p.today_token)currentStage=0;
   const patientContext='<div class="care-team-patient-context"><div><div class="care-team-context-label">CURRENT PATIENT</div><strong>'+escq(p.name||'Patient')+'</strong><span>'+((patientAge(p.date_of_birth)?escq(patientAge(p.date_of_birth))+' years · ':'')+escq(p.phone||'No phone')+' · '+escq(p.uhid||'No UHID'))+'</span></div><div class="care-team-patient-tags"><span class="care-team-patient-tag">'+escq(care)+'</span><span class="care-team-patient-tag">'+escq(p.queue_stage?prettyStatus(p.queue_stage):'Registered')+'</span>'+(p.ward||p.bed_number?'<span class="care-team-patient-tag">'+escq(p.ward||'Ward')+(p.bed_number?' · '+escq(p.bed_number):'')+'</span>':'')+'</div></div>';
   const section=(num,roleKey,label,desc,actions)=>{
     const mine=active(roleKey);
     const idx=stageMap[roleKey];
     const progress=idx<currentStage?'DONE':idx===currentStage?'CURRENT':'UP NEXT';
     const stateLabel=admin?'ADMIN ACCESS':(mine?'YOUR WORK':'CARE TEAM');
-    const icon=({receptionist:'R',nurse:'N',doctor:'D',lab:'L',pharmacy:'P',billing:'₹'})[roleKey]||num;
+    const icon=({nurse:'N',doctor:'D',lab:'L',pharmacy:'P',billing:'₹'})[roleKey]||num;
     const buttons=actions.map((a,i)=>'<button type="button" class="mini '+(mine&&i===0?'primary':'')+'" '+(mine?'onclick="'+a.onclick+'"':'disabled')+'>'+escq(a.label)+'</button>').join('');
     const isLoggedRole=!admin&&role===roleKey;
     return '<div class="care-team-group '+(isLoggedRole?'current-role logged-role ':'')+'workflow-'+progress.toLowerCase().replace(' ','-')+'" data-care-role="'+roleKey+'"><div class="care-team-group-head"><div class="care-team-role-title"><span class="care-team-step">'+num+'</span><span class="care-team-role-icon" aria-hidden="true">'+icon+'</span><strong>'+escq(label)+'</strong></div><div class="care-team-state"><span class="care-team-ownership '+(mine?'mine':'')+'">'+stateLabel+'</span><span class="care-team-progress '+progress.toLowerCase().replace(' ','-')+'">'+progress+'</span></div></div><div class="care-team-role-layout"><div class="care-team-role-copy"><div class="care-team-actions-title">'+escq(desc)+'</div></div><div class="care-team-actions-side"><div class="care-team-buttons">'+buttons+'</div></div></div></div>';
   };
   const sections=[
-    section('01','receptionist','Reception','Registration, OPD check-in and front-desk work.',[
-      {label:'Minimal view',onclick:'openReceptionMinimal('+id+')'},
-      {label:'Register / OPD',onclick:'workspaceOpenOpd('+id+')'},
-      {label:'Appointments',onclick:'patientWorkspaceAppointments('+id+')'},
-      {label:'Queue',onclick:"showSection('queue')"},
-      {label:'Billing',onclick:'workspaceInvoice('+id+',\'receptionist\')'}
-    ]),
-    section('02','nurse','Nurse','Vitals, triage and patient movement.',[
+    section('01','nurse','Nursing','Vitals, triage and patient movement.',[
       {label:'Record vitals',onclick:'workspaceVitals('+id+')'},
-      {label:'OPD queue',onclick:"showSection('queue')"},
+      {label:'Open OPD queue',onclick:"showSection('queue')"},
       {label:'Ward / IPD',onclick:"showSection('beds')"}
     ]),
-    section('03','doctor','Doctor','Consultation, clinical documentation and treatment.',[
+    section('02','doctor','Doctor','Consultation, clinical documentation and treatment.',[
       {label:'Open consultation',onclick:'workspaceOpenDoctor('+id+')'},
       {label:'AI Listen Summary',onclick:"openClinical("+id+",'consultation')"},
       {label:'Prescription',onclick:'workspacePrescription('+id+')'},
       {label:'Investigation',onclick:'workspaceLab('+id+')'},
       {label:'Follow-up',onclick:'workspaceFollowupForm('+id+')'}
     ]),
-    section('04','lab','Lab','Investigations, sample processing and reports.',[
+    section('03','lab','Laboratory','Investigations, sample processing and reports.',[
       {label:'Open lab',onclick:"showSection('lab')"},
-      {label:'New investigation',onclick:'workspaceLab('+id+')'}
+      {label:'Open investigation',onclick:'workspaceLab('+id+')'}
     ]),
-    section('05','pharmacy','Pharmacy','Prescription dispensing and medicine handover.',[
+    section('04','pharmacy','Pharmacy','Prescription dispensing and medicine handover.',[
       {label:'Open pharmacy',onclick:"showSection('pharmacy')"},
       {label:'Dispense medicines',onclick:'workspacePharmacy('+id+')'}
     ]),
-    section('06','billing','Billing','Invoices, payments and financial records.',[
-      {label:'Create bill',onclick:'workspaceInvoice('+id+',\'billing\')'},
-      {label:'Open billing',onclick:"showSection('billing')"}
+    section('05','billing','Billing','Invoices, payments and financial records.',[
+      {label:'Open billing',onclick:"showSection('billing')"},
+      {label:'Review account',onclick:'workspaceInvoice('+id+',\'billing\')'}
     ])
   ];
-  const progressStrip=Object.entries(stageMap).map(([rk,idx])=>'<span class="workflow-progress-item '+(idx<currentStage?'done':idx===currentStage?'current':'')+'"><b>'+String(idx+1).padStart(2,'0')+'</b>'+escq({receptionist:'Reception',nurse:'Nurse',doctor:'Doctor',lab:'Lab',pharmacy:'Pharmacy',billing:'Billing'}[rk])+'</span>').join('');
-  return '<div class="workspace-card care-team-actions-card"><div class="panel-head"><div><h3 class="panel-title">Care team workflow</h3><div class="record-section-note">Follow the patient journey from registration to clinical care, investigations, dispensing and billing.</div></div><span class="role-pill">'+escq(admin?'Admin':(role||'staff'))+'</span></div>'+patientContext+'<div class="workflow-progress-strip">'+progressStrip+'</div><div class="care-team-flow">'+sections.join('')+'</div></div>';
+  const progressStrip=Object.entries(stageMap).map(([rk,idx])=>'<span class="workflow-progress-item '+(idx<currentStage?'done':idx===currentStage?'current':'')+'"><b>'+String(idx+1).padStart(2,'0')+'</b>'+escq({nurse:'Nursing',doctor:'Doctor',lab:'Lab',pharmacy:'Pharmacy',billing:'Billing'}[rk])+'</span>').join('');
+  return '<div class="workspace-card care-team-actions-card"><div class="panel-head"><div><h3 class="panel-title">Care team workflow</h3><div class="record-section-note">Registered patient operations only. Follow the current patient across nursing, clinical care, diagnostics, pharmacy and billing. New patient registration and appointment booking are handled outside this workspace.</div></div><span class="role-pill">'+escq(admin?'Admin':(role||'staff'))+'</span></div>'+patientContext+'<div class="workflow-progress-strip">'+progressStrip+'</div><div class="care-team-flow">'+sections.join('')+'</div></div>';
 }
 
 // Canonical patient-detail entry point. Older clinical-detail helpers remain for their edit forms,

@@ -1214,3 +1214,14 @@ td{font-size:13px}
 @media(max-width:760px){.patient-workspace-layout{grid-template-columns:1fr}.patient-directory{position:relative;top:auto;max-height:360px}.patient-hero{padding:14px!important}.patient-workspace-header .patient-quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 @media(max-width:420px){.patient-workspace-header .patient-quick-actions{grid-template-columns:1fr 1fr!important}}
 @media(max-width:430px){.patient-workspace-header .patient-quick-actions{grid-template-columns:1fr!important}}
+/* Patient Workspace scope + compact registered-patient command surface */
+.patient-module-header{align-items:center!important}
+.patient-module-header-actions{display:flex!important;align-items:center!important;gap:8px!important}
+.patient-module-scope{display:inline-flex;align-items:center;min-height:34px;padding:7px 10px;border:1px solid #cfe5dc;border-radius:9px;background:#edf8f4;color:#176e5b;font-size:10px;font-weight:800;white-space:nowrap}
+.patient-workspace-header .patient-quick-actions{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+.patient-quick-actions .patient-action{overflow:hidden;text-overflow:ellipsis}
+.care-team-actions-card .care-team-group[data-care-role="receptionist"]{display:none!important}
+.care-team-actions-card .care-team-buttons{display:flex;gap:6px;flex-wrap:wrap}
+.care-team-actions-card .care-team-buttons .mini{white-space:nowrap}
+@media(max-width:900px){.patient-workspace-header .patient-quick-actions{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+@media(max-width:600px){.patient-module-header{align-items:flex-start!important}.patient-module-header-actions{width:100%!important}.patient-module-scope{width:100%;justify-content:center}.patient-workspace-header .patient-quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}.care-team-actions-card .care-team-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.care-team-actions-card .care-team-buttons .mini{width:100%;overflow:hidden;text-overflow:ellipsis}}
