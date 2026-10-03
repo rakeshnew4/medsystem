@@ -298,7 +298,7 @@ A module is UI-complete only when the UI reflects the verified HMIS workflow, al
 16. UI-15 Global Responsive Shell Hardening
 
 ## Current release gates
-- Live baseline: v543; visual/UI runner is deployed and operational.
+- Live baseline: v547; visual/UI runner is deployed and operational.
 - v537 Patient Workspace visual pass: compact six-column desktop action grid, three-column tablet and two-column mobile actions; Actions vs Reports & History tabs now have a clearer segmented treatment; workspace columns stack on smaller screens; Care Team action buttons are compact and non-wrapping on mobile.
 - Frontend main-script syntax parsing passes after the v469 interaction-regression repair.
 - Physical-device mobile verification remains open.
@@ -337,4 +337,5 @@ A module is UI-complete only when the UI reflects the verified HMIS workflow, al
 - 2026-10-02: OPD token visual-QA follow-up: replaced the missing-token dead-end with clear recovery actions (Back to OPD / Open Patient Portal) and a Retry path for token-load failures; tightened mobile spacing/contrast. This is a UI-only change and does not invent token retrieval behavior.
 - 2026-10-02: AI-agent foundation: added `api/ai-agent-tools.js`, a permission-gated, hospital-scoped read-only registry for hospital overview, patient search/workspace, OPD queue, appointments, due follow-ups and billing summary. The agent is not allowed to execute arbitrary SQL/URLs; future mutation tools must reuse and respect existing CareFlow API contracts.
 - 2026-10-02: v537 Patient Workspace visual pass: compact responsive command hierarchy, segmented Actions vs Reports & History navigation, stacked workspace columns at tablet/mobile widths, and denser Care Team controls. No backend workflow contracts changed; dry-run returned 0 errors.
+- 2026-10-02: v547 Patient Workspace modal hardening: floating patient-operation windows now close with Escape and restore focus to the triggering control after close. The modal remains scrollable/touch-safe and workspace mutations continue to close the window and refresh the same patient context. No backend workflow contract changed; dry-run returned 0 errors. Genuine authenticated staff visual E2E and physical-device mobile verification remain open.
 - 2026-10-02: v543 Administration/Staff/Setup parity increment: verified HMIS staff edit structure, department list/status/actions and administration privilege/navigation references. CareFlow now avoids duplicate generic headers on Staff/Setup and provides a compact administration sub-navigation linking Staff, Departments, Roles & permissions, Audit and Hospital Setup. No backend contract changes; dry-run returned 0 errors. Genuine authenticated staff visual E2E remains open.
