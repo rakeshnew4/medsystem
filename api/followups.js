@@ -66,7 +66,14 @@ export default async function(req,res){
  }
 
  if(req.method==="PUT"){
-   const r=await db.query("UPDATE followups SET due_date=$1,status=$2,notes=$3,updated_at=now() WHERE id=$4 AND hospital_id=$5 RETURNING *",[String(b.due_date||"").slice(0,10),b.status||"due",b.notes||null,b.id,hid]);
+   const id=Number(b.id);
+   if(!Number.isInteger(id)||id<=0)return res.status(400).json({error:"Follow-up id is required"});
+   const existing=await db.query("SELECT due_date,notes,status FROM followups WHERE id=$1 AND hospital_id=$2 LIMIT 1",[id,hid]);
+   if(!existing.rows[0])return res.status(404).json({error:"Follow-up not found"});
+   const dueDate=b.due_date==null||String(b.due_date).trim()===""?existing.rows[0].due_date:String(b.due_date).slice(0,10);
+   const status=String(b.status||existing.rows[0].status||"due");
+   const notes=b.notes===undefined?existing.rows[0].notes:(b.notes||null);
+   const r=await db.query("UPDATE followups SET due_date=$1::date,status=$2,notes=$3,updated_at=now() WHERE id=$4 AND hospital_id=$5 RETURNING *",[dueDate,status,notes,id,hid]);
    return res.json(r.rows[0]||{error:"Follow-up not found"});
  }
  const r=await db.query("SELECT f.*,p.name AS patient_name,d.name AS doctor_name,a.appointment_date,a.appointment_time,a.status AS appointment_status,a.consultation_type,a.public_token,a.video_status FROM followups f JOIN patients p ON p.id=f.patient_id LEFT JOIN doctors d ON d.id=f.doctor_id LEFT JOIN appointments a ON a.id=f.appointment_id WHERE f.hospital_id=$1 ORDER BY f.due_date LIMIT 200",[hid]);

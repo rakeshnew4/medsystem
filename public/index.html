@@ -47,6 +47,16 @@ body.workspace-modal-open{overflow:hidden}
 .patient-workspace-float-body{padding:20px;overflow:auto}
 .patient-workspace-float-body .form-grid{margin:0}
 .patient-workspace-float-body .compact-record{background:var(--surface-soft,#f8faf9);border:1px solid var(--border);border-radius:12px;padding:12px}
+.patient-lookup-toolbar{display:block!important}
+.patient-lookup-search{width:100%}
+.patient-filter-scroll{display:flex!important;gap:6px!important;overflow-x:auto!important;overflow-y:hidden!important;flex-wrap:nowrap!important;margin-top:9px;padding-bottom:3px;scrollbar-width:thin}
+.patient-filter-scroll .mini{flex:0 0 auto!important;min-width:72px}
+.patient-workspace-float-card:has(.consultation-card){width:min(1180px,calc(100vw - 28px));max-height:94vh}
+.patient-workspace-float-card:has(.consultation-card) .patient-workspace-float-body{padding:22px}
+.patient-workspace-float-card:has(.consultation-card) .consultation-tools{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.patient-workspace-float-card:has(.consultation-card) .consultation-card{min-height:0}
+.patient-workspace-float-card:has(.consultation-card) textarea{min-height:150px}
+@media(max-width:900px){.patient-workspace-float-card:has(.consultation-card){width:calc(100vw - 18px)}.patient-workspace-float-card:has(.consultation-card) .consultation-tools{grid-template-columns:1fr}}
 @media(max-width:600px){.patient-workspace-float{padding:10px}.patient-workspace-float-card{width:100%;max-height:92vh;border-radius:16px}.patient-workspace-float-head{padding:14px 15px}.patient-workspace-float-body{padding:15px}}
 .patient-workspace-header .patient-quick-actions{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:7px!important;width:100%}
 .patient-workspace-header .patient-action{min-width:0!important;min-height:40px!important;height:40px!important;padding:8px 9px!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:6px!important;white-space:nowrap!important;line-height:1!important;font-size:11px!important}
@@ -290,7 +300,7 @@ body.workspace-modal-open{overflow:hidden}
   <div class="patient-module-header"><div><div class="kicker">REGISTERED PATIENTS · WORKSPACE</div><h2>Patient Lookup & Workspace</h2><p>Search the registered patient register, open a patient, and continue with their existing clinical, inpatient, pharmacy or billing operations.</p></div><div class="patient-module-header-actions"><span class="patient-module-scope">Registered patients only</span></div></div>
   <div class="patient-workspace-layout">
     <div class="card panel patient-directory">
-      <div class="patient-lookup-toolbar"><div class="patient-lookup-search"><span aria-hidden="true">⌕</span><input id="patientWorkspaceSearch" placeholder="Search name, UHID, PHN, phone or identifier…" autocomplete="off" oninput="renderPatientDirectory()"></div><div class="patient-lookup-actions"><button class="mini active" data-pfilter="all" onclick="setPatientFilter('all',this)">All</button><button class="mini" data-pfilter="active" onclick="setPatientFilter('active',this)">Active</button><button class="mini" data-pfilter="opd" onclick="setPatientFilter('opd',this)">OPD</button><button class="mini" data-pfilter="ipd" onclick="setPatientFilter('ipd',this)">IPD</button></div></div>
+      <div class="patient-lookup-toolbar"><div class="patient-lookup-search"><span aria-hidden="true">⌕</span><input id="patientWorkspaceSearch" placeholder="Search name, UHID, PHN, phone or identifier…" autocomplete="off" oninput="renderPatientDirectory()"></div><div class="patient-lookup-actions patient-filter-scroll" aria-label="Patient filters"><button class="mini active" data-pfilter="all" onclick="setPatientFilter('all',this)">All</button><button class="mini" data-pfilter="active" onclick="setPatientFilter('active',this)">Active</button><button class="mini" data-pfilter="opd" onclick="setPatientFilter('opd',this)">OPD</button><button class="mini" data-pfilter="ipd" onclick="setPatientFilter('ipd',this)">IPD</button></div></div>
       <div class="patient-action-report-label">Patient records</div>
       <div id="patientDirectory"></div>
     </div>
@@ -1527,8 +1537,8 @@ function workspaceQueuePanel(pid){
  const p=state.activePatientRecord?.patient||state.patients.find(x=>Number(x.id)===Number(pid))||{};
  const qid=p.active_queue_id||null;
  const q=(state.queue||[]).find(x=>Number(x.id)===Number(qid)||Number(x.patient_id)===Number(pid));
- const body='<div class="care-banner"><div><strong>Queue status</strong><span>'+esc(q?prettyStatus(q.stage||'waiting'):'No active queue')+'</span></div><div><strong>Token</strong><span>'+esc(q?.token||'—')+'</span></div></div><div class="record-section-note">Queue details are shown here without leaving Patient Workspace. Queue transitions are performed by the responsible workflow action.</div>';
- workspaceActionPanel({title:'OPD queue',body},pid,'nurse');
+ const body='<div class="care-banner"><div><strong>Queue status</strong><span>'+esc(q?prettyStatus(q.stage||'waiting'):'No active queue')+'</span></div><div><strong>Token</strong><span>'+esc(q?.token||'—')+'</span></div></div><div class="record-section-note">Queue shows this patient’s current OPD position and token. It is a status view; the responsible workflow action changes the queue stage.</div>'+(q?'<div class="workspace-grid"><div class="compact-record"><strong>Priority</strong><span>'+esc(q.priority||'normal')+'</span></div><div class="compact-record"><strong>Doctor</strong><span>'+esc(q.doctor_name||'Not assigned')+'</span></div></div>':'');
+ workspaceActionPanel({title:'OPD queue status',body},pid,'nurse');
 }
 function workspaceWaitingStatus(pid){
  const el=document.getElementById('patientWorkspaceActionArea');
@@ -1538,7 +1548,16 @@ function workspaceWaitingStatus(pid){
 function workspaceFocusConsultation(pid){
  const card=document.querySelector('#patientWorkspaceBody .consultation-card');
  if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.querySelector('textarea')?.focus();return;}
- workspaceActionPanel({title:'Consultation',body:'<div class="empty">The consultation controls are available to the assigned doctor. This patient remains in the Patient Workspace.</div>'},pid,'doctor');
+ workspaceOpenDoctor(pid);
+}
+async function workspaceAIListen(pid){
+ try{
+   await openPatientWorkspace(pid);
+   const card=document.querySelector('#patientWorkspaceBody .ai-clinical-card');
+   if(card){card.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>document.getElementById('aiScribeInput')?.focus(),250);return;}
+   await workspaceOpenDoctor(pid);
+   setTimeout(()=>document.querySelector('#patientWorkspaceActionModal .ai-clinical-card')?.scrollIntoView({behavior:'smooth',block:'center'}),150);
+ }catch(e){alert(e.message)}
 }
 function patientNextActions(p,s){
  const clinical=!!s.permissions?.clinical, billing=!!s.permissions?.billing, pharmacy=!!s.permissions?.pharmacy;
@@ -1961,8 +1980,8 @@ function workspaceIPDAction(action,pid,admissionId){
  if(action==='transfer'){return workspaceIPDTransferModal(pid,admissionId)}
  if(action==='admit'){return workspaceIPDAdmitModal(pid)}
 }
-function workspaceIPDTransferModal(pid,admissionId){const beds=(state.beds||[]).filter(b=>b.status==='available');const body='<form class="form-grid" onsubmit="workspaceSubmitIPDTransfer(event,'+pid+','+admissionId+')"><div class="field full"><label>Destination bed</label><select name="new_bed_id" required>'+beds.map(b=>'<option value="'+b.id+'">'+esc((b.ward||'Ward')+' · '+(b.bed_number||'Bed'))+'</option>').join('')+'</select></div><div class="field full"><label>Reason</label><textarea name="reason" required>Patient workspace transfer</textarea></div><button class="btn primary">Transfer patient</button></form>';workspaceActionPanel({title:'Transfer bed',body},pid,'ipd')}
-function workspaceIPDAdmitModal(pid){const beds=(state.beds||[]).filter(b=>b.status==='available');const body='<form class="form-grid" onsubmit="workspaceSubmitIPDAdmit(event,'+pid+')"><div class="field full"><label>Admission bed</label><select name="bed_id" required>'+beds.map(b=>'<option value="'+b.id+'">'+esc((b.ward||'Ward')+' · '+(b.bed_number||'Bed'))+'</option>').join('')+'</select></div><div class="field"><label>Admission type</label><select name="admission_type"><option value="general">General</option><option value="emergency">Emergency</option><option value="surgical">Surgical</option><option value="observation">Observation</option><option value="day_care">Day care</option></select></div><div class="field full"><label>Notes</label><textarea name="notes"></textarea></div><button class="btn primary">Admit patient</button></form>';workspaceActionPanel({title:'Create IPD admission',body},pid,'ipd')}
+function workspaceIPDTransferModal(pid,admissionId){const beds=(state.activePatientRecord?.ipd?.available_beds||state.beds||[]).filter(b=>b.status==='available');const body='<form class="form-grid" onsubmit="workspaceSubmitIPDTransfer(event,'+pid+','+admissionId+')"><div class="field full"><label>Destination bed</label><select name="new_bed_id" required>'+beds.map(b=>'<option value="'+b.id+'">'+esc((b.ward||'Ward')+' · '+(b.bed_number||'Bed'))+'</option>').join('')+'</select></div><div class="field full"><label>Reason</label><textarea name="reason" required>Patient workspace transfer</textarea></div><button class="btn primary">Transfer patient</button></form>';workspaceActionPanel({title:'Transfer bed',body},pid,'ipd')}
+function workspaceIPDAdmitModal(pid){const beds=(state.activePatientRecord?.ipd?.available_beds||state.beds||[]).filter(b=>b.status==='available');const body='<form class="form-grid" onsubmit="workspaceSubmitIPDAdmit(event,'+pid+')"><div class="field full"><label>Admission bed</label><select name="bed_id" required>'+beds.map(b=>'<option value="'+b.id+'">'+esc((b.ward||'Ward')+' · '+(b.bed_number||'Bed'))+'</option>').join('')+'</select></div><div class="field"><label>Admission type</label><select name="admission_type"><option value="general">General</option><option value="emergency">Emergency</option><option value="surgical">Surgical</option><option value="observation">Observation</option><option value="day_care">Day care</option></select></div><div class="field full"><label>Notes</label><textarea name="notes"></textarea></div><button class="btn primary">Admit patient</button></form>';workspaceActionPanel({title:'Create IPD admission',body},pid,'ipd')}
 async function workspaceSubmitIPDTransfer(e,pid,admissionId){e.preventDefault();const b=Object.fromEntries(new FormData(e.target).entries());await workspaceIPDRequest({action:'transfer',id:admissionId,new_bed_id:Number(b.new_bed_id),reason:b.reason},pid)}
 async function workspaceSubmitIPDAdmit(e,pid){e.preventDefault();const b=Object.fromEntries(new FormData(e.target).entries());await workspaceIPDRequest({action:'admit',patient_id:pid,bed_id:Number(b.bed_id),admission_type:b.admission_type,notes:b.notes||''},pid)}
 async function workspaceIPDRequest(body,pid){
@@ -2105,7 +2124,27 @@ function shareAppointmentWhatsApp(id){const a=state.appointments.find(x=>Number(
 async function moveAppointment(id,stage){try{await api('/appointments',{method:'PUT',body:JSON.stringify({id,action:'move',stage})});await loadAll();showSection('queue')}catch(e){alert(e.message)}}
 async function movePatient(patientId,stage){try{const existing=state.queue.find(q=>Number(q.patient_id)===Number(patientId));if(existing){await moveQueue(existing.id,stage);return}await api('/queue',{method:'POST',body:JSON.stringify({patient_id:patientId,stage,reason:'Patient flow'})});await loadAll();showSection('queue')}catch(e){alert(e.message)}}
 async function updatePatientStatus(id,status){try{const p=state.patients.find(x=>Number(x.id)===Number(id));if(!p)return;await api('/patients',{method:'PUT',body:JSON.stringify({...p,id,status})});await loadAll()}catch(e){alert(e.message)}}
-function editPatient(id){const p=state.patients.find(x=>Number(x.id)===Number(id));if(!p)return;patientId.value=p.id;patientName.value=p.name||'';patientPhone.value=p.phone||'';patientEmail.value=p.email||'';patientDob.value=p.date_of_birth?String(p.date_of_birth).slice(0,10):'';patientStatus.value=p.status||'active';patientNotes.value=p.notes||'';openModal('patientModal')}
+function editPatient(id){
+ const p=state.activePatientRecord?.patient&&Number(state.activePatientRecord.patient.id)===Number(id)
+   ? state.activePatientRecord.patient
+   : state.patients.find(x=>Number(x.id)===Number(id));
+ if(!p)return;
+ if(state.activePatientRecord?.patient&&Number(state.activePatientRecord.patient.id)===Number(id)){
+   const body='<form class="form-grid" onsubmit="workspaceSavePatientEdit(event,'+Number(id)+')"><div class="field full"><label>Name</label><input name="name" required value="'+esc(p.name||'')+'"></div><div class="field"><label>Phone</label><input name="phone" value="'+esc(p.phone||'')+'"></div><div class="field"><label>Email</label><input name="email" type="email" value="'+esc(p.email||'')+'"></div><div class="field"><label>Date of birth</label><input name="date_of_birth" type="date" value="'+esc(p.date_of_birth?String(p.date_of_birth).slice(0,10):'')+'"></div><div class="field"><label>Status</label><select name="status"><option value="active" '+(p.status!=='inactive'?'selected':'')+'>Active</option><option value="inactive" '+(p.status==='inactive'?'selected':'')+'>Inactive</option></select></div><div class="field full"><label>Administrative notes</label><textarea name="notes">'+esc(p.notes||'')+'</textarea></div><div class="field full"><button class="btn primary">Save changes</button></div></form>';
+   workspaceActionPanel({title:'Edit patient · '+(p.name||'Patient'),body},id,'patient');
+   return;
+ }
+ patientId.value=p.id;patientName.value=p.name||'';patientPhone.value=p.phone||'';patientEmail.value=p.email||'';patientDob.value=p.date_of_birth?String(p.date_of_birth).slice(0,10):'';patientStatus.value=p.status||'active';patientNotes.value=p.notes||'';openModal('patientModal');
+}
+async function workspaceSavePatientEdit(e,pid){
+ e.preventDefault();
+ try{
+   const b=Object.fromEntries(new FormData(e.target).entries());
+   await api('/patients',{method:'PUT',body:JSON.stringify({id:Number(pid),...b})});
+   closePatientWorkspaceActionModal();
+   await refreshPatientWorkspace(pid);
+ }catch(x){alert(x.message)}
+}
 function renderQueue(){
  const stages=[['waiting','Waiting'],['vitals','Vitals'],['doctor','Waiting for doctor'],['in_room','In doctor room'],['lab','Lab'],['followup','Follow-up'],['pharmacy','Pharmacy']];
  const role=state.session?.staff?.role||'admin';
@@ -2984,22 +3023,17 @@ function patientCareTeamActions(p,s){
     ]),
     section('02','doctor','Doctor','Consultation, clinical documentation and treatment.',[
       {label:'Open consultation',onclick:'workspaceOpenDoctor('+id+')'},
-      {label:'AI Listen Summary',onclick:"openClinical("+id+",'consultation')"},
-      {label:'Prescription',onclick:'workspacePrescription('+id+')'},
-      {label:'Investigation',onclick:'workspaceLab('+id+')'},
-      {label:'Follow-up',onclick:'workspaceFollowupForm('+id+')'}
+      {label:'AI Listen Summary',onclick:'workspaceAIListen('+id+')'}
     ]),
     section('03','lab','Laboratory','Investigations, sample processing and reports.',[
       {label:'Lab',onclick:'workspaceLab('+id+')'},
       {label:'Open investigation',onclick:'workspaceLab('+id+')'}
     ]),
     section('04','pharmacy','Pharmacy','Prescription dispensing and medicine handover.',[
-      {label:'Pharmacy',onclick:'workspacePharmacy('+id+')'},
-      {label:'Dispense medicines',onclick:'workspacePharmacy('+id+')'}
+      {label:'Pharmacy',onclick:'workspacePharmacy('+id+')'}
     ]),
     section('05','billing','Billing','Invoices, payments and financial records.',[
-      {label:'Bill',onclick:'workspaceInvoice('+id+',\'billing\')'},
-      {label:'Review account',onclick:'workspaceInvoice('+id+',\'billing\')'}
+      {label:'Billing',onclick:'workspaceInvoice('+id+',\'billing\')'}
     ])
   ];
   const progressStrip=Object.entries(stageMap).map(([rk,idx])=>'<span class="workflow-progress-item '+(idx<currentStage?'done':idx===currentStage?'current':'')+'"><b>'+String(idx+1).padStart(2,'0')+'</b>'+escq({nurse:'Nursing',doctor:'Doctor',lab:'Lab',pharmacy:'Pharmacy',billing:'Billing'}[rk])+'</span>').join('');

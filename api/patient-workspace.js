@@ -58,6 +58,7 @@ export default async function(req,res){
       safeQuery("theatre_team","SELECT pt.*,s.display_name,s.email,s.role AS staff_role,d.name AS doctor_name FROM theatre_procedure_team pt JOIN theatre_procedures t ON t.id=pt.procedure_id AND t.hospital_id=pt.hospital_id JOIN staff_profiles s ON s.id=pt.staff_id AND s.hospital_id=pt.hospital_id LEFT JOIN doctors d ON d.id=s.doctor_id WHERE pt.hospital_id=$1 AND t.patient_id=$2 ORDER BY pt.created_at DESC",[ctx.hospitalId,pid])
     ]).then(x=>({procedures:x[0].rows,rooms:x[1].rows,catalog:x[2].rows,team:x[3].rows})) : Promise.resolve({procedures:[],rooms:[],catalog:[],team:[]})
   ]);
+  const availableBeds = await safeQuery("available_beds","SELECT id,ward,bed_number,bed_type,status FROM beds WHERE hospital_id=$1 AND status='available' ORDER BY ward,bed_number",[ctx.hospitalId]);
   const triage = canClinical
     ? await safeQuery("triage","SELECT t.*,COALESCE(t.assessed_by,'Unknown') AS assessor_name FROM triage_assessments t WHERE t.hospital_id=$1 AND t.patient_id=$2 ORDER BY t.assessed_at DESC LIMIT 20",[ctx.hospitalId,pid])
     : {rows:[]};
@@ -69,7 +70,7 @@ export default async function(req,res){
     appointments:appointments.rows,
     billing:canBilling?billing.rows:[],
     followups:followups.rows,
-    ipd:{admissions:ipd.rows},
+    ipd:{admissions:ipd.rows,available_beds:availableBeds.rows},
     workflow:{events:workflow.rows},
     pharmacy:canPharmacy?pharmacy.rows:[],
     insurance:canBilling?insurance.rows:[],
