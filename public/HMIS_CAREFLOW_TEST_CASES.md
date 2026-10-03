@@ -358,6 +358,8 @@ Status: Open.
 ## AI-agent tool safety contract
 `/api/ai-agent-tools` exposes a discoverable tool registry and permission-gated execution for read-only staff workflows. Each tool is hospital-scoped and executes fixed server-side queries; the model cannot submit arbitrary SQL, URLs or database operations. HMIS `AnthropicApiService` uses the same core agent pattern: declare tools, let the model request a named tool, execute a server-side handler, return the tool result, and continue the agent loop; some HMIS mutations remain deliberately in the normal UI. CareFlow should follow this pattern while preserving its hospital/role permission boundaries. Future write tools must reuse the existing API/function contract, permission guard, validation, idempotency and concurrency boundary before being exposed to an agent.
 
+2026-10-02 verification: an anonymous GET to `/api/ai-agent-tools` returned HTTP 401, confirming the registry is not publicly discoverable at runtime. The deployed source was audited for fixed tool definitions, requirePermission gating and hospital_id scoping. The next expansion candidates are read-only laboratory worklist, IPD census and fixed-asset register tools; their underlying permissions were verified against existing CareFlow routes. No mutation tool was added in this pass because the project source editor rejected the attempted code patch, preventing an unsafe partial implementation.
+
 ## TC-AI-TOOLS-001 — Tool discovery
 Expected: signed-in staff can discover only the declared CareFlow agent tools and their read-only metadata; no secrets are returned.
 

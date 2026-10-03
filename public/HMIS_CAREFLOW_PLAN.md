@@ -14,6 +14,10 @@ v477: Safe integration boundary verification refreshed without enabling LIS writ
 
 The discharge checklist mutation path is now transaction-bound to an active admission lock. HMIS nursing-discharge review confirms discharge is a gated inpatient workflow; CareFlow now prevents checklist writes from racing past terminal discharge state. Authenticated staff concurrency execution remains a required open gate.
 
+## 2026-10-02 continuation increment — AI-agent safety/coverage audit
+
+The current AI-agent registry was audited against the HMIS agent/tool pattern. The deployed route remains permission-gated and hospital-scoped; anonymous execution returned HTTP 401. The existing registry contains seven read-only tools and does not expose arbitrary SQL/URL execution. The next safe expansion candidates are read-only laboratory worklist, IPD census and fixed-asset register tools, mapped to already-verified CareFlow permission boundaries. No mutation tool is being exposed until its underlying API contract, permission, validation, idempotency and concurrency behavior are individually verified. The project source editor blocked the attempted code patch in this pass, so no unverified partial implementation was shipped.
+
 ## Purpose
 
 Use the HMIS implementation as a domain/workflow reference for CareFlow. We will inspect the real HMIS entities, controllers/services, screens and persistence flows before changing the corresponding CareFlow module.
