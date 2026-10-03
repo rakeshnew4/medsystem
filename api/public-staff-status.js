@@ -6,7 +6,7 @@ export const methods=["GET"];
 
 const DEMO_ROLES=["admin","doctor","nurse","receptionist","lab","pharmacy","billing","store"];
 function demoEnabled(){return String(process.env.CARE_FLOW_DEMO_MODE||"").trim().toLowerCase()==="true";}
-function demoRole(req){const r=String(req.cookies?.careflow_demo_role||req.headers?.["x-careflow-demo-role"]||"admin").trim().toLowerCase();return DEMO_ROLES.includes(r)?r:"admin";}
+function demoRole(req){const r=String(req.cookies?.careflow_demo_role||req.headers?.["x-careflow-demo-role"]||req.query?.demo_role||"admin").trim().toLowerCase();return DEMO_ROLES.includes(r)?r:"admin";}
 
 export default async function(req,res){
   const user=await auth.getUser(req);

@@ -578,6 +578,9 @@ async function api(path,opts={}){
   if(show)showCareFlowLoader('Loading…');
   try{
     const roleToken=localStorage.getItem('careflowRoleToken')||'';
+    const demoRole=localStorage.getItem('careflowDemoRole')||'';
+    if(demoRole&&String(path).startsWith('/public-staff-status'))path+=(String(path).includes('?')?'&':'?')+'demo_role='+encodeURIComponent(demoRole);
+    else if(demoRole&&String(path).startsWith('/'))path+=(String(path).includes('?')?'&':'?')+'demo_role='+encodeURIComponent(demoRole);
     const baseHeaders={'Content-Type':'application/json'};
     if(roleToken)baseHeaders['X-CareFlow-Role-Token']=roleToken;
     const r=await fetch(API+path,{headers:{...baseHeaders,...(requestOpts.headers||{})},...requestOpts});

@@ -317,6 +317,7 @@ async function runTarget(target,width,height,demoRole=null){
     if(demoRole){
       await page.goto("https://hospital-ai.hatchable.site/",{waitUntil:"domcontentloaded"});
       await page.setCookie({name:"careflow_demo_role",value:String(demoRole).toLowerCase(),path:"/",secure:true,httpOnly:false});
+      await page.evaluate(role=>localStorage.setItem("careflowDemoRole",String(role).toLowerCase()),demoRole);
     }
     await page.goto(target.url,{waitUntil:"domcontentloaded"});
     await new Promise(r=>setTimeout(r,800));
