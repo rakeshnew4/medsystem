@@ -1588,17 +1588,24 @@ async function workspaceSaveDispense(medication_id,pid,quantity){
 }
 function closePatientWorkspaceActionModal(){
  const modal=document.getElementById('patientWorkspaceActionModal');
+ if(window.__patientWorkspaceEscHandler){document.removeEventListener('keydown',window.__patientWorkspaceEscHandler);window.__patientWorkspaceEscHandler=null}
  if(modal)modal.remove();
  document.body.classList.remove('workspace-modal-open');
+ if(window.__patientWorkspaceReturnFocus&&document.contains(window.__patientWorkspaceReturnFocus)){window.__patientWorkspaceReturnFocus.focus()}
+ window.__patientWorkspaceReturnFocus=null;
 }
 function patientWorkspacePanel(title,body){
  return '<div id="patientWorkspaceActionModal" class="patient-workspace-float" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><div class="patient-workspace-float-backdrop" onclick="closePatientWorkspaceActionModal()"></div><div class="patient-workspace-float-card"><div class="patient-workspace-float-head"><div><div class="kicker">PATIENT WORKSPACE</div><h3 class="panel-title">'+esc(title)+'</h3></div><button class="btn" type="button" aria-label="Close" onclick="closePatientWorkspaceActionModal()">Close</button></div><div class="patient-workspace-float-body">'+body+'</div></div></div>';
 }
 function workspaceActionPanel(html,pid,anchorRole){
+ const returnFocus=document.activeElement instanceof HTMLElement?document.activeElement:null;
  closePatientWorkspaceActionModal();
+ window.__patientWorkspaceReturnFocus=returnFocus;
  document.body.insertAdjacentHTML('beforeend',patientWorkspacePanel(html.title,html.body));
  document.body.classList.add('workspace-modal-open');
- setTimeout(()=>document.querySelector('#patientWorkspaceActionModal input, #patientWorkspaceActionModal select, #patientWorkspaceActionModal textarea')?.focus(),40);
+ window.__patientWorkspaceEscHandler=e=>{if(e.key==='Escape'){e.preventDefault();closePatientWorkspaceActionModal()}};
+ document.addEventListener('keydown',window.__patientWorkspaceEscHandler);
+ setTimeout(()=>document.querySelector('#patientWorkspaceActionModal input, #patientWorkspaceActionModal select, #patientWorkspaceActionModal textarea, #patientWorkspaceActionModal button')?.focus(),40);
 }
 function workspaceOpenOpd(pid){openOpdRegistration(pid)}
 function workspaceOpenDoctor(pid){
