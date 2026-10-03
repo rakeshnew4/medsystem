@@ -44,6 +44,7 @@ button.secondary{background:#eef4f1;color:#315248}.msg{min-height:22px;margin:14
         <label for="code">Verification code</label>
         <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" placeholder="6-digit code" required>
       </div>
+      <p id="msg" class="msg" role="status" aria-live="polite"></p>
       <button id="submit" type="submit">Send sign-in code</button>
       <button id="back" class="secondary" type="button" hidden>Use a different email</button>
     </form>
@@ -53,7 +54,6 @@ button.secondary{background:#eef4f1;color:#315248}.msg{min-height:22px;margin:14
       <button id="passkeySkip" class="secondary" type="button">Continue without passkey</button>
     </div>
 
-    <p id="msg" class="msg" role="status" aria-live="polite"></p>
     <div class="hint">Access is controlled by your hospital staff registration and role. If your email is not registered, ask the hospital administrator to add it under <b>Staff</b>.</div>
     <div style="margin-top:14px;text-align:center;font-size:13px"><a href="/patient/" style="color:#356653;font-weight:750;text-decoration:none">I'm a patient → Open Patient Portal</a></div>
   </section>
