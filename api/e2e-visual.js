@@ -4,6 +4,7 @@ export const access="admin";
 export const methods=["GET","POST"];
 
 const TARGETS=[
+  {name:"patient-workspace",url:"https://hospital-ai.hatchable.site/"},
   {name:"staff-login",url:"https://hospital-ai.hatchable.site/login"},
   {name:"patient-portal",url:"https://hospital-ai.hatchable.site/patient/"},
   {name:"opd",url:"https://hospital-ai.hatchable.site/opd/"},
@@ -119,6 +120,25 @@ async function safeUiActions(page,target){
       actions.push({type:"patient-tab",...result});
     }
   }
+  if(target.name==="patient-workspace"){
+    actions.push(await page.evaluate(async()=>{
+      const section=document.getElementById("patients");
+      if(!section)return {type:"patient-workspace",ok:false,reason:"patient workspace section missing"};
+      section.scrollIntoView({block:"start"});
+      await new Promise(r=>setTimeout(r,150));
+      const buttons=Array.from(section.querySelectorAll("button")).filter(b=>b.offsetParent!==null);
+      const labels=buttons.map(b=>(b.innerText||"").trim().replace(/\s+/g," ").slice(0,100));
+      const before={buttons:labels.length,labels,scrollTop:Math.round(section.scrollTop||0)};
+      const body=section.querySelector(".patient-workspace-main");
+      if(body){
+        body.scrollTop=body.scrollHeight;
+        await new Promise(r=>setTimeout(r,80));
+      }
+      const after={bodyScrollable:!!body&&body.scrollHeight>body.clientHeight+8,bodyScrollTop:Math.round(body?.scrollTop||0)};
+      const modalBefore=!!document.getElementById("patientWorkspaceActionModal");
+      return {type:"patient-workspace-surface",ok:true,before,after,modalBefore};
+    }));
+  }
   if(target.name==="staff-login"){
     actions.push(await page.evaluate(()=>{
       const email=document.getElementById("email"),submit=document.getElementById("submit");
@@ -137,7 +157,19 @@ async function captureState(page,target,width,height,scrollState){
     documentHeight:document.documentElement.scrollHeight,
     horizontalOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2,
     visibleText:(document.body.innerText||"").slice(0,1800),
-    consoleErrors:window.__careflowErrors||[]
+    consoleErrors:window.__careflowErrors||[],
+    scrollContainers:Array.from(document.querySelectorAll("*")).filter(el=>{
+      const s=getComputedStyle(el);
+      return el.scrollHeight>el.clientHeight+8 && ["auto","scroll"].includes(s.overflowY);
+    }).slice(0,80).map(el=>({
+      tag:el.tagName,id:el.id||null,cls:String(el.className||"").slice(0,100),
+      clientHeight:el.clientHeight,scrollHeight:el.scrollHeight,
+      scrollTop:Math.round(el.scrollTop)
+    })),
+    visibleButtons:Array.from(document.querySelectorAll("button")).filter(b=>b.offsetParent!==null).map((b,i)=>({
+      index:i,text:(b.innerText||"").trim().replace(/\s+/g," ").slice(0,120),
+      disabled:b.disabled,rect:(()=>{const r=b.getBoundingClientRect();return {x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)}})()
+    })).slice(0,100)
   }));
   const png=await page.screenshot({fullPage:false});
   const key="e2e/visual/"+new Date().toISOString().slice(0,10)+"/"+target.name+"-"+width+"x"+height+"-"+scrollState+".png";
