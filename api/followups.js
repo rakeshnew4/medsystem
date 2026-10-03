@@ -57,7 +57,11 @@ export default async function(req,res){
    }
 
    const f=await db.query("INSERT INTO followups(hospital_id,patient_id,doctor_id,due_date,status,notes,appointment_id,consultation_type) VALUES($1,$2,$3,$4,'scheduled',$5,$6,$7) RETURNING *",[hid,b.patient_id,doctorId,date,[b.reason,b.notes].filter(Boolean).join(" — ")||null,a.rows[0].id,type]);
-   await db.query("INSERT INTO notifications(hospital_id,patient_id,appointment_id,kind,scheduled_for,status,channel) VALUES($1,$2,$3,'followup_confirmation',now(),'pending','web') ON CONFLICT (appointment_id,kind) DO NOTHING",[hid,b.patient_id,a.rows[0].id]);
+   try{
+     await db.query("INSERT INTO notifications(hospital_id,patient_id,appointment_id,kind,scheduled_for,status,channel) VALUES($1,$2,$3,'followup_confirmation',CURRENT_TIMESTAMP,'pending','web')",[hid,b.patient_id,a.rows[0].id]);
+   }catch(err){
+     console.warn("[followups] confirmation notification skipped",String(err?.message||err));
+   }
    return res.json({followup:f.rows[0],appointment:a.rows[0],doctor,video});
  }
 
