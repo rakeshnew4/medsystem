@@ -248,7 +248,9 @@ HMIS references: `Privileges.java`, `UserPrivilageController.java`, `ConfigOptio
 - [x] Appointments — rebuilt from the verified HMIS appointment-search pattern into a persistent filter/search pane plus dedicated appointment register; day grouping, doctor/status/type/date filters and existing check-in/no-show/cancel/video actions are preserved.
 - [x] Doctor Consultation — rebuilt the shared consultation workspace presentation around the verified HMIS OPD visit hierarchy: patient context first, compact waiting/today worklist, grouped clinical actions, consultation documentation separated from AI assistance, and responsive two-pane behavior.
 - [ ] Browser visual reproduction on an authenticated staff session — implementation is deployed, but the available automated browser gate could not establish a genuine staff session; this remains separate from UI implementation completion.
-- [ ] Next module parity loop — Laboratory, then Pharmacy, then Inpatient Admission Profile, then Billing. Each must be inspected against the corresponding HMIS screen/code before implementation.
+- [x] Laboratory — rebuilt with HMIS-aligned persistent worklist/search controls and staged investigation register; existing ordered → sample → processing → verified contracts preserved.
+- [x] Pharmacy — rebuilt from HMIS dispensing workflow into prescription queue + stock/report separation; existing dispensing and stock contracts preserved.
+- [ ] Next module parity loop — Inpatient Admission Profile, then Billing. Each must be inspected against the corresponding HMIS screen/code before implementation.
 
 ### UI-16 — Minimal role workspaces / hospital-home-first landing
 - [x] Role landing rule — all supported staff roles now resolve to the normal Hospital overview first instead of auto-opening a role-specific operational screen.
